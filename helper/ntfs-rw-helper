@@ -1,0 +1,249 @@
+#!/bin/bash
+# Privileged helper: ntfs-3g over bundled FUSE-T userspace. Device id only, e.g. disk5s1.
+set -euo pipefail
+
+DISKUTIL="/usr/sbin/diskutil"
+MOUNT="/sbin/mount"
+UMOUNT="/sbin/umount"
+PKILL="/usr/bin/pkill"
+
+# Prefer fully-bundled binaries inside NTFSMount.app.
+find_ntfs3g() {
+  local p
+  for p in \
+    /Applications/NTFSMount.app/Contents/MacOS/ntfs-3g \
+    /Users/yfan/Desktop/bio-apple/NTFSMount/runtime/ntfs-3g
+  do
+    if [[ -x "$p" ]]; then
+      printf '%s' "$p"
+      return 0
+    fi
+  done
+  return 1
+}
+
+NTFS3G="${NTFS3G:-$(find_ntfs3g || true)}"
+NTFS3G_DIR=""
+if [[ -n "${NTFS3G}" ]]; then
+  NTFS3G_DIR="$(/usr/bin/dirname "$NTFS3G")"
+fi
+
+# go-nfsv4 must sit next to ntfs-3g inside the app bundle.
+resolve_nfs_srv() {
+  local cand
+  for cand in \
+    "${NTFS3G_DIR}/go-nfsv4" \
+    /Applications/NTFSMount.app/Contents/MacOS/go-nfsv4 \
+    /Users/yfan/Desktop/bio-apple/NTFSMount/runtime/go-nfsv4
+  do
+    if [[ -x "$cand" ]]; then
+      printf '%s' "$cand"
+      return 0
+    fi
+  done
+  return 1
+}
+
+die() { echo "error: $*" >&2; exit 1; }
+
+valid_id() {
+  [[ "${1:-}" =~ ^disk[0-9]+s[0-9]+$ ]]
+}
+
+require_ntfs() {
+  local fs
+  fs="$("$DISKUTIL" info -plist "$1" 2>/dev/null | /usr/bin/plutil -extract FilesystemName raw - 2>/dev/null || true)"
+  [[ "$fs" == "NTFS" ]] || die "$1 不是 NTFS（当前: ${fs:-unknown}）"
+}
+
+volume_name() {
+  local name
+  name="$("$DISKUTIL" info -plist "$1" 2>/dev/null | /usr/bin/plutil -extract VolumeName raw - 2>/dev/null || true)"
+  if [[ -z "$name" || "$name" == "null" ]]; then
+    name="NTFS-$1"
+  fi
+  printf '%s' "$name"
+}
+
+console_ids() {
+  local user
+  user="$(/usr/bin/stat -f '%Su' /dev/console 2>/dev/null || /usr/bin/id -un)"
+  echo "$(/usr/bin/id -u "$user") $(/usr/bin/id -g "$user")"
+}
+
+mount_line() {
+  local mp="$1"
+  "$MOUNT" | /usr/bin/grep " on ${mp} " || true
+}
+
+is_writable_mount() {
+  local mp="$1"
+  local line
+  line="$(mount_line "$mp")"
+  [[ -n "$line" ]] && [[ "$line" != *read-only* ]]
+}
+
+kill_ntfs3g() {
+  local ident="$1"
+  local name
+  name="$(volume_name "$ident")"
+  "$PKILL" -f "/ntfs-3g /dev/${ident} " >/dev/null 2>&1 || true
+  "$PKILL" -f "ntfs-3g /dev/${ident} " >/dev/null 2>&1 || true
+  "$PKILL" -f "go-nfsv4 --volname ${name} " >/dev/null 2>&1 || true
+  sleep 0.2
+}
+
+unmount_any() {
+  local ident="$1"
+  local name mp
+  name="$(volume_name "$ident")"
+  mp="/Volumes/$name"
+  kill_ntfs3g "$ident"
+  "$DISKUTIL" unmount force "$ident" >/dev/null 2>&1 || true
+  "$DISKUTIL" unmount force "/dev/$ident" >/dev/null 2>&1 || true
+  "$UMOUNT" -f "$mp" >/dev/null 2>&1 || true
+  local i
+  for i in 1 2 3 4 5; do
+    if [[ -z "$(mount_line "$mp")" ]]; then
+      break
+    fi
+    "$UMOUNT" -f "$mp" >/dev/null 2>&1 || true
+    sleep 0.2
+  done
+}
+
+can_write() {
+  local mp="$1"
+  local probe="${mp}/ntfsmount_rw_probe.bin"
+  /bin/rm -f "$probe" >/dev/null 2>&1 || true
+  if ! /bin/dd if=/dev/zero of="$probe" bs=4096 count=1 >/dev/null 2>&1; then
+    /bin/rm -f "$probe" >/dev/null 2>&1 || true
+    return 1
+  fi
+  local sz
+  sz="$(/usr/bin/stat -f '%z' "$probe" 2>/dev/null || echo 0)"
+  /bin/rm -f "$probe" >/dev/null 2>&1 || true
+  [[ "$sz" == "4096" ]]
+}
+
+# ntfs-3g 可能 daemonize 后立刻返回，也可能占前台。两种都等挂载。
+try_mount() {
+  local ident="$1" mp="$2" opts="$3"
+  local log pid i nfs
+  log="/tmp/ntfs-rw-last.log"
+  : >"$log"
+  nfs="$(resolve_nfs_srv || true)"
+  [[ -n "$nfs" ]] || { echo "找不到捆绑的 go-nfsv4" >>"$log"; return 1; }
+  export FUSE_NFSSRV_PATH="$nfs"
+  # Prefer bundled binaries on PATH for any child lookup.
+  export PATH="${NTFS3G_DIR}:/usr/bin:/bin:/usr/sbin:/sbin"
+  "$NTFS3G" "/dev/$ident" "$mp" -o "$opts" >>"$log" 2>&1 &
+  pid=$!
+  disown "$pid" 2>/dev/null || true
+  for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+    if is_writable_mount "$mp"; then
+      sleep 0.3
+      if can_write "$mp"; then
+        return 0
+      fi
+    fi
+    if ! /bin/kill -0 "$pid" 2>/dev/null; then
+      if ! /usr/bin/pgrep -f "ntfs-3g /dev/${ident} " >/dev/null 2>&1; then
+        if ! is_writable_mount "$mp"; then
+          /bin/cat "$log" 2>/dev/null || true
+          return 1
+        fi
+      fi
+    fi
+    sleep 0.4
+  done
+  /bin/cat "$log" 2>/dev/null || true
+  return 1
+}
+
+do_mount() {
+  local ident="$1"
+  valid_id "$ident" || die "非法设备: $ident"
+  [[ -e "/dev/$ident" ]] || die "设备不存在: /dev/$ident"
+  require_ntfs "$ident"
+  [[ -n "$NTFS3G" && -x "$NTFS3G" ]] || die "找不到捆绑的 ntfs-3g。请重新运行 install.sh"
+  resolve_nfs_srv >/dev/null || die "找不到捆绑的 go-nfsv4。请重新运行 install.sh"
+  [[ -f "${NTFS3G_DIR}/libfuse.2.dylib" ]] || die "找不到捆绑的 libfuse.2.dylib。请重新运行 install.sh"
+  [[ -f "${NTFS3G_DIR}/libntfs-3g.90.dylib" ]] || die "找不到捆绑的 libntfs-3g。请重新运行 install.sh"
+
+  local name mp uid gid
+  name="$(volume_name "$ident")"
+  mp="/Volumes/$name"
+  read -r uid gid <<<"$(console_ids)"
+
+  local base="volname=${name},local,allow_other,uid=${uid},gid=${gid}"
+  local attempts=(
+    "backend=nfs,force,remove_hiberfile"
+    "backend=smb,force,remove_hiberfile"
+    "backend=nfs"
+    "backend=smb"
+    "backend=fskit,force,remove_hiberfile"
+  )
+  local err="" opts rc=1 errfile extra
+
+  unmount_any "$ident"
+  /bin/mkdir -p "$mp"
+
+  for extra in "${attempts[@]}"; do
+    opts="${base},${extra}"
+    unmount_any "$ident"
+    /bin/mkdir -p "$mp"
+    errfile="$(/usr/bin/mktemp /tmp/ntfs-rw-err.XXXXXX)"
+    set +e
+    try_mount "$ident" "$mp" "$opts" >"$errfile"
+    rc=$?
+    set -e
+    err="$(/bin/cat "$errfile" 2>/dev/null || true)"
+    /bin/rm -f "$errfile"
+    if [[ $rc -eq 0 ]]; then
+      if [[ "$extra" == *force* ]]; then
+        echo "warning: 以 force 挂载（可能已清除 Windows 休眠文件）" >&2
+      fi
+      echo "ok rw $ident -> $mp (${extra})"
+      return 0
+    fi
+  done
+  unmount_any "$ident"
+  if echo "$err" | /usr/bin/grep -q 'Module org.fuset.fskit-srv.module is disabled'; then
+    die "挂载失败：FSKit 扩展未启用（可忽略，助手会优先用 NFS）。详情: $err"
+  fi
+  die "挂载失败: $err"
+}
+
+do_unmount() {
+  local ident="$1"
+  valid_id "$ident" || die "非法设备: $ident"
+  unmount_any "$ident"
+  echo "ok unmounted $ident"
+}
+
+do_eject() {
+  local ident="$1"
+  valid_id "$ident" || die "非法设备: $ident"
+  unmount_any "$ident"
+  local whole="${ident%%s*}"
+  "$DISKUTIL" eject "$whole" >/dev/null 2>&1 || "$DISKUTIL" eject "$ident" >/dev/null 2>&1 || die "推出失败: $ident"
+  echo "ok ejected $ident"
+}
+
+usage() {
+  cat <<'EOF'
+用法: ntfs-rw-helper <mount|unmount|eject> <diskNsM>
+示例: ntfs-rw-helper mount disk5s1
+EOF
+}
+
+cmd="${1:-}"
+id="${2:-}"
+case "$cmd" in
+  mount) do_mount "$id" ;;
+  unmount) do_unmount "$id" ;;
+  eject) do_eject "$id" ;;
+  -h|--help|help) usage ;;
+  *) usage; exit 2 ;;
+esac
