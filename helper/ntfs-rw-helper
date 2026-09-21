@@ -166,10 +166,10 @@ do_mount() {
   valid_id "$ident" || die "非法设备: $ident"
   [[ -e "/dev/$ident" ]] || die "设备不存在: /dev/$ident"
   require_ntfs "$ident"
-  [[ -n "$NTFS3G" && -x "$NTFS3G" ]] || die "找不到捆绑的 ntfs-3g。请重新运行 install.sh"
-  resolve_nfs_srv >/dev/null || die "找不到捆绑的 go-nfsv4。请重新运行 install.sh"
-  [[ -f "${NTFS3G_DIR}/libfuse.2.dylib" ]] || die "找不到捆绑的 libfuse.2.dylib。请重新运行 install.sh"
-  [[ -f "${NTFS3G_DIR}/libntfs-3g.90.dylib" ]] || die "找不到捆绑的 libntfs-3g。请重新运行 install.sh"
+  [[ -n "$NTFS3G" && -x "$NTFS3G" ]] || die "找不到捆绑的 ntfs-3g。请把 NTFSMount.app 重新装到 /Applications"
+  resolve_nfs_srv >/dev/null || die "找不到捆绑的 go-nfsv4。请把 NTFSMount.app 重新装到 /Applications"
+  [[ -f "${NTFS3G_DIR}/libfuse.2.dylib" ]] || die "找不到捆绑的 libfuse.2.dylib。请把 NTFSMount.app 重新装到 /Applications"
+  [[ -f "${NTFS3G_DIR}/libntfs-3g.90.dylib" ]] || die "找不到捆绑的 libntfs-3g。请把 NTFSMount.app 重新装到 /Applications"
 
   local name mp uid gid
   name="$(volume_name "$ident")"

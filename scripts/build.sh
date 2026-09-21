@@ -27,7 +27,8 @@ swiftc -parse-as-library -O \
 
 cp "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
 cp "$ROOT/helper/ntfs-rw-helper" "$APP/Contents/Resources/ntfs-rw-helper"
-chmod 755 "$APP/Contents/Resources/ntfs-rw-helper" "$BIN"
+cp "$ROOT/helper/install-helper.sh" "$APP/Contents/Resources/install-helper.sh"
+chmod 755 "$APP/Contents/Resources/ntfs-rw-helper" "$APP/Contents/Resources/install-helper.sh" "$BIN"
 
 for f in ntfs-3g go-nfsv4 libfuse.2.dylib libntfs-3g.90.dylib; do
   [[ -e "$ROOT/runtime/$f" ]] || { echo "error: missing runtime/$f" >&2; exit 1; }

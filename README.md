@@ -1,22 +1,75 @@
-# NTFS 读写
+# NTFSMount
 
-macOS 自带 NTFS **只能读**。本应用把 **ntfs-3g + FUSE 用户态栈** 全部打进 `NTFSMount.app`，无需内核扩展，也无需日常依赖系统里的 FUSE-T。
+Read and write Windows (NTFS) drives on macOS. The menu bar icon is **NTFS**.
 
-**日常怎么用 → 见 [操作说明.md](./操作说明.md)**
+macOS mounts NTFS read-only. This app bundles **ntfs-3g** and a userspace FUSE stack inside `NTFSMount.app` — no kernel extension, no system FUSE-T at runtime.
 
-## 安装 / 卸载
+**Plug in → Mount writable → Eject → unplug.**
+
+## Install
+
+1. Open `NTFSMount.dmg` (build it with `./scripts/package-dmg.sh` → `dist/NTFSMount.dmg`).
+2. Drag **NTFSMount** to **Applications**.
+3. Open it. The menu bar should show **NTFS**.
+4. The first launch asks for an admin password to install the mount helper.
+
+If macOS says the app cannot be opened: Control-click it → **Open**. Reinstall by dragging the app from the DMG again.
+
+## Launch
+
+There is no Dock icon — only the menu bar.
+
+- Finder → **Applications** → **NTFSMount**
+- Spotlight: `NTFSMount`
+- `open /Applications/NTFSMount.app`
+
+Success: **NTFS** appears in the menu bar. Use **Launch at login** in the menu to start it automatically. **Quit NTFS 读写** to exit; reopen with the steps above.
+
+## Use
+
+1. Plug in an NTFS drive.
+2. Click **NTFS** in the menu bar.
+3. Choose **Mount writable** (or **Mount all writable**).
+4. Finder opens `/Volumes/<name>`. Copy, delete, rename as usual.
+5. When done: **Eject (safe to unplug)** → wait until the disk disappears → unplug.
+
+Do not unplug without ejecting. Skipping eject can leave the volume dirty and risk data loss.
+
+| Menu | Meaning |
+| --- | --- |
+| **Unmount** | Unmount only; the cable stays in |
+| **Eject (safe to unplug)** | Unmount and tell the system it is safe to unplug |
+
+| Mark | State |
+| --- | --- |
+| ● | Writable — use Finder |
+| ○ | macOS read-only — choose **Mount writable** |
+| ◌ | Detected, not mounted — choose **Mount writable** |
+| … | Busy |
+
+Shut Windows down cleanly before removing the disk. A dirty volume may be force-mounted (hibernation file cleared); back up important data first.
+
+If Finder shows both `Name` and `Name 1`, the `1` copy is usually the read-only system mount — use the writable one from this menu.
+
+## Permissions
+
+Only if something fails:
+
+- **Full Disk Access**: System Settings → Privacy & Security → Full Disk Access → enable **NTFSMount**
+- **Network Volumes**: System Settings → Privacy & Security → Files and Folders → enable **Network Volumes** (mounted but Finder shows nothing)
+
+## Uninstall the app
 
 ```bash
-cd ~/Desktop/bio-apple/NTFSMount
-./install.sh    # 首次或重装（含捆绑依赖）
 ./uninstall.sh
 ```
 
-`install.sh` 仍会要一次管理员密码：安装 `/usr/local/sbin/ntfs-rw-helper`（开磁盘设备需要）。
+Removes the app, helper, and sudo rule. This does not eject a drive.
 
-## 开发：刷新捆绑二进制
+## Develop
 
 ```bash
-./scripts/prepare-runtime.sh   # 从系统拷贝/改写 runtime/
-./scripts/build.sh             # 打进 dist 或 /tmp 的 .app
+./scripts/prepare-runtime.sh   # refresh bundled binaries in runtime/
+./scripts/build.sh             # build NTFSMount.app
+./scripts/package-dmg.sh       # dist/NTFSMount.dmg
 ```

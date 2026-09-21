@@ -22,6 +22,7 @@ final class VolumeStore: ObservableObject {
   @Published var message: String = ""
   @Published var busyId: String?
   @Published var launchAtLogin: Bool = SMAppService.mainApp.status == .enabled
+  @Published var helperInstalled: Bool = Privileged.systemHelperInstalled
 
   private var timer: Timer?
 
@@ -44,6 +45,27 @@ final class VolumeStore: ObservableObject {
     timer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
       Task { @MainActor in self?.refresh() }
     }
+    DispatchQueue.main.async { [weak self] in
+      self?.offerHelperInstallIfNeeded()
+    }
+  }
+
+  func offerHelperInstallIfNeeded() {
+    guard !helperInstalled else { return }
+    NSApp.activate(ignoringOtherApps: true)
+    let alert = NSAlert()
+    alert.messageText = "安装挂载助手"
+    alert.informativeText = "第一次使用需要输入一次管理员密码。装好后，挂载硬盘就不用再输密码。"
+    alert.addButton(withTitle: "安装")
+    alert.addButton(withTitle: "稍后")
+    guard alert.runModal() == .alertFirstButtonReturn else { return }
+    installHelper()
+  }
+
+  func installHelper() {
+    let result = Privileged.installHelper()
+    helperInstalled = Privileged.systemHelperInstalled
+    message = result.text
   }
 
   func refresh() {
@@ -226,6 +248,10 @@ enum Privileged {
     Bundle.main.path(forResource: "ntfs-rw-helper", ofType: nil),
   ].compactMap { $0 }
 
+  static var systemHelperInstalled: Bool {
+    FileManager.default.isExecutableFile(atPath: "/usr/local/sbin/ntfs-rw-helper")
+  }
+
   static var helperPath: String? {
     helperCandidates.first { FileManager.default.isExecutableFile(atPath: $0) }
   }
@@ -235,9 +261,40 @@ enum Privileged {
     let text: String
   }
 
+  static func installHelper() -> Outcome {
+    guard let installer = Bundle.main.path(forResource: "install-helper", ofType: "sh"),
+          let helper = Bundle.main.path(forResource: "ntfs-rw-helper", ofType: nil)
+    else {
+      return Outcome(ok: false, text: "应用包内缺少安装脚本，请重新安装。")
+    }
+    let user = NSUserName()
+    let source = """
+    do shell script "bash " & quoted form of "\(installer)" & " " & quoted form of "\(helper)" & " " & quoted form of "\(user)" with administrator privileges
+    """
+    let osa = Process()
+    osa.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+    osa.arguments = ["-e", source]
+    let osaOut = Pipe()
+    let osaErr = Pipe()
+    osa.standardOutput = osaOut
+    osa.standardError = osaErr
+    do {
+      try osa.run()
+      osa.waitUntilExit()
+      let out = String(data: osaOut.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+      let err = String(data: osaErr.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+      if osa.terminationStatus == 0 {
+        return Outcome(ok: true, text: "挂载助手已安装")
+      }
+      return Outcome(ok: false, text: (err.isEmpty ? out : err).trimmingCharacters(in: .whitespacesAndNewlines))
+    } catch {
+      return Outcome(ok: false, text: error.localizedDescription)
+    }
+  }
+
   static func run(_ cmd: String, _ deviceId: String) -> Outcome {
     guard let helper = helperPath else {
-      return Outcome(ok: false, text: "未找到挂载助手。请先运行 ./install.sh")
+      return Outcome(ok: false, text: "未找到挂载助手。请点菜单「安装挂载助手」。")
     }
     let sudo = Process()
     sudo.executableURL = URL(fileURLWithPath: "/usr/bin/sudo")
@@ -319,6 +376,9 @@ struct MenuRoot: View {
       .keyboardShortcut("r")
     Button(store.launchAtLogin ? "开机启动：开" : "开机启动：关") {
       store.toggleLogin()
+    }
+    if !store.helperInstalled {
+      Button("安装挂载助手…") { store.installHelper() }
     }
     if !store.message.isEmpty {
       Text(store.message)
