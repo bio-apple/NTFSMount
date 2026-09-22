@@ -23,6 +23,7 @@ final class VolumeStore: ObservableObject {
   @Published var busyId: String?
   @Published var launchAtLogin: Bool = SMAppService.mainApp.status == .enabled
   @Published var helperInstalled: Bool = Privileged.systemHelperInstalled
+  @Published var formatDisks: [FormatDisk] = []
 
   private var timer: Timer?
 
@@ -51,12 +52,23 @@ final class VolumeStore: ObservableObject {
   }
 
   func offerHelperInstallIfNeeded() {
-    guard !helperInstalled else { return }
+    if !helperInstalled {
+      NSApp.activate(ignoringOtherApps: true)
+      let alert = NSAlert()
+      alert.messageText = "安装挂载助手"
+      alert.informativeText = "第一次使用需要输入一次管理员密码。装好后，挂载硬盘就不用再输密码。"
+      alert.addButton(withTitle: "安装")
+      alert.addButton(withTitle: "稍后")
+      guard alert.runModal() == .alertFirstButtonReturn else { return }
+      installHelper()
+      return
+    }
+    guard Privileged.helperNeedsUpdate else { return }
     NSApp.activate(ignoringOtherApps: true)
     let alert = NSAlert()
-    alert.messageText = "安装挂载助手"
-    alert.informativeText = "第一次使用需要输入一次管理员密码。装好后，挂载硬盘就不用再输密码。"
-    alert.addButton(withTitle: "安装")
+    alert.messageText = "更新挂载助手"
+    alert.informativeText = "需要更新才能使用格式化等新功能。将请求一次管理员密码。"
+    alert.addButton(withTitle: "更新")
     alert.addButton(withTitle: "稍后")
     guard alert.runModal() == .alertFirstButtonReturn else { return }
     installHelper()
@@ -70,6 +82,7 @@ final class VolumeStore: ObservableObject {
 
   func refresh() {
     volumes = NTFSVolume.scan()
+    formatDisks = FormatDisk.scan()
   }
 
   func mount(_ vol: NTFSVolume) {
@@ -87,6 +100,38 @@ final class VolumeStore: ObservableObject {
   func mountAll() {
     for vol in volumes where !vol.isWritableFuse {
       run("mount", vol)
+    }
+  }
+
+  func confirmFormat(_ disk: FormatDisk) {
+    NSApp.activate(ignoringOtherApps: true)
+    let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 280, height: 24))
+    field.stringValue = disk.suggestedLabel
+    field.placeholderString = "卷名"
+    let alert = NSAlert()
+    alert.alertStyle = .critical
+    alert.messageText = "抹掉「\(disk.name)」并格式化为 NTFS？"
+    alert.informativeText = "\(disk.sizeLabel) · \(disk.id) · \(disk.fsHint)\n将删除盘上全部文件，且无法恢复。"
+    alert.accessoryView = field
+    alert.addButton(withTitle: "取消")
+    alert.addButton(withTitle: "抹掉并格式化")
+    guard alert.runModal() == .alertSecondButtonReturn else { return }
+    format(disk, label: sanitizeLabel(field.stringValue))
+  }
+
+  func format(_ disk: FormatDisk, label: String) {
+    busyId = disk.id
+    message = ""
+    DispatchQueue.global(qos: .userInitiated).async {
+      let result = Privileged.run("format", disk.id, extra: [label])
+      DispatchQueue.main.async {
+        self.busyId = nil
+        self.message = result.text
+        self.refresh()
+        if result.ok, let vol = self.volumes.first(where: { wholeDiskId($0.id) == disk.id }) {
+          self.mount(vol)
+        }
+      }
     }
   }
 
@@ -124,6 +169,23 @@ final class VolumeStore: ObservableObject {
       }
     }
   }
+}
+
+private func wholeDiskId(_ id: String) -> String {
+  if let range = id.range(of: #"s\d"#, options: .regularExpression) {
+    return String(id[..<range.lowerBound])
+  }
+  return id
+}
+
+private func sanitizeLabel(_ raw: String) -> String {
+  let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+  let cleaned = trimmed
+    .replacingOccurrences(of: "/", with: "")
+    .replacingOccurrences(of: "\"", with: "")
+    .replacingOccurrences(of: "\\", with: "")
+  let limited = String(cleaned.prefix(32))
+  return limited.isEmpty ? "NTFS" : limited
 }
 
 struct NTFSVolume: Identifiable, Equatable {
@@ -193,6 +255,88 @@ struct NTFSVolume: Identifiable, Equatable {
   }
 }
 
+struct FormatDisk: Identifiable, Equatable {
+  let id: String
+  let name: String
+  let size: Int64
+  let fsHint: String
+
+  var sizeLabel: String {
+    ByteCountFormatter.string(fromByteCount: size, countStyle: .file)
+  }
+
+  var suggestedLabel: String {
+    let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    if trimmed.isEmpty || trimmed == id { return "NTFS" }
+    return String(trimmed.prefix(32))
+  }
+
+  static func scan() -> [FormatDisk] {
+    guard let list = diskutilPlist(["list", "-plist"]) else { return [] }
+    let protected = protectedDisks()
+    let disks = list["AllDisksAndPartitions"] as? [[String: Any]] ?? []
+    var out: [FormatDisk] = []
+    for disk in disks {
+      guard let ident = disk["DeviceIdentifier"] as? String,
+            ident.range(of: #"^disk[0-9]+$"#, options: .regularExpression) != nil
+      else { continue }
+      guard let info = diskutilPlist(["info", "-plist", ident]) else { continue }
+      if info["Internal"] as? Bool == true { continue }
+      let proto = info["BusProtocol"] as? String ?? ""
+      if proto == "Disk Image" || proto == "Apple Fabric" { continue }
+      if info["VirtualOrPhysical"] as? String == "Virtual" { continue }
+      if protected.contains(ident) { continue }
+      let size = (info["TotalSize"] as? NSNumber)?.int64Value ?? 0
+      guard size > 0 else { continue }
+      let media = info["MediaName"] as? String ?? ""
+      let parts = disk["Partitions"] as? [[String: Any]] ?? []
+      var hint = "未格式化"
+      var volName = ""
+      for part in parts {
+        let content = part["Content"] as? String ?? ""
+        if content.uppercased().contains("EFI") { continue }
+        if let pid = part["DeviceIdentifier"] as? String,
+           let pinfo = diskutilPlist(["info", "-plist", pid]) {
+          let fs = pinfo["FilesystemName"] as? String ?? ""
+          hint = fs.isEmpty ? (content.isEmpty ? hint : content) : fs
+          volName = pinfo["VolumeName"] as? String ?? ""
+        } else if !content.isEmpty {
+          hint = content
+        }
+        break
+      }
+      let name: String
+      if !volName.isEmpty {
+        name = volName
+      } else if !media.isEmpty {
+        name = media
+      } else {
+        name = ident
+      }
+      out.append(FormatDisk(id: ident, name: name, size: size, fsHint: hint))
+    }
+    return out.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+  }
+
+  private static func protectedDisks() -> Set<String> {
+    var out = Set<String>()
+    guard let info = diskutilPlist(["info", "-plist", "/"]) else { return out }
+    if let parent = info["ParentWholeDisk"] as? String {
+      out.insert(parent)
+      out.insert(wholeDiskId(parent))
+    }
+    if let stores = info["APFSPhysicalStores"] as? [[String: Any]] {
+      for store in stores {
+        if let ident = store["APFSPhysicalStore"] as? String {
+          out.insert(ident)
+          out.insert(wholeDiskId(ident))
+        }
+      }
+    }
+    return out
+  }
+}
+
 private struct MountTable {
   var fusePoints: Set<String>
 }
@@ -252,6 +396,16 @@ enum Privileged {
     FileManager.default.isExecutableFile(atPath: "/usr/local/sbin/ntfs-rw-helper")
   }
 
+  static var helperNeedsUpdate: Bool {
+    guard systemHelperInstalled,
+          let bundled = Bundle.main.path(forResource: "ntfs-rw-helper", ofType: nil)
+    else { return false }
+    let a = try? Data(contentsOf: URL(fileURLWithPath: bundled))
+    let b = try? Data(contentsOf: URL(fileURLWithPath: "/usr/local/sbin/ntfs-rw-helper"))
+    guard let a, let b else { return false }
+    return a != b
+  }
+
   static var helperPath: String? {
     helperCandidates.first { FileManager.default.isExecutableFile(atPath: $0) }
   }
@@ -292,13 +446,14 @@ enum Privileged {
     }
   }
 
-  static func run(_ cmd: String, _ deviceId: String) -> Outcome {
+  static func run(_ cmd: String, _ deviceId: String, extra: [String] = []) -> Outcome {
     guard let helper = helperPath else {
       return Outcome(ok: false, text: "未找到挂载助手。请点菜单「安装挂载助手」。")
     }
+    let args = [cmd, deviceId] + extra
     let sudo = Process()
     sudo.executableURL = URL(fileURLWithPath: "/usr/bin/sudo")
-    sudo.arguments = ["-n", helper, cmd, deviceId]
+    sudo.arguments = ["-n", helper] + args
     let sudoOut = Pipe()
     let sudoErr = Pipe()
     sudo.standardOutput = sudoOut
@@ -320,7 +475,7 @@ enum Privileged {
 
     let osa = Process()
     osa.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-    osa.arguments = ["-e", "do shell script \"\(helper) \(cmd) \(deviceId)\" with administrator privileges"]
+    osa.arguments = ["-e", adminShellScript(helper, args)]
     let osaOut = Pipe()
     let osaErr = Pipe()
     osa.standardOutput = osaOut
@@ -338,6 +493,20 @@ enum Privileged {
       return Outcome(ok: false, text: error.localizedDescription)
     }
   }
+
+  private static func adminShellScript(_ executable: String, _ args: [String]) -> String {
+    func quoted(_ s: String) -> String {
+      let escaped = s
+        .replacingOccurrences(of: "\\", with: "\\\\")
+        .replacingOccurrences(of: "\"", with: "\\\"")
+      return "quoted form of \"\(escaped)\""
+    }
+    var expr = quoted(executable)
+    for a in args {
+      expr += " & \" \" & " + quoted(a)
+    }
+    return "do shell script " + expr + " with administrator privileges"
+  }
 }
 
 struct MenuRoot: View {
@@ -346,7 +515,9 @@ struct MenuRoot: View {
   var body: some View {
     if store.volumes.isEmpty {
       Text("没有检测到 NTFS 硬盘")
-      Text("插入 Windows 格式的移动盘后再点菜单")
+      Text(store.formatDisks.isEmpty
+        ? "插入 Windows 格式的移动盘后再点菜单"
+        : "可用「格式化为 NTFS」把其他移动盘转成 NTFS")
         .foregroundStyle(.secondary)
     } else {
       ForEach(store.volumes) { vol in
@@ -362,6 +533,13 @@ struct MenuRoot: View {
             .disabled(vol.mountPoint.isEmpty || store.busyId != nil)
           Button("推出（可安全拔出）") { store.eject(vol) }
             .disabled(store.busyId != nil)
+          Divider()
+          Button("格式化为 NTFS…") {
+            if let disk = store.formatDisks.first(where: { $0.id == wholeDiskId(vol.id) }) {
+              store.confirmFormat(disk)
+            }
+          }
+          .disabled(store.busyId != nil || !store.formatDisks.contains(where: { $0.id == wholeDiskId(vol.id) }))
         } label: {
           Text("\(statusDot(vol)) \(vol.name)  ·  \(vol.stateLabel)  ·  \(vol.sizeLabel)")
         }
@@ -371,6 +549,17 @@ struct MenuRoot: View {
         .keyboardShortcut("m")
         .disabled(store.volumes.allSatisfy(\.isWritableFuse) || store.busyId != nil)
     }
+    if !store.formatDisks.isEmpty {
+      Divider()
+      Menu("格式化为 NTFS…") {
+        ForEach(store.formatDisks) { disk in
+          Button("\(disk.name)  ·  \(disk.fsHint)  ·  \(disk.sizeLabel)") {
+            store.confirmFormat(disk)
+          }
+          .disabled(store.busyId != nil)
+        }
+      }
+    }
     Divider()
     Button("刷新") { store.refresh() }
       .keyboardShortcut("r")
@@ -379,6 +568,8 @@ struct MenuRoot: View {
     }
     if !store.helperInstalled {
       Button("安装挂载助手…") { store.installHelper() }
+    } else if Privileged.helperNeedsUpdate {
+      Button("更新挂载助手…") { store.installHelper() }
     }
     if !store.message.isEmpty {
       Text(store.message)

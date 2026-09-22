@@ -28,6 +28,23 @@ if [[ -n "${NTFS3G}" ]]; then
   NTFS3G_DIR="$(/usr/bin/dirname "$NTFS3G")"
 fi
 
+find_mkntfs() {
+  local p
+  for p in \
+    "${NTFS3G_DIR}/mkntfs" \
+    /Applications/NTFSMount.app/Contents/MacOS/mkntfs \
+    /Users/yfan/Desktop/bio-apple/NTFSMount/runtime/mkntfs
+  do
+    if [[ -n "$p" && -x "$p" ]]; then
+      printf '%s' "$p"
+      return 0
+    fi
+  done
+  return 1
+}
+
+MKNTFS="${MKNTFS:-$(find_mkntfs || true)}"
+
 # go-nfsv4 must sit next to ntfs-3g inside the app bundle.
 resolve_nfs_srv() {
   local cand
@@ -48,6 +65,10 @@ die() { echo "error: $*" >&2; exit 1; }
 
 valid_id() {
   [[ "${1:-}" =~ ^disk[0-9]+s[0-9]+$ ]]
+}
+
+valid_whole() {
+  [[ "${1:-}" =~ ^disk[0-9]+$ ]]
 }
 
 require_ntfs() {
@@ -231,10 +252,75 @@ do_eject() {
   echo "ok ejected $ident"
 }
 
+data_partition() {
+  "$DISKUTIL" list "$1" | /usr/bin/awk '/EFI/{next} $NF ~ /^disk[0-9]+s[0-9]+$/ { p=$NF } END { print p }'
+}
+
+refuse_format_target() {
+  local ident="$1"
+  local plist internal sys proto
+  plist="$("$DISKUTIL" info -plist "$ident" 2>/dev/null || true)"
+  [[ -n "$plist" ]] || die "读不到磁盘信息: $ident"
+  internal="$(printf '%s' "$plist" | /usr/bin/plutil -extract Internal raw - 2>/dev/null || true)"
+  [[ "$internal" == "true" ]] && die "拒绝格式化内置磁盘: $ident"
+  proto="$(printf '%s' "$plist" | /usr/bin/plutil -extract BusProtocol raw - 2>/dev/null || true)"
+  [[ "$proto" == "Disk Image" || "$proto" == "Apple Fabric" ]] && die "拒绝格式化该磁盘: $ident ($proto)"
+  sys="$("$DISKUTIL" info -plist / 2>/dev/null | /usr/bin/plutil -extract ParentWholeDisk raw - 2>/dev/null || true)"
+  [[ -n "$sys" && "$ident" == "$sys" ]] && die "拒绝格式化系统盘: $ident"
+}
+
+sanitize_label() {
+  local label="$1"
+  label="$(printf '%s' "$label" | /usr/bin/tr -d '/`\\;')"
+  label="${label#"${label%%[![:space:]]*}"}"
+  label="${label%"${label##*[![:space:]]}"}"
+  if [[ ${#label} -gt 32 ]]; then
+    label="${label:0:32}"
+  fi
+  [[ -n "$label" ]] || label="NTFS"
+  printf '%s' "$label"
+}
+
+do_format() {
+  local ident="$1"
+  local label
+  valid_whole "$ident" || die "非法设备: ${ident}（格式化需要整个磁盘，例如 disk4）"
+  [[ -e "/dev/$ident" ]] || die "设备不存在: /dev/$ident"
+  [[ -n "$MKNTFS" && -x "$MKNTFS" ]] || die "找不到捆绑的 mkntfs。请把 NTFSMount.app 重新装到 /Applications"
+  [[ -n "$NTFS3G_DIR" && -f "${NTFS3G_DIR}/libntfs-3g.90.dylib" ]] || die "找不到捆绑的 libntfs-3g。请把 NTFSMount.app 重新装到 /Applications"
+  refuse_format_target "$ident"
+  label="$(sanitize_label "${2:-NTFS}")"
+
+  export PATH="${NTFS3G_DIR}:/usr/bin:/bin:/usr/sbin:/sbin"
+  "$PKILL" -f "ntfs-3g /dev/${ident}" >/dev/null 2>&1 || true
+  "$DISKUTIL" unmountDisk force "$ident" >/dev/null 2>&1 || true
+
+  local out rc part dev
+  set +e
+  out="$("$DISKUTIL" eraseDisk ExFAT _NTFSFMT "$ident" 2>&1)"
+  rc=$?
+  set -e
+  [[ $rc -eq 0 ]] || die "分区失败: $out"
+
+  "$DISKUTIL" unmountDisk force "$ident" >/dev/null 2>&1 || true
+  part="$(data_partition "$ident")"
+  [[ "$part" =~ ^disk[0-9]+s[0-9]+$ ]] || die "找不到数据分区: $ident"
+  dev="/dev/$part"
+  [[ -e "/dev/r$part" ]] && dev="/dev/r$part"
+
+  set +e
+  out="$("$MKNTFS" -F -Q -L "$label" "$dev" 2>&1)"
+  rc=$?
+  set -e
+  [[ $rc -eq 0 ]] || die "mkntfs 失败: $out"
+  echo "ok formatted $part ($label)"
+}
+
 usage() {
   cat <<'EOF'
-用法: ntfs-rw-helper <mount|unmount|eject> <diskNsM>
+用法: ntfs-rw-helper <mount|unmount|eject|format> <diskNsM|diskN> [label]
 示例: ntfs-rw-helper mount disk5s1
+      ntfs-rw-helper format disk4 DATA
 EOF
 }
 
@@ -244,6 +330,7 @@ case "$cmd" in
   mount) do_mount "$id" ;;
   unmount) do_unmount "$id" ;;
   eject) do_eject "$id" ;;
+  format) do_format "$id" "${3:-NTFS}" ;;
   -h|--help|help) usage ;;
   *) usage; exit 2 ;;
 esac

@@ -12,7 +12,7 @@ MACOS="$APP/Contents/MacOS"
 mkdir -p "$MACOS" "$APP/Contents/Resources"
 
 # Ensure bundled userspace stack is present.
-if [[ ! -x "$ROOT/runtime/ntfs-3g" || ! -x "$ROOT/runtime/go-nfsv4" || ! -f "$ROOT/runtime/libntfs-3g.90.dylib" ]]; then
+if [[ ! -x "$ROOT/runtime/ntfs-3g" || ! -x "$ROOT/runtime/go-nfsv4" || ! -x "$ROOT/runtime/mkntfs" || ! -f "$ROOT/runtime/libntfs-3g.90.dylib" ]]; then
   bash "$ROOT/scripts/prepare-runtime.sh"
 fi
 
@@ -30,7 +30,7 @@ cp "$ROOT/helper/ntfs-rw-helper" "$APP/Contents/Resources/ntfs-rw-helper"
 cp "$ROOT/helper/install-helper.sh" "$APP/Contents/Resources/install-helper.sh"
 chmod 755 "$APP/Contents/Resources/ntfs-rw-helper" "$APP/Contents/Resources/install-helper.sh" "$BIN"
 
-for f in ntfs-3g go-nfsv4 libfuse.2.dylib libntfs-3g.90.dylib; do
+for f in ntfs-3g mkntfs go-nfsv4 libfuse.2.dylib libntfs-3g.90.dylib; do
   [[ -e "$ROOT/runtime/$f" ]] || { echo "error: missing runtime/$f" >&2; exit 1; }
   cp "$ROOT/runtime/$f" "$MACOS/$f"
   chmod 755 "$MACOS/$f"
@@ -39,6 +39,7 @@ codesign --force --sign - \
   "$MACOS/libfuse.2.dylib" \
   "$MACOS/libntfs-3g.90.dylib" \
   "$MACOS/ntfs-3g" \
+  "$MACOS/mkntfs" \
   "$MACOS/go-nfsv4" >/dev/null
 
 codesign --force --sign - --identifier local.ntfsmount "$APP" >/dev/null
