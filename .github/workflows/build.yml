@@ -3,6 +3,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  release:
+    types: [published]
 jobs:
   helper-and-app:
     runs-on: macos-14
@@ -12,3 +14,19 @@ jobs:
         run: bash scripts/test-helper.sh
       - name: Build app
         run: bash scripts/build.sh
+        env:
+          CODESIGN_IDENTITY: ${{ secrets.CODESIGN_IDENTITY }}
+      - name: Notarize
+        if: ${{ secrets.NOTARY_PROFILE != '' && secrets.CODESIGN_IDENTITY != '' }}
+        run: bash scripts/notarize.sh dist/NTFSMount.app || bash scripts/notarize.sh /tmp/NTFSMount.app
+        env:
+          CODESIGN_IDENTITY: ${{ secrets.CODESIGN_IDENTITY }}
+          NOTARY_PROFILE: ${{ secrets.NOTARY_PROFILE }}
+      - name: Upload unsigned/ad-hoc artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NTFSMount-app
+          path: |
+            dist/NTFSMount.app
+            /tmp/NTFSMount.app
+          if-no-files-found: warn

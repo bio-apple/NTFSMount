@@ -29,28 +29,44 @@ trap cleanup EXIT
 /bin/ln -s /Applications "$STAGE/Applications"
 /bin/cp "$ROOT/LICENSE" "$STAGE/LICENSE"
 /bin/cp "$ROOT/THIRD_PARTY_LICENSES.md" "$STAGE/THIRD_PARTY_LICENSES.md"
+/bin/cp "$ROOT/docs/DISTRIBUTION.md" "$STAGE/DISTRIBUTION.md"
 printf '%s\n' "源码: https://github.com/bio-apple/NTFSMount" > "$STAGE/源码.txt"
 /bin/cat > "$STAGE/使用说明.txt" <<'EOF'
-NTFS 读写（直发，不上 Mac App Store）
+NTFS 读写（NTFSMount，直发，不上 Mac App Store）
 
 安装
-1. 把 NTFS 读写（NTFSMount）拖到右边的「应用程序」
+1. 把 NTFS 读写拖到右边的「应用程序」
 2. 打开后菜单栏显示 NTFS，并出现主窗口
-3. 在窗口点「安装…」输入一次管理员密码
+3. 首次需同意备份与个人使用条款
+4. 在窗口点「安装…」输入一次管理员密码（安装签名钉扎的特权守护进程）
    升级后若提示「更新挂载助手」，再输入一次密码
-4. 若系统提示无法验证开发者：需要已公证的安装包。未公证包可按住 Control 点应用 → 打开
+5. 若系统提示无法验证开发者：需要已公证的安装包。未公证包可按住 Control 点应用 → 打开
 
 读写
-1. 插入外置 NTFS 硬盘，默认以可写方式挂载（内置盘 / Boot Camp 不会自动挂）
-2. 用完点「推出（可安全拔出）」，等盘消失后再拔线
+1. 插入外置 NTFS 硬盘。第一次可写挂载会再确认一次「已备份」
+2. 默认以可写方式挂载（内置盘 / Boot Camp 不会自动挂）
+3. 用完点「推出（可安全拔出）」，等盘消失后再拔线
+4. 自动挂载、登录时打开、程序坞、助手与日志：窗口左侧「设置」
 
 格式化
 点「格式化为 NTFS…」可把外置整盘抹掉并做成 NTFS。
 必须输入当前卷名确认。内置盘不能格式化。
 
-卸载助手：菜单「卸载挂载助手…」
+卸载助手：设置 → 卸载助手
 完全卸载：仓库中的 ./uninstall.sh
 EOF
+
+if [[ "${FUSE_T_REDISTRIBUTION_OK:-}" != "1" ]]; then
+  /bin/cat > "$STAGE/个人使用说明.txt" <<'EOF'
+本安装包仅供个人使用。
+
+捆绑的 FUSE-T go-nfsv4 不是 GPL。作为产品嵌入、分发或销售前，须向 FUSE-T 取得许可：
+https://www.fuse-t.org/
+
+未公证的构建会被 Gatekeeper 拦截。正式发给他人请使用 Developer ID 公证。
+详见 DISTRIBUTION.md 与 THIRD_PARTY_LICENSES.md。
+EOF
+fi
 
 SIZE_MB="$(/usr/bin/du -sm "$STAGE" | /usr/bin/awk '{print int($1)+30}')"
 echo "==> 制作磁盘映像（${SIZE_MB} MB）"
@@ -65,7 +81,11 @@ MNT="$(printf '%s\n' "$ATTACH" | /usr/bin/awk -F'\t' '/\/Volumes\//{print $NF; e
 /bin/cp "$STAGE/使用说明.txt" "$MNT/使用说明.txt"
 /bin/cp "$STAGE/LICENSE" "$MNT/LICENSE"
 /bin/cp "$STAGE/THIRD_PARTY_LICENSES.md" "$MNT/THIRD_PARTY_LICENSES.md"
+/bin/cp "$STAGE/DISTRIBUTION.md" "$MNT/DISTRIBUTION.md"
 /bin/cp "$STAGE/源码.txt" "$MNT/源码.txt"
+if [[ -f "$STAGE/个人使用说明.txt" ]]; then
+  /bin/cp "$STAGE/个人使用说明.txt" "$MNT/个人使用说明.txt"
+fi
 
 # 摆成「左边应用、右边应用程序」的常见安装窗口
 /usr/bin/osascript <<EOF
@@ -112,3 +132,9 @@ echo "==> 压缩为 $OUT"
 
 echo "ok $OUT"
 /bin/ls -lh "$OUT"
+if [[ -n "${CODESIGN_IDENTITY:-}" && -n "${NOTARY_PROFILE:-}" ]]; then
+  xcrun stapler staple "$OUT" && echo "ok stapled $OUT" || echo "warning: staple DMG failed" >&2
+fi
+if [[ "${FUSE_T_REDISTRIBUTION_OK:-}" != "1" ]]; then
+  echo "note: FUSE_T_REDISTRIBUTION_OK unset; DMG is personal-use only" >&2
+fi

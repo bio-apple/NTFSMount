@@ -1,4 +1,5 @@
 import AppKit
+import Darwin
 import ServiceManagement
 import SwiftUI
 
@@ -68,6 +69,7 @@ final class VolumeStore: ObservableObject {
   @Published var autoMount: Bool = Privileged.autoMountEnabled
   @Published var launchAtLogin: Bool = SMAppService.mainApp.status == .enabled
   @Published var showDock: Bool = UserDefaults.standard.bool(forKey: AppIdentity.Defaults.showDock)
+  @Published var openSettings = false
 
   private var timer: Timer?
   private var diskWatch = DiskWatch()
@@ -100,11 +102,17 @@ final class VolumeStore: ObservableObject {
     }
     DispatchQueue.main.async { [weak self] in
       PlatformGate.enforceOrTerminate()
+      LegalGate.confirmOrTerminate()
       self?.presentWindowOnFirstLaunch()
       self?.offerHelperUpdateIfNeeded()
       self?.enableAutoMountDefault()
       self?.offerCompatNoticeIfNeeded()
     }
+  }
+
+  deinit {
+    timer?.invalidate()
+    diskWatch.stop()
   }
 
   func presentWindowOnFirstLaunch() {
@@ -154,9 +162,15 @@ final class VolumeStore: ObservableObject {
   func installHelper() {
     let result = Privileged.installHelper()
     helperInstalled = Privileged.systemHelperInstalled
-    message = result.text
+    message = UserFacingError.message(from: result.text)
     if result.ok {
       UserDefaults.standard.set(false, forKey: AppIdentity.Defaults.autoMountUserOff)
+      if let bundled = Bundle.main.path(forResource: "ntfs-rw-helper", ofType: nil) {
+        UserDefaults.standard.set(AppIdentity.sha256File(bundled), forKey: AppIdentity.Defaults.lastHelperSHA)
+      }
+      try? SMAppService.daemon(plistName: "com.bioapple.ntfsmount.helper.plist").register()
+      Thread.sleep(forTimeInterval: 0.5)
+      helperInstalled = Privileged.systemHelperInstalled
       enableAutoMountDefault()
     }
   }
@@ -165,7 +179,7 @@ final class VolumeStore: ObservableObject {
     let result = Privileged.uninstallHelper()
     helperInstalled = Privileged.systemHelperInstalled
     autoMount = Privileged.autoMountEnabled
-    message = result.text
+    message = UserFacingError.message(from: result.text)
   }
 
   func confirmUninstallHelper() {
@@ -173,7 +187,7 @@ final class VolumeStore: ObservableObject {
     let alert = NSAlert()
     alert.alertStyle = .warning
     alert.messageText = "卸载挂载助手？"
-    alert.informativeText = "将删除特权助手、sudo 规则和插入时自动挂载。应用仍留在「应用程序」里。"
+    alert.informativeText = "将删除特权守护进程和插入时自动挂载。应用仍留在「应用程序」里。"
     alert.addButton(withTitle: "取消")
     alert.addButton(withTitle: "卸载助手")
     guard alert.runModal() == .alertSecondButtonReturn else { return }
@@ -191,9 +205,11 @@ final class VolumeStore: ObservableObject {
     \(AppLog.url.path)
 
     源码与许可证：\(AppIdentity.sourceURL)
-    捆绑 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 对个人使用免费；若把本应用作为产品分发，可能需要向 FUSE-T 取得商业许可。
+    捆绑 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 仅供个人使用；作为产品分发须向 FUSE-T 取得许可。
 
     写 NTFS 有损坏数据的风险，请先备份。
+
+    当前构建\(SigningStatus.isNotarized ? "已公证。" : "未公证（Gatekeeper 可能拦截）。")
     """
     alert.addButton(withTitle: "知道了")
     alert.addButton(withTitle: "打开源码页")
@@ -204,6 +220,11 @@ final class VolumeStore: ObservableObject {
 
   func showMainWindow() {
     MainWindowController.shared.show(store: self)
+  }
+
+  func showSettings() {
+    openSettings = true
+    showMainWindow()
   }
 
   func refresh() {
@@ -219,6 +240,7 @@ final class VolumeStore: ObservableObject {
 
   func mount(_ vol: NTFSVolume, openFinder: Bool = true) {
     if vol.isInternal, !confirmInternalMount(vol) { return }
+    if !LegalGate.confirmWritable() { return }
     skippedUnmount.remove(vol.id)
     run("mount", vol, openFinder: openFinder)
   }
@@ -234,6 +256,7 @@ final class VolumeStore: ObservableObject {
   }
 
   func mountAll() {
+    if !LegalGate.confirmWritable() { return }
     for vol in volumes where !vol.isWritableFuse && !vol.isInternal {
       run("mount", vol, openFinder: false)
     }
@@ -281,7 +304,7 @@ final class VolumeStore: ObservableObject {
       let result = Privileged.run("format", disk.id, extra: [label])
       DispatchQueue.main.async {
         self.busyId = nil
-        self.message = result.text
+        self.message = UserFacingError.message(from: result.text)
         self.refresh()
         if result.ok, let vol = self.volumes.first(where: { wholeDiskId($0.id) == disk.id }) {
           self.mount(vol)
@@ -329,7 +352,7 @@ final class VolumeStore: ObservableObject {
       DispatchQueue.main.async {
         self.busyId = nil
         self.autoMount = Privileged.autoMountEnabled
-        if !result.ok { self.message = result.text }
+        if !result.ok { self.message = UserFacingError.message(from: result.text) }
         else { self.mountDefaultWritableIfNeeded() }
       }
     }
@@ -363,7 +386,7 @@ final class VolumeStore: ObservableObject {
           self.message = self.autoMount ? "已打开插入时自动挂载" : "已关闭插入时自动挂载"
           if self.autoMount { self.mountDefaultWritableIfNeeded() }
         } else {
-          self.message = result.text
+          self.message = UserFacingError.message(from: result.text)
         }
       }
     }
@@ -376,17 +399,18 @@ final class VolumeStore: ObservableObject {
       let result = Privileged.run(cmd, vol.id)
       DispatchQueue.main.async {
         self.busyId = nil
+        let shown = UserFacingError.message(from: result.text)
         if result.ok {
-          self.message = result.text
+          self.message = shown
           self.refresh()
           if cmd == "mount", openFinder {
             NSWorkspace.shared.open(URL(fileURLWithPath: vol.expectedMountPoint))
           }
         } else {
-          self.message = result.text
+          self.message = shown
           self.refresh()
           if cmd == "mount", MacOSCompat.looksLikeKextOrFSKitBlock(result.text) {
-            self.alertKextIgnored(result.text)
+            self.alertKextIgnored(shown)
           }
         }
       }
@@ -659,13 +683,13 @@ private func diskutilPlist(_ args: [String]) -> [String: Any]? {
 }
 
 enum Privileged {
-  static let helperCandidates = [
-    AppIdentity.helperPath,
-    Bundle.main.path(forResource: "ntfs-rw-helper", ofType: nil),
-  ].compactMap { $0 }
-
   static var systemHelperInstalled: Bool {
-    FileManager.default.isExecutableFile(atPath: AppIdentity.helperPath)
+    FileManager.default.fileExists(atPath: AppIdentity.helperDaemonPath)
+      || FileManager.default.fileExists(atPath: AppIdentity.helperDaemonPlist)
+      || FileManager.default.fileExists(atPath: AppIdentity.helperSocket)
+      || FileManager.default.fileExists(atPath: AppIdentity.legacyHelperPath)
+      || FileManager.default.fileExists(atPath: AppIdentity.legacySudoers)
+      || SMAppService.daemon(plistName: "com.bioapple.ntfsmount.helper.plist").status == .enabled
   }
 
   static var autoMountEnabled: Bool {
@@ -673,21 +697,29 @@ enum Privileged {
       || FileManager.default.fileExists(atPath: AppIdentity.legacyDaemonPlist)
   }
 
-  static var helperNeedsUpdate: Bool {
-    guard systemHelperInstalled,
-          let bundled = Bundle.main.path(forResource: "ntfs-rw-helper", ofType: nil)
-    else { return false }
-    let a = try? Data(contentsOf: URL(fileURLWithPath: bundled))
-    let b = try? Data(contentsOf: URL(fileURLWithPath: AppIdentity.helperPath))
-    guard let a, let b else { return true }
-    return a != b
+  static var hasLegacySudoers: Bool {
+    FileManager.default.fileExists(atPath: AppIdentity.legacySudoers)
   }
 
-  static var helperPath: String? {
-    if systemHelperInstalled, !helperNeedsUpdate {
-      return AppIdentity.helperPath
+  static var helperNeedsUpdate: Bool {
+    if hasLegacySudoers { return true }
+    guard systemHelperInstalled else { return false }
+    guard let bundled = Bundle.main.path(forResource: "ntfs-rw-helper", ofType: nil),
+          let sha = AppIdentity.sha256File(bundled)
+    else { return true }
+    if UserDefaults.standard.string(forKey: AppIdentity.Defaults.lastHelperSHA) != sha {
+      if let stamp = try? String(contentsOfFile: AppIdentity.helperStampPath, encoding: .utf8),
+         stamp.contains(sha) {
+        UserDefaults.standard.set(sha, forKey: AppIdentity.Defaults.lastHelperSHA)
+        return hasLegacySudoers
+      }
+      return true
     }
-    return helperCandidates.first { FileManager.default.isExecutableFile(atPath: $0) }
+    return !daemonReady
+  }
+
+  static var daemonReady: Bool {
+    FileManager.default.fileExists(atPath: AppIdentity.helperSocket)
   }
 
   struct Outcome {
@@ -701,14 +733,42 @@ enum Privileged {
     else {
       return Outcome(ok: false, text: "应用包内缺少安装脚本，请重新安装。")
     }
-    return runAdmin("bash \(quotedForShell(installer)) \(quotedForShell(helper)) \(quotedForShell(NSUserName()))")
+    let helperd = Bundle.main.bundlePath + "/Contents/MacOS/ntfsmount-helperd"
+    guard FileManager.default.isExecutableFile(atPath: helperd) else {
+      return Outcome(ok: false, text: "应用包内缺少特权守护进程，请重新安装。")
+    }
+    return copyToTempAndRun(
+      ["bash"],
+      files: [installer, helper, helperd],
+      extra: [NSUserName(), Bundle.main.bundlePath]
+    )
   }
 
   static func uninstallHelper() -> Outcome {
     guard let script = Bundle.main.path(forResource: "uninstall-helper", ofType: "sh") else {
       return Outcome(ok: false, text: "应用包内缺少卸载脚本。")
     }
-    return runAdmin("bash \(quotedForShell(script))")
+    try? SMAppService.daemon(plistName: "com.bioapple.ntfsmount.helper.plist").unregister()
+    return copyToTempAndRun(["bash"], files: [script], extra: [])
+  }
+
+  private static func copyToTempAndRun(_ prefix: [String], files: [String], extra: [String]) -> Outcome {
+    let dir = URL(fileURLWithPath: "/tmp/ntfsmount-helper-install")
+    let fm = FileManager.default
+    try? fm.removeItem(at: dir)
+    do {
+      try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+      var copied: [String] = []
+      for src in files {
+        let dest = dir.appendingPathComponent((src as NSString).lastPathComponent)
+        try fm.copyItem(atPath: src, toPath: dest.path)
+        try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: dest.path)
+        copied.append(dest.path)
+      }
+      return runAdmin(parts: prefix + copied + extra)
+    } catch {
+      return Outcome(ok: false, text: error.localizedDescription)
+    }
   }
 
   static func run(_ cmd: String, extra: [String] = []) -> Outcome {
@@ -723,36 +783,62 @@ enum Privileged {
     if systemHelperInstalled && helperNeedsUpdate {
       return Outcome(ok: false, text: "挂载助手与本应用不匹配，已拒绝运行。请先点「更新挂载助手」。")
     }
-    guard let helper = helperPath else {
-      return Outcome(ok: false, text: "未找到挂载助手。请点「安装挂载助手」。")
+    if let via = runViaDaemon(args) {
+      return via
     }
-    let sudo = Process()
-    sudo.executableURL = URL(fileURLWithPath: "/usr/bin/sudo")
-    sudo.arguments = ["-n", helper] + args
-    let sudoOut = Pipe()
-    let sudoErr = Pipe()
-    sudo.standardOutput = sudoOut
-    sudo.standardError = sudoErr
-    do {
-      try sudo.run()
-      sudo.waitUntilExit()
-      let out = String(data: sudoOut.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-      let err = String(data: sudoErr.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-      if sudo.terminationStatus == 0 {
-        return Outcome(ok: true, text: out.trimmingCharacters(in: .whitespacesAndNewlines))
-      }
-      if !err.lowercased().contains("password") && sudo.terminationStatus != 1 {
-        return Outcome(ok: false, text: (err.isEmpty ? out : err).trimmingCharacters(in: .whitespacesAndNewlines))
-      }
-    } catch {
-      return Outcome(ok: false, text: error.localizedDescription)
-    }
-
-    return runAdmin(adminCommand(helper, args))
+    return Outcome(ok: false, text: "未找到挂载助手。请点「安装挂载助手」。")
   }
 
-  private static func runAdmin(_ shell: String) -> Outcome {
-    let source = "do shell script \(appleScriptQuoted(shell)) with administrator privileges"
+  private static func runViaDaemon(_ args: [String]) -> Outcome? {
+    let fd = socket(AF_UNIX, SOCK_STREAM, 0)
+    guard fd >= 0 else { return nil }
+    defer { close(fd) }
+    var addr = sockaddr_un()
+    addr.sun_family = sa_family_t(AF_UNIX)
+    let path = AppIdentity.helperSocket
+    withUnsafeMutablePointer(to: &addr.sun_path) { ptr in
+      ptr.withMemoryRebound(to: CChar.self, capacity: 104) { dst in
+        _ = strncpy(dst, path, 104)
+      }
+    }
+    let cr = withUnsafePointer(to: &addr) {
+      $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+        connect(fd, $0, socklen_t(MemoryLayout<sockaddr_un>.size))
+      }
+    }
+    guard cr == 0 else { return nil }
+    var payload = "v1 \(args.count)\n"
+    for a in args { payload += a.replacingOccurrences(of: "\n", with: " ") + "\n" }
+    guard let data = payload.data(using: .utf8) else { return nil }
+    let sent = data.withUnsafeBytes { raw in
+      send(fd, raw.baseAddress, raw.count, 0)
+    }
+    guard sent == data.count else { return Outcome(ok: false, text: "与挂载助手通信失败。") }
+    shutdown(fd, SHUT_WR)
+    var out = Data()
+    var buf = [UInt8](repeating: 0, count: 4096)
+    while true {
+      let n = recv(fd, &buf, buf.count, 0)
+      if n <= 0 { break }
+      out.append(buf, count: n)
+      if out.count > 512 * 1024 { break }
+    }
+    let text = String(data: out, encoding: .utf8) ?? ""
+    if text.hasPrefix("OK\n") {
+      return Outcome(ok: true, text: String(text.dropFirst(3)).trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+    if text.hasPrefix("ERR\n") {
+      return Outcome(ok: false, text: String(text.dropFirst(4)).trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+    if text.isEmpty {
+      return Outcome(ok: false, text: "挂载助手没有响应。请先安装或更新助手。")
+    }
+    return Outcome(ok: false, text: text.trimmingCharacters(in: .whitespacesAndNewlines))
+  }
+
+  private static func runAdmin(parts: [String]) -> Outcome {
+    let expr = parts.map(appleScriptQuoted).joined(separator: " & \" \" & ")
+    let source = "do shell script \(expr) with administrator privileges"
     let osa = Process()
     osa.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
     osa.arguments = ["-e", source]
@@ -774,16 +860,8 @@ enum Privileged {
     }
   }
 
-  private static func quotedForShell(_ s: String) -> String {
-    "'" + s.replacingOccurrences(of: "'", with: "'\\''") + "'"
-  }
-
   private static func appleScriptQuoted(_ s: String) -> String {
     "quoted form of \"\(s.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\""))\""
-  }
-
-  private static func adminCommand(_ executable: String, _ args: [String]) -> String {
-    ([executable] + args).map(quotedForShell).joined(separator: " ")
   }
 }
 
@@ -798,7 +876,7 @@ struct MenuRoot: View {
       Text("没有检测到 NTFS 硬盘")
       Text(store.formatDisks.isEmpty
         ? "插入 Windows 格式的移动盘后再点菜单"
-        : "可用「格式化为 NTFS」把其他移动盘转成 NTFS")
+        : "可用窗口里「格式化为 NTFS」把其他移动盘转成 NTFS")
         .foregroundStyle(.secondary)
     } else {
       ForEach(store.volumes) { vol in
@@ -848,35 +926,14 @@ struct MenuRoot: View {
     Divider()
     Button("刷新") { store.refresh() }
       .keyboardShortcut("r")
-    Button(store.autoMount ? "插入时自动挂载：开" : "插入时自动挂载：关") {
-      store.toggleAutoMount()
-    }
-    .disabled(store.busyId != nil || !store.helperInstalled || Privileged.helperNeedsUpdate)
-    Button(store.launchAtLogin ? "登录时打开：开" : "登录时打开：关") {
-      store.toggleLogin()
-    }
-    Button(store.showDock ? "在程序坞显示：开" : "在程序坞显示：关") {
-      store.toggleDock()
-    }
-    if !store.helperInstalled {
-      Button("安装挂载助手…") { store.installHelper() }
-    } else if Privileged.helperNeedsUpdate {
-      Button("更新挂载助手…") { store.installHelper() }
-    } else {
-      Button("卸载挂载助手…") { store.confirmUninstallHelper() }
-    }
-    Text(MacOSCompat.menuCaption)
-      .font(.caption)
-      .foregroundStyle(.secondary)
-      .lineLimit(2)
+    Button("设置…") { store.showSettings() }
     if !store.message.isEmpty {
       Text(store.message)
         .font(.caption)
         .foregroundStyle(.secondary)
-        .lineLimit(3)
+        .lineLimit(2)
     }
     Divider()
-    Button("关于与隐私…") { store.showAbout() }
     Button("退出 NTFS 读写") { NSApp.terminate(nil) }
       .keyboardShortcut("q")
   }
