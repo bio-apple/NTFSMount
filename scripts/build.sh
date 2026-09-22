@@ -16,16 +16,19 @@ if [[ ! -x "$ROOT/runtime/ntfs-3g" || ! -x "$ROOT/runtime/go-nfsv4" || ! -x "$RO
   bash "$ROOT/scripts/prepare-runtime.sh"
 fi
 
+# shellcheck disable=SC2206
+SWIFT_SOURCES=("$ROOT/Sources"/*.swift)
 swiftc -parse-as-library -O \
   -target arm64-apple-macosx13.0 \
   -sdk "$SDK" \
   -framework SwiftUI \
   -framework AppKit \
   -framework ServiceManagement \
-  "$ROOT/Sources/main.swift" \
+  "${SWIFT_SOURCES[@]}" \
   -o "$BIN"
 
 cp "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
+cp "$ROOT/Resources/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
 cp "$ROOT/helper/ntfs-rw-helper" "$APP/Contents/Resources/ntfs-rw-helper"
 cp "$ROOT/helper/install-helper.sh" "$APP/Contents/Resources/install-helper.sh"
 chmod 755 "$APP/Contents/Resources/ntfs-rw-helper" "$APP/Contents/Resources/install-helper.sh" "$BIN"

@@ -64,15 +64,15 @@ Do not unplug without ejecting. That can leave a dirty volume and risk data loss
 | ◌ | Detected, not mounted — choose **以可写方式挂载** |
 | … | Busy |
 
-If Finder shows both `Name` and `Name 1`, the `1` copy is usually the read-only system mount. Use the writable volume from this menu.
+If Finder would otherwise show both `Name` and `Name 1`, the helper unmounts the macOS read-only mount (and a leftover `Name 1` from the same disk) before remounting, so the writable volume reuses `/Volumes/Name`.
 
-A dirty volume may be force-mounted (hibernation file cleared). Back up important data first.
+If the volume is dirty or Windows is hibernated, it is mounted **read-only** and you are notified. Shut Windows down fully (not hibernate / fast startup) before a writable mount. The hibernation file is not deleted.
 
 ## Auto-mount on insert
 
 **插入时自动挂载：开** installs `/Library/LaunchDaemons/local.ntfsmount.automount.plist` (admin password once).
 
-The daemon watches `/Volumes` (`WatchPaths`) and also runs on filesystem mounts (`StartOnMount`). When macOS attaches an NTFS volume read-only, it remounts that volume writable. Disks you have already **卸载** stay unmounted. Internal/system disks are never formatted; this path only mounts.
+The daemon watches `/Volumes` (`WatchPaths`) and also runs on filesystem mounts (`StartOnMount`). When macOS attaches an NTFS volume read-only, it unmounts that system mount and remounts writable (or read-only if the volume is dirty / hibernated). Disks you have already **卸载** stay unmounted. Internal/system disks are never formatted; this path only mounts.
 
 Turn it **关** to unload the daemon and remove the plist. `./uninstall.sh` removes it as well.
 

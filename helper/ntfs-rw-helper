@@ -1,12 +1,21 @@
 #!/bin/bash
 # Privileged helper: ntfs-3g over bundled FUSE-T userspace.
 # 命令: mount|unmount|eject|format|automount|enable-automount|disable-automount
+# 全局旗标: --verbose（可在子命令前或后）
 set -euo pipefail
 
 DISKUTIL="/usr/sbin/diskutil"
 MOUNT="/sbin/mount"
 UMOUNT="/sbin/umount"
 PKILL="/usr/bin/pkill"
+# macOS diskutil 把 -- 当成非法参数；id 必须先 valid_id/valid_whole，再作为独立 argv 传入，永不拼进 shell 字符串。
+# umount(8) 支持 --，卸载挂载点时使用。
+
+VERBOSE=0
+CURRENT_IDENT="-"
+CURRENT_CMD="-"
+LOG_FILE=""
+CMD_START_MS=0
 
 # Resolve this helper's real path. $0 may be:
 #   /usr/local/sbin/ntfs-rw-helper
@@ -127,6 +136,77 @@ resolve_nfs_srv() {
 
 die() { echo "error: $*" >&2; exit 1; }
 
+now_ms() {
+  /usr/bin/perl -MTime::HiRes=time -e 'printf("%d\n", int(time() * 1000))' 2>/dev/null \
+    || echo $(($(/bin/date +%s) * 1000))
+}
+
+log_ts() {
+  /bin/date -u +%Y-%m-%dT%H:%M:%SZ
+}
+
+init_log_file() {
+  if [[ "$(/usr/bin/id -u)" -eq 0 ]]; then
+    if [[ -d /var/log && -w /var/log ]]; then
+      LOG_FILE="/var/log/ntfsmount.log"
+    else
+      LOG_FILE="/tmp/ntfsmount.log"
+    fi
+  else
+    local home="${HOME:-}"
+    if [[ -n "$home" && "$home" != "/" ]]; then
+      /bin/mkdir -p "$home/Library/Logs" 2>/dev/null || true
+      if [[ -d "$home/Library/Logs" && -w "$home/Library/Logs" ]]; then
+        LOG_FILE="$home/Library/Logs/ntfsmount.log"
+      else
+        LOG_FILE="/tmp/ntfsmount.log"
+      fi
+    else
+      LOG_FILE="/tmp/ntfsmount.log"
+    fi
+  fi
+}
+
+rotate_log_if_needed() {
+  local f="$1" sz
+  [[ -n "$f" && -f "$f" ]] || return 0
+  sz="$(/usr/bin/stat -f '%z' "$f" 2>/dev/null || echo 0)"
+  if [[ "$sz" -gt 1048576 ]]; then
+    /bin/mv -f "$f" "${f}.old" 2>/dev/null || true
+  fi
+}
+
+# 一行：timestamp device_id command return_code duration_ms
+log_event() {
+  local ident="${1:--}" cmd="${2:--}" rc="${3:-0}" dur="${4:-0}"
+  local line
+  line="$(log_ts) ${ident} ${cmd} ${rc} ${dur}"
+  if [[ -n "$LOG_FILE" ]]; then
+    printf '%s\n' "$line" >>"$LOG_FILE" 2>/dev/null || true
+  fi
+  if [[ "$VERBOSE" -eq 1 ]]; then
+    printf '%s\n' "$line" >&2
+  fi
+}
+
+vlog() {
+  [[ "$VERBOSE" -eq 1 ]] || return 0
+  printf '+ %s\n' "$*" >&2
+  if [[ -n "$LOG_FILE" ]]; then
+    printf '%s\n' "$(log_ts) ${CURRENT_IDENT:--} $* - -" >>"$LOG_FILE" 2>/dev/null || true
+  fi
+}
+
+on_exit() {
+  local rc=$?
+  [[ "${BASH_SUBSHELL:-0}" -eq 0 ]] || return 0
+  local end dur
+  end="$(now_ms)"
+  dur=$((end - CMD_START_MS))
+  [[ "$dur" -ge 0 ]] || dur=0
+  log_event "${CURRENT_IDENT:--}" "${CURRENT_CMD:--}" "$rc" "$dur"
+}
+
 macos_major() {
   /usr/bin/sw_vers -productVersion 2>/dev/null | /usr/bin/awk -F. '{print $1}'
 }
@@ -135,22 +215,47 @@ looks_like_kext_or_fskit_block() {
   echo "$1" | /usr/bin/grep -qiE 'fskit|kext|kernel extension|module .* is disabled|System Extension|内核扩展'
 }
 
+looks_like_dirty_or_hiber() {
+  echo "$1" | /usr/bin/grep -qiE 'hibernat|hiberfile|unclean|not cleanly|unsafe state|windows cache|fast restart|volume is dirty'
+}
+
+# 拒绝路径、空白、shell 元字符；再套 diskNsM / diskN。
+has_unsafe_id_chars() {
+  local s="${1:-}"
+  [[ -z "$s" ]] && return 0
+  [[ "$s" == */* ]] && return 0
+  [[ "$s" == *[[:space:]]* ]] && return 0
+  [[ "$s" == *';'* ]] && return 0
+  [[ "$s" == *'$'* ]] && return 0
+  [[ "$s" == *'`'* ]] && return 0
+  [[ "$s" == *"'"* ]] && return 0
+  [[ "$s" == *'"'* ]] && return 0
+  [[ "$s" == *'\'* ]] && return 0
+  return 1
+}
+
 valid_id() {
-  [[ "${1:-}" =~ ^disk[0-9]+s[0-9]+$ ]]
+  local s="${1:-}"
+  has_unsafe_id_chars "$s" && return 1
+  [[ "$s" =~ ^disk[0-9]+s[0-9]+$ ]]
 }
 
 valid_whole() {
-  [[ "${1:-}" =~ ^disk[0-9]+$ ]]
+  local s="${1:-}"
+  has_unsafe_id_chars "$s" && return 1
+  [[ "$s" =~ ^disk[0-9]+$ ]]
 }
 
 require_ntfs() {
   local fs
+  vlog "$DISKUTIL" info -plist "$1"
   fs="$("$DISKUTIL" info -plist "$1" 2>/dev/null | /usr/bin/plutil -extract FilesystemName raw - 2>/dev/null || true)"
   [[ "$fs" == "NTFS" ]] || die "$1 不是 NTFS（当前: ${fs:-unknown}）"
 }
 
 volume_name() {
   local name
+  vlog "$DISKUTIL" info -plist "$1"
   name="$("$DISKUTIL" info -plist "$1" 2>/dev/null | /usr/bin/plutil -extract VolumeName raw - 2>/dev/null || true)"
   if [[ -z "$name" || "$name" == "null" ]]; then
     name="NTFS-$1"
@@ -167,7 +272,7 @@ console_ids() {
 notify() {
   local msg="$1"
   local user uid e
-  msg="$(printf '%s' "$msg" | /usr/bin/tr -d '"')"
+  msg="$(printf '%s' "$msg" | /usr/bin/tr -d '"$`\\')"
   user="$(/usr/bin/stat -f '%Su' /dev/console 2>/dev/null || /usr/bin/id -un)"
   uid="$(/usr/bin/id -u "$user" 2>/dev/null || true)"
   e="display notification \"${msg}\" with title \"NTFSMount\""
@@ -182,7 +287,15 @@ notify() {
 
 mount_line() {
   local mp="$1"
-  "$MOUNT" | /usr/bin/grep " on ${mp} " || true
+  "$MOUNT" | /usr/bin/awk -v mp="$mp" '
+    $2 == "on" {
+      p = ""
+      for (i = 3; i <= NF; i++) {
+        if ($i ~ /^\(/) break
+        p = (p == "" ? $i : p " " $i)
+      }
+      if (p == mp) { print; exit }
+    }'
 }
 
 is_writable_mount() {
@@ -190,6 +303,28 @@ is_writable_mount() {
   local line
   line="$(mount_line "$mp")"
   [[ -n "$line" ]] && [[ "$line" != *read-only* ]]
+}
+
+is_our_fuse_mount() {
+  local mp="$1"
+  local line
+  line="$(mount_line "$mp")"
+  [[ -n "$line" ]] || return 1
+  echo "$line" | /usr/bin/grep -qiE 'macfuse|osxfuse|fuse-t|fuset|ntfs-3g| fuse,| \(nfs,|smbfs'
+}
+
+# 该 diskNsM 当前所有挂载点（含 /Volumes/Name 1）。
+dev_mount_points() {
+  local ident="$1"
+  "$MOUNT" | /usr/bin/awk -v d="/dev/${ident}" '
+    $1 == d && $2 == "on" {
+      mp = ""
+      for (i = 3; i <= NF; i++) {
+        if ($i ~ /^\(/) break
+        mp = (mp == "" ? $i : mp " " $i)
+      }
+      if (mp != "") print mp
+    }'
 }
 
 kill_ntfs3g() {
@@ -202,21 +337,60 @@ kill_ntfs3g() {
   sleep 0.2
 }
 
+unmount_numbered_leftovers() {
+  local ident="$1"
+  local name="$2"
+  local mp line
+  for mp in "/Volumes/${name} 1" "/Volumes/${name} 2" "/Volumes/${name} 3"; do
+    line="$(mount_line "$mp")"
+    [[ -n "$line" ]] || {
+      if [[ -d "$mp" ]]; then
+        /bin/rmdir "$mp" 2>/dev/null || true
+      fi
+      continue
+    }
+    case "$line" in
+      "/dev/${ident} on "*)
+        vlog "$UMOUNT" -f -- "$mp"
+        "$UMOUNT" -f -- "$mp" >/dev/null 2>&1 || true
+        vlog "$DISKUTIL" unmount force "$mp"
+        "$DISKUTIL" unmount force "$mp" >/dev/null 2>&1 || true
+        ;;
+    esac
+    if [[ -z "$(mount_line "$mp")" && -d "$mp" ]]; then
+      /bin/rmdir "$mp" 2>/dev/null || true
+    fi
+  done
+}
+
 unmount_any() {
   local ident="$1"
   local name mp
   name="$(volume_name "$ident")"
   mp="/Volumes/$name"
   kill_ntfs3g "$ident"
+  vlog "$DISKUTIL" unmount force "$ident"
   "$DISKUTIL" unmount force "$ident" >/dev/null 2>&1 || true
+  vlog "$DISKUTIL" unmount force "/dev/$ident"
   "$DISKUTIL" unmount force "/dev/$ident" >/dev/null 2>&1 || true
-  "$UMOUNT" -f "$mp" >/dev/null 2>&1 || true
+  while IFS= read -r mp; do
+    [[ -n "$mp" ]] || continue
+    vlog "$UMOUNT" -f -- "$mp"
+    "$UMOUNT" -f -- "$mp" >/dev/null 2>&1 || true
+    vlog "$DISKUTIL" unmount force "$mp"
+    "$DISKUTIL" unmount force "$mp" >/dev/null 2>&1 || true
+  done < <(dev_mount_points "$ident")
+  mp="/Volumes/$name"
+  vlog "$UMOUNT" -f -- "$mp"
+  "$UMOUNT" -f -- "$mp" >/dev/null 2>&1 || true
+  unmount_numbered_leftovers "$ident" "$name"
   local i
   for i in 1 2 3 4 5; do
-    if [[ -z "$(mount_line "$mp")" ]]; then
+    if [[ -z "$(mount_line "$mp")" ]] && [[ -z "$("$MOUNT" | /usr/bin/awk -v d="/dev/${ident}" '$1 == d && $2 == "on" { print; exit }')" ]]; then
       break
     fi
-    "$UMOUNT" -f "$mp" >/dev/null 2>&1 || true
+    "$UMOUNT" -f -- "$mp" >/dev/null 2>&1 || true
+    unmount_numbered_leftovers "$ident" "$name"
     sleep 0.2
   done
 }
@@ -225,16 +399,22 @@ unmount_any() {
 volume_still_mounted() {
   local ident="$1"
   local mp name
+  vlog "$DISKUTIL" info -plist "$ident"
   mp="$("$DISKUTIL" info -plist "$ident" 2>/dev/null | /usr/bin/plutil -extract MountPoint raw - 2>/dev/null || true)"
   if [[ -n "$mp" && "$mp" != "null" ]]; then
     return 0
   fi
   name="$(volume_name "$ident")"
   [[ -n "$(mount_line "/Volumes/$name")" ]] && return 0
-  [[ -n "$("$MOUNT" | /usr/bin/grep "/dev/${ident} on " || true)" ]]
+  local line
+  line="$(mount_line "/Volumes/${name} 1")"
+  case "$line" in
+    "/dev/${ident} on "*) return 0 ;;
+  esac
+  [[ -n "$("$MOUNT" | /usr/bin/awk -v d="/dev/${ident}" '$1 == d && $2 == "on" { print; exit }')" ]]
 }
 
-# 挂载前必须卸干净；仍占用则重试几次后失败，不启动 ntfs-3g。
+# 挂载前必须卸干净（含系统只读与 leftover Name 1）；仍占用则重试几次后失败，不启动 ntfs-3g。
 ensure_unmounted() {
   local ident="$1"
   local i
@@ -263,9 +443,10 @@ can_write() {
 }
 
 # ntfs-3g 可能 daemonize 后立刻返回，也可能占前台。两种都等挂载。
+# $4: rw（默认可写探测）或 ro（只要求出现在 mount 表）。
 try_mount() {
-  local ident="$1" mp="$2" opts="$3"
-  local log pid i nfs
+  local ident="$1" mp="$2" opts="$3" mode="${4:-rw}"
+  local log pid i nfs start
   log="/tmp/ntfs-rw-last.log"
   : >"$log"
   nfs="$(resolve_nfs_srv || true)"
@@ -273,19 +454,42 @@ try_mount() {
   export FUSE_NFSSRV_PATH="$nfs"
   # Prefer bundled binaries on PATH for any child lookup.
   export PATH="${NTFS3G_DIR}:/usr/bin:/bin:/usr/sbin:/sbin"
+  start="$(now_ms)"
+  vlog "$NTFS3G" "/dev/$ident" "$mp" -o "$opts"
   "$NTFS3G" "/dev/$ident" "$mp" -o "$opts" >>"$log" 2>&1 &
   pid=$!
   disown "$pid" 2>/dev/null || true
   for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
-    if is_writable_mount "$mp"; then
+    if [[ "$mode" == "ro" ]]; then
+      if [[ -n "$(mount_line "$mp")" ]]; then
+        if [[ "$VERBOSE" -eq 1 ]]; then
+          log_event "$ident" "$NTFS3G" "0" "$(($(now_ms) - start))"
+        fi
+        return 0
+      fi
+    elif is_writable_mount "$mp"; then
       sleep 0.3
       if can_write "$mp"; then
+        if [[ "$VERBOSE" -eq 1 ]]; then
+          log_event "$ident" "$NTFS3G" "0" "$(($(now_ms) - start))"
+        fi
         return 0
       fi
     fi
     if ! /bin/kill -0 "$pid" 2>/dev/null; then
       if ! /usr/bin/pgrep -f "ntfs-3g /dev/${ident} " >/dev/null 2>&1; then
-        if ! is_writable_mount "$mp"; then
+        if [[ "$mode" == "ro" ]]; then
+          if [[ -z "$(mount_line "$mp")" ]]; then
+            if [[ "$VERBOSE" -eq 1 ]]; then
+              log_event "$ident" "$NTFS3G" "1" "$(($(now_ms) - start))"
+            fi
+            /bin/cat "$log" 2>/dev/null || true
+            return 1
+          fi
+        elif ! is_writable_mount "$mp"; then
+          if [[ "$VERBOSE" -eq 1 ]]; then
+            log_event "$ident" "$NTFS3G" "1" "$(($(now_ms) - start))"
+          fi
           /bin/cat "$log" 2>/dev/null || true
           return 1
         fi
@@ -293,12 +497,16 @@ try_mount() {
     fi
     sleep 0.4
   done
+  if [[ "$VERBOSE" -eq 1 ]]; then
+    log_event "$ident" "$NTFS3G" "1" "$(($(now_ms) - start))"
+  fi
   /bin/cat "$log" 2>/dev/null || true
   return 1
 }
 
 do_mount() {
   local ident="$1"
+  CURRENT_IDENT="$ident"
   valid_id "$ident" || die "非法设备: $ident"
   [[ -e "/dev/$ident" ]] || die "设备不存在: /dev/$ident"
   require_ntfs "$ident"
@@ -313,39 +521,69 @@ do_mount() {
   read -r uid gid <<<"$(console_ids)"
 
   local base="volname=${name},local,allow_other,uid=${uid},gid=${gid}"
-  local attempts=(
-    "backend=nfs,force,remove_hiberfile"
-    "backend=smb,force,remove_hiberfile"
+  # 默认不用 force/remove_hiberfile，避免静默毁掉 Windows 休眠会话。
+  local rw_attempts=(
     "backend=nfs"
     "backend=smb"
     # FSKit 在 macOS 13+ 常被禁用；失败可忽略，勿改顺序。
-    "backend=fskit,force,remove_hiberfile"
+    "backend=fskit"
   )
-  local err="" opts rc=1 errfile extra
+  local ro_attempts=(
+    "ro,backend=nfs"
+    "ro,backend=smb"
+  )
+  local err="" opts rc=1 errfile extra dirty=0
 
   ensure_unmounted "$ident"
   /bin/mkdir -p "$mp"
 
-  for extra in "${attempts[@]}"; do
+  for extra in "${rw_attempts[@]}"; do
     opts="${base},${extra}"
     ensure_unmounted "$ident"
     /bin/mkdir -p "$mp"
     errfile="$(/usr/bin/mktemp /tmp/ntfs-rw-err.XXXXXX)"
     set +e
-    try_mount "$ident" "$mp" "$opts" >"$errfile"
+    try_mount "$ident" "$mp" "$opts" rw >"$errfile"
     rc=$?
     set -e
     err="$(/bin/cat "$errfile" 2>/dev/null || true)"
     /bin/rm -f "$errfile"
     if [[ $rc -eq 0 ]]; then
-      if [[ "$extra" == *force* ]]; then
-        echo "warning: 以 force 挂载（可能已清除 Windows 休眠文件）" >&2
-      fi
       echo "ok rw $ident -> $mp (${extra})"
       notify "NTFS 磁盘已成功挂载为可读写模式"
       return 0
     fi
+    if looks_like_dirty_or_hiber "$err"; then
+      dirty=1
+      break
+    fi
   done
+
+  if [[ "$dirty" -eq 1 ]]; then
+    local ro_msg
+    ro_msg="该 NTFS 磁盘未正常关机或仍处于 Windows 休眠，已只读挂载。请在 Windows 中彻底关机（不要休眠/快速启动）后再以可写方式挂载。"
+    for extra in "${ro_attempts[@]}"; do
+      opts="${base},${extra}"
+      ensure_unmounted "$ident"
+      /bin/mkdir -p "$mp"
+      errfile="$(/usr/bin/mktemp /tmp/ntfs-rw-err.XXXXXX)"
+      set +e
+      try_mount "$ident" "$mp" "$opts" ro >"$errfile"
+      rc=$?
+      set -e
+      err="$(/bin/cat "$errfile" 2>/dev/null || true)"
+      /bin/rm -f "$errfile"
+      if [[ $rc -eq 0 ]]; then
+        echo "ok ro $ident -> $mp (dirty/hibernation, 未清除休眠文件)"
+        echo "warning: $ro_msg"
+        notify "$ro_msg"
+        return 0
+      fi
+    done
+    notify "无法挂载：磁盘未正常关机或处于 Windows 休眠"
+    die "挂载失败：磁盘 dirty 或 Windows 休眠，只读挂载也失败。请在 Windows 彻底关机后重试。详情: $err"
+  fi
+
   unmount_any "$ident"
   local ver
   ver="$(macos_major)"
@@ -363,6 +601,7 @@ do_mount() {
 
 do_unmount() {
   local ident="$1"
+  CURRENT_IDENT="$ident"
   valid_id "$ident" || die "非法设备: $ident"
   unmount_any "$ident"
   echo "ok unmounted $ident"
@@ -370,26 +609,39 @@ do_unmount() {
 
 do_eject() {
   local ident="$1"
+  CURRENT_IDENT="$ident"
   valid_id "$ident" || die "非法设备: $ident"
   unmount_any "$ident"
   local whole="${ident%%s*}"
-  "$DISKUTIL" eject "$whole" >/dev/null 2>&1 || "$DISKUTIL" eject "$ident" >/dev/null 2>&1 || die "推出失败: $ident"
+  valid_whole "$whole" || whole=""
+  if [[ -n "$whole" ]]; then
+    vlog "$DISKUTIL" eject "$whole"
+    "$DISKUTIL" eject "$whole" >/dev/null 2>&1 \
+      || { vlog "$DISKUTIL" eject "$ident"; "$DISKUTIL" eject "$ident" >/dev/null 2>&1; } \
+      || die "推出失败: $ident"
+  else
+    vlog "$DISKUTIL" eject "$ident"
+    "$DISKUTIL" eject "$ident" >/dev/null 2>&1 || die "推出失败: $ident"
+  fi
   echo "ok ejected $ident"
 }
 
 data_partition() {
+  vlog "$DISKUTIL" list "$1"
   "$DISKUTIL" list "$1" | /usr/bin/awk '/EFI/{next} $NF ~ /^disk[0-9]+s[0-9]+$/ { p=$NF } END { print p }'
 }
 
 refuse_format_target() {
   local ident="$1"
   local plist internal sys proto
+  vlog "$DISKUTIL" info -plist "$ident"
   plist="$("$DISKUTIL" info -plist "$ident" 2>/dev/null || true)"
   [[ -n "$plist" ]] || die "读不到磁盘信息: $ident"
   internal="$(printf '%s' "$plist" | /usr/bin/plutil -extract Internal raw - 2>/dev/null || true)"
   [[ "$internal" == "true" ]] && die "拒绝格式化内置磁盘: $ident"
   proto="$(printf '%s' "$plist" | /usr/bin/plutil -extract BusProtocol raw - 2>/dev/null || true)"
   [[ "$proto" == "Disk Image" || "$proto" == "Apple Fabric" ]] && die "拒绝格式化该磁盘: $ident ($proto)"
+  vlog "$DISKUTIL" info -plist /
   sys="$("$DISKUTIL" info -plist / 2>/dev/null | /usr/bin/plutil -extract ParentWholeDisk raw - 2>/dev/null || true)"
   [[ -n "$sys" && "$ident" == "$sys" ]] && die "拒绝格式化系统盘: $ident"
 }
@@ -409,6 +661,7 @@ sanitize_label() {
 do_format() {
   local ident="$1"
   local label
+  CURRENT_IDENT="$ident"
   valid_whole "$ident" || die "非法设备: ${ident}（格式化需要整个磁盘，例如 disk4）"
   [[ -e "/dev/$ident" ]] || die "设备不存在: /dev/$ident"
   [[ -n "$MKNTFS" && -x "$MKNTFS" ]] || die "找不到捆绑的 mkntfs。请把 NTFSMount.app 重新装到 /Applications"
@@ -418,22 +671,26 @@ do_format() {
 
   export PATH="${NTFS3G_DIR}:/usr/bin:/bin:/usr/sbin:/sbin"
   "$PKILL" -f "ntfs-3g /dev/${ident}" >/dev/null 2>&1 || true
+  vlog "$DISKUTIL" unmountDisk force "$ident"
   "$DISKUTIL" unmountDisk force "$ident" >/dev/null 2>&1 || true
 
   local out rc part dev
   set +e
+  vlog "$DISKUTIL" eraseDisk ExFAT _NTFSFMT "$ident"
   out="$("$DISKUTIL" eraseDisk ExFAT _NTFSFMT "$ident" 2>&1)"
   rc=$?
   set -e
   [[ $rc -eq 0 ]] || die "分区失败: $out"
 
+  vlog "$DISKUTIL" unmountDisk force "$ident"
   "$DISKUTIL" unmountDisk force "$ident" >/dev/null 2>&1 || true
   part="$(data_partition "$ident")"
-  [[ "$part" =~ ^disk[0-9]+s[0-9]+$ ]] || die "找不到数据分区: $ident"
+  valid_id "$part" || die "找不到数据分区: $ident"
   dev="/dev/$part"
   [[ -e "/dev/r$part" ]] && dev="/dev/r$part"
 
   set +e
+  vlog "$MKNTFS" -F -Q -L "$label" "$dev"
   out="$("$MKNTFS" -F -Q -L "$label" "$dev" 2>&1)"
   rc=$?
   set -e
@@ -450,28 +707,32 @@ require_root() {
 
 is_ntfs() {
   local fs
+  vlog "$DISKUTIL" info -plist "$1"
   fs="$("$DISKUTIL" info -plist "$1" 2>/dev/null | /usr/bin/plutil -extract FilesystemName raw - 2>/dev/null || true)"
   [[ "$fs" == "NTFS" ]]
 }
 
-# 只处理系统只读挂上的 NTFS（刚插入）。用户主动卸载的不自动再挂。
+# 系统只读刚插入：先卸掉 /Volumes/Name（及同盘 leftover Name 1），再可写重挂；dirty/休眠则只读。
+# 用户主动卸载的不自动再挂。已是本助手 fuse 挂载则只清重复卷。
 do_automount() {
   local ident name mp
-  local ids
-  ids="$("$DISKUTIL" list | /usr/bin/awk '$NF ~ /^disk[0-9]+s[0-9]+$/ { print $NF }')"
-  for ident in $ids; do
+  vlog "$DISKUTIL" list
+  while IFS= read -r ident; do
+    [[ -n "$ident" ]] || continue
     valid_id "$ident" || continue
     is_ntfs "$ident" || continue
     name="$(volume_name "$ident")"
     mp="/Volumes/$name"
-    if is_writable_mount "$mp"; then
+    if is_our_fuse_mount "$mp" || is_writable_mount "$mp"; then
+      unmount_numbered_leftovers "$ident" "$name"
       continue
     fi
     if ! volume_still_mounted "$ident"; then
       continue
     fi
+    CURRENT_IDENT="$ident"
     ( do_mount "$ident" ) || echo "automount skip $ident" >&2
-  done
+  done < <("$DISKUTIL" list | /usr/bin/awk '$NF ~ /^disk[0-9]+s[0-9]+$/ { print $NF }')
   echo "ok automount"
 }
 
@@ -519,20 +780,38 @@ do_disable_automount() {
 
 usage() {
   cat <<'EOF'
-用法: ntfs-rw-helper <mount|unmount|eject|format|automount|enable-automount|disable-automount> [diskNsM|diskN] [label]
+用法: ntfs-rw-helper [--verbose] <mount|unmount|eject|format|automount|enable-automount|disable-automount> [diskNsM|diskN] [label]
 示例: ntfs-rw-helper mount disk5s1
+      ntfs-rw-helper --verbose mount disk5s1
       ntfs-rw-helper format disk4 DATA
       ntfs-rw-helper enable-automount
 EOF
 }
 
-cmd="${1:-}"
-id="${2:-}"
+POS=()
+for a in "$@"; do
+  case "$a" in
+    --verbose|-v) VERBOSE=1 ;;
+    *) POS+=("$a") ;;
+  esac
+done
+
+cmd="${POS[0]:-}"
+id="${POS[1]:-}"
+CURRENT_CMD="${cmd:--}"
+CURRENT_IDENT="${id:--}"
+[[ "$CURRENT_IDENT" == "--verbose" || "$CURRENT_IDENT" == "-v" ]] && CURRENT_IDENT="-"
+
+init_log_file
+rotate_log_if_needed "$LOG_FILE"
+CMD_START_MS="$(now_ms)"
+trap on_exit EXIT
+
 case "$cmd" in
   mount) do_mount "$id" ;;
   unmount) do_unmount "$id" ;;
   eject) do_eject "$id" ;;
-  format) do_format "$id" "${3:-NTFS}" ;;
+  format) do_format "$id" "${POS[2]:-NTFS}" ;;
   automount) do_automount ;;
   enable-automount) do_enable_automount ;;
   disable-automount) do_disable_automount ;;

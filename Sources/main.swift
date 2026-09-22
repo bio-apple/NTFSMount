@@ -151,6 +151,10 @@ final class VolumeStore: ObservableObject {
     message = result.text
   }
 
+  func showMainWindow() {
+    MainWindowController.shared.show(store: self)
+  }
+
   func refresh() {
     volumes = NTFSVolume.scan()
     formatDisks = FormatDisk.scan()
@@ -263,7 +267,7 @@ final class VolumeStore: ObservableObject {
   }
 }
 
-private func wholeDiskId(_ id: String) -> String {
+func wholeDiskId(_ id: String) -> String {
   if let range = id.range(of: #"s\d"#, options: .regularExpression) {
     return String(id[..<range.lowerBound])
   }
@@ -287,6 +291,9 @@ struct NTFSVolume: Identifiable, Equatable {
   let mountPoint: String
   let isWritableFuse: Bool
   let isReadOnlyMounted: Bool
+  let mediaName: String
+  let usedBytes: Int64
+  let freeBytes: Int64
 
   var expectedMountPoint: String { mountPoint.isEmpty ? "/Volumes/\(name)" : mountPoint }
 
@@ -298,6 +305,16 @@ struct NTFSVolume: Identifiable, Equatable {
     if isWritableFuse { return "可写" }
     if isReadOnlyMounted { return "系统只读" }
     return "未挂载"
+  }
+
+  var hasUsage: Bool {
+    !mountPoint.isEmpty && (usedBytes + freeBytes) > 0
+  }
+
+  var usageRatio: Double {
+    let total = usedBytes + freeBytes
+    guard total > 0 else { return 0 }
+    return min(1, Double(usedBytes) / Double(total))
   }
 
   static func scan() -> [NTFSVolume] {
@@ -332,6 +349,18 @@ struct NTFSVolume: Identifiable, Equatable {
         : (mountTable.fusePoints.contains(expected) ? expected : "")
       let mp = fuseMp.isEmpty ? diskutilMp : fuseMp
       let fuse = !fuseMp.isEmpty
+      let media = volumeMediaName(info: info, volumeName: volumeName)
+      let diskutilFree = (info["VolumeFreeSpace"] as? NSNumber)?.int64Value
+        ?? (info["FreeSpace"] as? NSNumber)?.int64Value
+        ?? 0
+      var used: Int64 = 0
+      var free: Int64 = diskutilFree
+      if !mp.isEmpty, let usage = fileSystemUsage(at: mp) {
+        free = usage.free
+        used = max(0, usage.total - usage.free)
+      } else if size > 0, diskutilFree > 0 {
+        used = max(0, size - diskutilFree)
+      }
       out.append(
         NTFSVolume(
           id: ident,
@@ -339,12 +368,31 @@ struct NTFSVolume: Identifiable, Equatable {
           size: size,
           mountPoint: mp,
           isWritableFuse: fuse,
-          isReadOnlyMounted: !mp.isEmpty && !fuse
+          isReadOnlyMounted: !mp.isEmpty && !fuse,
+          mediaName: media,
+          usedBytes: used,
+          freeBytes: free
         )
       )
     }
     return out.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
   }
+}
+
+private func volumeMediaName(info: [String: Any], volumeName: String) -> String {
+  let media = info["MediaName"] as? String ?? ""
+  if !media.isEmpty, media != volumeName { return media }
+  let proto = info["BusProtocol"] as? String ?? ""
+  if !proto.isEmpty { return proto }
+  return ""
+}
+
+private func fileSystemUsage(at path: String) -> (total: Int64, free: Int64)? {
+  guard let vals = try? FileManager.default.attributesOfFileSystem(forPath: path),
+        let total = vals[.systemSize] as? NSNumber,
+        let free = vals[.systemFreeSize] as? NSNumber
+  else { return nil }
+  return (total.int64Value, free.int64Value)
 }
 
 struct FormatDisk: Identifiable, Equatable {
@@ -616,6 +664,9 @@ struct MenuRoot: View {
   @ObservedObject var store: VolumeStore
 
   var body: some View {
+    Button("打开窗口") { store.showMainWindow() }
+      .keyboardShortcut("o")
+    Divider()
     if store.volumes.isEmpty {
       Text("没有检测到 NTFS 硬盘")
       Text(store.formatDisks.isEmpty
