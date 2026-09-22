@@ -638,12 +638,18 @@ refuse_format_target() {
   plist="$("$DISKUTIL" info -plist "$ident" 2>/dev/null || true)"
   [[ -n "$plist" ]] || die "读不到磁盘信息: $ident"
   internal="$(printf '%s' "$plist" | /usr/bin/plutil -extract Internal raw - 2>/dev/null || true)"
-  [[ "$internal" == "true" ]] && die "拒绝格式化内置磁盘: $ident"
+  if [[ "$internal" == "true" ]]; then
+    die "拒绝格式化内置磁盘: $ident"
+  fi
   proto="$(printf '%s' "$plist" | /usr/bin/plutil -extract BusProtocol raw - 2>/dev/null || true)"
-  [[ "$proto" == "Disk Image" || "$proto" == "Apple Fabric" ]] && die "拒绝格式化该磁盘: $ident ($proto)"
+  if [[ "$proto" == "Disk Image" || "$proto" == "Apple Fabric" ]]; then
+    die "拒绝格式化该磁盘: $ident ($proto)"
+  fi
   vlog "$DISKUTIL" info -plist /
   sys="$("$DISKUTIL" info -plist / 2>/dev/null | /usr/bin/plutil -extract ParentWholeDisk raw - 2>/dev/null || true)"
-  [[ -n "$sys" && "$ident" == "$sys" ]] && die "拒绝格式化系统盘: $ident"
+  if [[ -n "$sys" && "$ident" == "$sys" ]]; then
+    die "拒绝格式化系统盘: $ident"
+  fi
 }
 
 sanitize_label() {
@@ -686,8 +692,9 @@ do_format() {
   "$DISKUTIL" unmountDisk force "$ident" >/dev/null 2>&1 || true
   part="$(data_partition "$ident")"
   valid_id "$part" || die "找不到数据分区: $ident"
+  # macOS /dev/rdisk* is a character device; mkntfs needs a block device.
   dev="/dev/$part"
-  [[ -e "/dev/r$part" ]] && dev="/dev/r$part"
+  [[ -b "$dev" ]] || die "不是块设备: $dev"
 
   set +e
   vlog "$MKNTFS" -F -Q -L "$label" "$dev"
@@ -695,6 +702,10 @@ do_format() {
   rc=$?
   set -e
   [[ $rc -eq 0 ]] || die "mkntfs 失败: $out"
+  /bin/sync
+  # DiskArbitration 在探测前仍会报 ExFAT；先 mount 一次让系统认出 NTFS。
+  vlog "$DISKUTIL" mount "$part"
+  "$DISKUTIL" mount "$part" >/dev/null 2>&1 || true
   echo "ok formatted $part ($label)"
 }
 

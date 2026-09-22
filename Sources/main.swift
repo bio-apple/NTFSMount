@@ -65,10 +65,11 @@ final class VolumeStore: ObservableObject {
   @Published var volumes: [NTFSVolume] = []
   @Published var message: String = ""
   @Published var busyId: String?
-  @Published var launchAtLogin: Bool = SMAppService.mainApp.status == .enabled
   @Published var helperInstalled: Bool = Privileged.systemHelperInstalled
   @Published var formatDisks: [FormatDisk] = []
   @Published var autoMount: Bool = Privileged.autoMountEnabled
+
+  private static let autoMountUserOffKey = "local.ntfsmount.autoMountUserOff"
 
   private var timer: Timer?
 
@@ -92,7 +93,9 @@ final class VolumeStore: ObservableObject {
       Task { @MainActor in self?.refresh() }
     }
     DispatchQueue.main.async { [weak self] in
+      self?.disableLoginItemIfNeeded()
       self?.offerHelperInstallIfNeeded()
+      self?.enableAutoMountDefault()
       self?.offerCompatNoticeIfNeeded()
     }
   }
@@ -149,6 +152,10 @@ final class VolumeStore: ObservableObject {
     let result = Privileged.installHelper()
     helperInstalled = Privileged.systemHelperInstalled
     message = result.text
+    if result.ok {
+      UserDefaults.standard.set(false, forKey: Self.autoMountUserOffKey)
+      enableAutoMountDefault()
+    }
   }
 
   func showMainWindow() {
@@ -212,22 +219,31 @@ final class VolumeStore: ObservableObject {
     }
   }
 
-  func toggleLogin() {
-    do {
-      if launchAtLogin {
-        try SMAppService.mainApp.unregister()
-        launchAtLogin = false
-      } else {
-        try SMAppService.mainApp.register()
-        launchAtLogin = true
+  func disableLoginItemIfNeeded() {
+    guard SMAppService.mainApp.status == .enabled else { return }
+    try? SMAppService.mainApp.unregister()
+  }
+
+  func enableAutoMountDefault() {
+    guard helperInstalled, !Privileged.autoMountEnabled else {
+      autoMount = Privileged.autoMountEnabled
+      return
+    }
+    guard !UserDefaults.standard.bool(forKey: Self.autoMountUserOffKey) else { return }
+    busyId = "automount"
+    DispatchQueue.global(qos: .userInitiated).async {
+      let result = Privileged.run("enable-automount")
+      DispatchQueue.main.async {
+        self.busyId = nil
+        self.autoMount = Privileged.autoMountEnabled
+        if !result.ok { self.message = result.text }
       }
-    } catch {
-      message = "开机启动失败：\(error.localizedDescription)"
     }
   }
 
   func toggleAutoMount() {
-    let cmd = autoMount ? "disable-automount" : "enable-automount"
+    let turningOff = autoMount
+    let cmd = turningOff ? "disable-automount" : "enable-automount"
     busyId = "automount"
     message = ""
     DispatchQueue.global(qos: .userInitiated).async {
@@ -235,9 +251,12 @@ final class VolumeStore: ObservableObject {
       DispatchQueue.main.async {
         self.busyId = nil
         self.autoMount = Privileged.autoMountEnabled
-        self.message = result.ok
-          ? (self.autoMount ? "已打开插入时自动挂载" : "已关闭插入时自动挂载")
-          : result.text
+        if result.ok {
+          UserDefaults.standard.set(turningOff, forKey: Self.autoMountUserOffKey)
+          self.message = self.autoMount ? "已打开插入时自动挂载" : "已关闭插入时自动挂载"
+        } else {
+          self.message = result.text
+        }
       }
     }
   }
@@ -717,9 +736,6 @@ struct MenuRoot: View {
     Divider()
     Button("刷新") { store.refresh() }
       .keyboardShortcut("r")
-    Button(store.launchAtLogin ? "开机启动：开" : "开机启动：关") {
-      store.toggleLogin()
-    }
     Button(store.autoMount ? "插入时自动挂载：开" : "插入时自动挂载：关") {
       store.toggleAutoMount()
     }

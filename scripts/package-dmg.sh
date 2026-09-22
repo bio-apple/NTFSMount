@@ -40,7 +40,7 @@ NTFS 读写
 1. 插入 NTFS 硬盘
 2. 点菜单栏 NTFS → 以可写方式挂载
 3. 用完点「推出（可安全拔出）」，等盘消失后再拔线
-4. 可选：打开「插入时自动挂载」，以后插盘会自动变成可写
+4. 安装助手后默认打开「插入时自动挂载」，插盘会自动变成可写
 
 格式化
 点「格式化为 NTFS…」可把外置整盘抹掉并做成 NTFS。
@@ -84,6 +84,14 @@ tell application "Finder"
   end tell
 end tell
 EOF
+
+# 访达排版后再写卷图标，避免转换时丢掉不可见文件
+if [[ -f "$ROOT/Resources/AppIcon.icns" ]]; then
+  /bin/cp "$ROOT/Resources/AppIcon.icns" "$MNT/.VolumeIcon.icns"
+  /usr/bin/SetFile -c icnC "$MNT/.VolumeIcon.icns"
+  /usr/bin/SetFile -a C "$MNT"
+  [[ -f "$MNT/.VolumeIcon.icns" ]] || { echo "error: 未能写入 .VolumeIcon.icns" >&2; exit 1; }
+fi
 
 sync
 /usr/bin/hdiutil detach "$MNT" -quiet
