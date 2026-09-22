@@ -1,7 +1,9 @@
-# NTFSMount
+# NTFSMount · NTFS 读写
 
-Read and write Windows (NTFS) drives on macOS. Menu bar title: **NTFS**.  
-在 macOS 上读写 Windows（NTFS）硬盘。菜单栏显示 **NTFS**。
+[Download the DMG](https://github.com/bio-apple/NTFSMount/releases) · [下载 DMG](https://github.com/bio-apple/NTFSMount/releases)
+
+Read and write Windows (NTFS) drives on macOS. Menu bar: **NTFS**. App name: **NTFS 读写**. Package: `NTFSMount.app`. Direct distribution (not Mac App Store).  
+在 macOS 上读写 Windows（NTFS）硬盘。菜单栏 **NTFS**，应用名 **NTFS 读写**，安装包 `NTFSMount.app`。Developer ID 直发，不上 Mac App Store。
 
 **Apple Silicon (M series) and macOS 13.0+ only.**  
 **当前仅支持 Apple Silicon（M 芯片）及 macOS 13.0+。**
@@ -12,8 +14,8 @@ macOS 默认把 NTFS 挂成只读。本应用把 **ntfs-3g**、**mkntfs** 和用
 This project is **GPL-2.0-or-later**. It ships ntfs-3g (GPL), so the combined work — including the Swift sources — is offered under the same terms. See [LICENSE](./LICENSE) and [THIRD_PARTY_LICENSES.md](./THIRD_PARTY_LICENSES.md).  
 本项目为 **GPL-2.0-or-later**。因捆绑了 GPL 的 ntfs-3g，合并作品（含 Swift 源码）按相同条款提供。详见 [LICENSE](./LICENSE) 与 [THIRD_PARTY_LICENSES.md](./THIRD_PARTY_LICENSES.md)。
 
-**Plug in → 以可写方式挂载 → 推出（可安全拔出） → unplug.**  
-**插入硬盘 → 以可写方式挂载 → 推出（可安全拔出） → 再拔线。**
+**Plug in → writable by default → 推出（可安全拔出） → unplug.**  
+**插入硬盘 → 默认以可写方式挂载 → 推出（可安全拔出） → 再拔线。**
 
 ## Disclaimer · 免责声明
 
@@ -34,11 +36,11 @@ Apple Silicon and macOS 13.0+ only.
    把 **NTFSMount** 拖到「应用程序」。
 3. Open it. The menu bar should show **NTFS**.  
    打开应用，菜单栏应出现 **NTFS**。
-4. First launch asks for an admin password to install the mount helper. Auto-mount on insert is then enabled by default.  
-   第一次启动会要求管理员密码，用来安装挂载助手。装好后默认打开「插入时自动挂载」。
+4. First launch opens the window. Install the helper from the banner (one admin password). Auto-mount on insert is then enabled for **external** disks only.  
+   第一次启动会打开窗口。在横幅安装挂载助手（一次管理员密码）。之后仅对外置盘默认打开「插入时自动挂载」。
 
-If macOS says the app cannot be opened: Control-click it → **Open**. Reinstall by dragging from the DMG again.  
-若提示无法打开：按住 Control 点应用 → 打开。重新安装时再从 DMG 拖一次即可。
+A notarized build opens normally. If macOS says the app cannot be opened, the DMG was not notarized: Control-click → **Open**.  
+已公证的包可直接打开。若提示无法打开，说明该 DMG 未公证：按住 Control 点应用 → 打开。
 
 After an update, the app may ask to **更新挂载助手** (one admin password). Do that before formatting.  
 升级后可能提示 **更新挂载助手**（再输一次管理员密码）。格式化前请先更新。
@@ -54,17 +56,17 @@ No Dock icon — menu bar only.
   聚焦搜索：`NTFSMount`
 - `open /Applications/NTFSMount.app`
 
-**插入时自动挂载** is on by default after the helper is installed; NTFS disks remount writable when they appear. There is no login-at-startup option. **退出 NTFS 读写** quits; reopen with the steps above.  
-安装助手后 **插入时自动挂载** 默认打开，插入 NTFS 盘会自动变成可写。没有开机启动项。**退出 NTFS 读写** 会退出应用，按上面的步骤再打开。
+**插入时自动挂载** is on by default after the helper is installed; **external** NTFS disks remount writable when they appear. Internal / Boot Camp volumes are not auto-mounted. Optional **登录时打开** and **在程序坞显示**. **退出 NTFS 读写** quits.  
+安装助手后 **插入时自动挂载** 默认打开，插入**外置** NTFS 盘会自动变成可写。内置盘 / Boot Camp 不会自动挂。可选 **登录时打开** 与 **在程序坞显示**。**退出 NTFS 读写** 会退出应用。
 
 ## Mount and eject · 挂载与推出
 
-1. Plug in an NTFS drive.  
-   插入 NTFS 硬盘。
+1. Plug in an NTFS drive. With **插入时自动挂载** on (the default), it remounts writable.  
+   插入 NTFS 硬盘。默认打开 **插入时自动挂载**，会自动变成可写。
 2. Click **NTFS** in the menu bar.  
    点菜单栏 **NTFS**。
-3. On the disk: **以可写方式挂载** (or **全部以可写方式挂载**).  
-   对该盘选 **以可写方式挂载**（或 **全部以可写方式挂载**）。
+3. If it is still read-only, click the disk name to **以可写方式挂载**.  
+   若仍是只读，点盘名即可 **以可写方式挂载**。
 4. Finder opens `/Volumes/<name>`. Copy, delete, rename as usual.  
    访达打开 `/Volumes/<卷名>`，可照常复制、删除、重命名。
 5. When done: **推出（可安全拔出）** → wait until the disk disappears → unplug.  
@@ -84,8 +86,8 @@ Do not unplug without ejecting. That can leave a dirty volume and risk data loss
 | Mark · 标记 | State · 状态 |
 | --- | --- |
 | ● | Writable — use Finder / 可写，用访达即可 |
-| ○ | macOS read-only — choose **以可写方式挂载** / 系统只读，请选可写挂载 |
-| ◌ | Detected, not mounted — choose **以可写方式挂载** / 已检测到未挂载 |
+| ○ | macOS read-only — click the disk name / 系统只读，点盘名即可挂上 |
+| ◌ | Detected, not mounted — click the disk name / 已检测到未挂载，点盘名即可挂上 |
 | … | Busy / 正在处理 |
 
 If Finder would otherwise show both `Name` and `Name 1`, the helper unmounts the macOS read-only mount (and a leftover `Name 1` from the same disk) before remounting, so the writable volume reuses `/Volumes/Name`.  
@@ -96,8 +98,8 @@ If the volume is dirty or Windows is hibernated, it is mounted **read-only** and
 
 ## Auto-mount on insert · 插入时自动挂载
 
-Installing the helper turns **插入时自动挂载** on by default (`/Library/LaunchDaemons/local.ntfsmount.automount.plist`).  
-安装助手后默认打开 **插入时自动挂载**（`/Library/LaunchDaemons/local.ntfsmount.automount.plist`）。
+Installing the helper turns **插入时自动挂载** on by default (`/Library/LaunchDaemons/com.bioapple.ntfsmount.automount.plist`). Internal disks and disk images are skipped.  
+安装助手后默认打开 **插入时自动挂载**（`/Library/LaunchDaemons/com.bioapple.ntfsmount.automount.plist`）。内置盘和磁盘映像会被跳过。
 
 The daemon watches `/Volumes` (`WatchPaths`) and also runs on filesystem mounts (`StartOnMount`). When macOS attaches an NTFS volume read-only, it unmounts that system mount and remounts writable (or read-only if the volume is dirty / hibernated). Disks you have already **卸载** stay unmounted. Internal/system disks are never formatted; this path only mounts.  
 守护进程监视 `/Volumes`（`WatchPaths`），并在文件系统挂载时运行（`StartOnMount`）。系统把 NTFS 只读挂上后，它会卸掉该挂载再以可写方式挂上（脏盘 / 休眠则只读）。你已经 **卸载** 的盘不会再自动挂。此路径只负责挂载，不会格式化内置盘 / 系统盘。
@@ -112,8 +114,8 @@ Erases an **external** whole disk and creates one NTFS volume. Internal, system,
 
 1. **NTFS** → **格式化为 NTFS…** (also on a disk’s submenu).  
    **NTFS** → **格式化为 NTFS…**（磁盘子菜单里也有）。
-2. Confirm. Optionally change the volume name. Default button is **取消**.  
-   确认。可改卷名。默认按钮是 **取消**。
+2. Confirm by typing the **current volume name**. Optionally change the new volume name. Default button is **取消**.  
+   输入**当前卷名**确认。可改新卷名。默认按钮是 **取消**。
 3. **抹掉并格式化**. This deletes everything on that disk.  
    **抹掉并格式化**。盘上全部文件都会删除。
 4. When it finishes, the app remounts the new volume writable.  
@@ -159,9 +161,14 @@ Before running the build scripts, install:
 
 ```bash
 ./scripts/prepare-runtime.sh   # refresh bundled binaries in runtime/ · 刷新 runtime/ 捆绑二进制
+./scripts/test-helper.sh       # identifier selftest · 助手自检
 ./scripts/build.sh             # build NTFSMount.app · 编译应用
+CODESIGN_IDENTITY='Developer ID Application: …' NOTARY_PROFILE=… ./scripts/notarize.sh
 ./scripts/package-dmg.sh       # dist/NTFSMount.dmg · 打包 DMG
 ```
+
+See [docs/RELEASE_CHECKLIST.md](./docs/RELEASE_CHECKLIST.md). FUSE-T `go-nfsv4` is free for personal use; shipping this app as a product may require a commercial license from the FUSE-T authors.  
+发布检查见 [docs/RELEASE_CHECKLIST.md](./docs/RELEASE_CHECKLIST.md)。FUSE-T 的 `go-nfsv4` 个人使用免费；作为产品分发可能需要 FUSE-T 商业许可。
 
 ## License · 许可
 
