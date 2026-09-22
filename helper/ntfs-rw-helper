@@ -4,7 +4,7 @@
 # 全局旗标: --verbose（可在子命令前或后）
 set -euo pipefail
 
-HELPER_VERSION=4
+HELPER_VERSION=5
 
 DISKUTIL="/usr/sbin/diskutil"
 MOUNT="/sbin/mount"
@@ -758,43 +758,51 @@ do_automount() {
     if ! volume_still_mounted "$ident"; then
       continue
     fi
+    if ! writable_accepted; then
+      echo "automount skip $ident (writable risk not accepted)" >&2
+      continue
+    fi
     CURRENT_IDENT="$ident"
     ( do_mount "$ident" ) || echo "automount skip $ident" >&2
   done < <("$DISKUTIL" list | /usr/bin/awk '$NF ~ /^disk[0-9]+s[0-9]+$/ { print $NF }')
   echo "ok automount"
 }
 
+installed_helper_path() {
+  local app helper
+  app="$(/bin/cat "/Library/Application Support/NTFSMount/app.path" 2>/dev/null || true)"
+  helper="${app}/Contents/Resources/ntfs-rw-helper"
+  if [[ -n "$app" && -x "$helper" ]]; then
+    printf '%s' "$helper"
+    return 0
+  fi
+  helper="$(helper_realpath)"
+  [[ -x "$helper" ]] || return 1
+  printf '%s' "$helper"
+}
+
+writable_accepted() {
+  local user home stamp
+  user="$(/usr/bin/stat -f '%Su' /dev/console 2>/dev/null || /usr/bin/id -un)"
+  home="$(/usr/bin/dscl . -read "/Users/${user}" NFSHomeDirectory 2>/dev/null | /usr/bin/awk '{print $2}')"
+  stamp="${home}/Library/Application Support/com.bioapple.ntfsmount/writable-accepted"
+  [[ -f "$stamp" ]]
+}
+
 do_enable_automount() {
   require_root
-  [[ -x /usr/local/sbin/ntfs-rw-helper ]] || die "请先安装挂载助手"
+  local helper
+  helper="$(installed_helper_path)" || die "请先安装挂载助手"
   /usr/bin/launchctl bootout "system/${DAEMON_LABEL}" >/dev/null 2>&1 || true
   /usr/bin/launchctl bootout "system/${LEGACY_DAEMON_LABEL}" >/dev/null 2>&1 || true
   /bin/rm -f "/Library/LaunchDaemons/${LEGACY_DAEMON_LABEL}.plist"
-  cat > "$DAEMON_PLIST" <<'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>Label</key>
-  <string>com.bioapple.ntfsmount.automount</string>
-  <key>ProgramArguments</key>
-  <array>
-    <string>/usr/local/sbin/ntfs-rw-helper</string>
-    <string>automount</string>
-  </array>
-  <key>WatchPaths</key>
-  <array>
-    <string>/Volumes</string>
-  </array>
-  <key>StartOnMount</key>
-  <true/>
-  <key>RunAtLoad</key>
-  <true/>
-  <key>ThrottleInterval</key>
-  <integer>5</integer>
-</dict>
-</plist>
-EOF
+  /usr/bin/plutil -create xml1 "$DAEMON_PLIST"
+  /usr/bin/plutil -insert Label -string "$DAEMON_LABEL" "$DAEMON_PLIST"
+  /usr/bin/plutil -insert ProgramArguments -json "[\"${helper}\",\"automount\"]" "$DAEMON_PLIST"
+  /usr/bin/plutil -insert WatchPaths -json "[\"/Volumes\"]" "$DAEMON_PLIST"
+  /usr/bin/plutil -insert StartOnMount -bool true "$DAEMON_PLIST"
+  /usr/bin/plutil -insert RunAtLoad -bool true "$DAEMON_PLIST"
+  /usr/bin/plutil -insert ThrottleInterval -integer 5 "$DAEMON_PLIST"
   /usr/sbin/chown root:wheel "$DAEMON_PLIST"
   /bin/chmod 644 "$DAEMON_PLIST"
   /usr/bin/launchctl bootstrap system "$DAEMON_PLIST" || die "launchctl bootstrap 失败"
@@ -824,6 +832,18 @@ do_selftest() {
   fi
   if valid_whole disk12s1; then
     die "selftest: 分区不应当作整盘"
+  fi
+  if valid_id '../disk1s1'; then
+    die "selftest: 路径 id 应拒绝"
+  fi
+  if valid_id 'disk5s1$(whoami)'; then
+    die "selftest: 命令替换 id 应拒绝"
+  fi
+  if valid_id 'disk5s1;whoami'; then
+    die "selftest: 分号 id 应拒绝"
+  fi
+  if valid_whole 'disk4;id'; then
+    die "selftest: 整盘注入应拒绝"
   fi
   echo "ok selftest HELPER_VERSION=${HELPER_VERSION}"
 }
