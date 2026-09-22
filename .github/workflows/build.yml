@@ -1,0 +1,14 @@
+name: build
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  helper-and-app:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Helper selftest
+        run: bash scripts/test-helper.sh
+      - name: Build app
+        run: bash scripts/build.sh

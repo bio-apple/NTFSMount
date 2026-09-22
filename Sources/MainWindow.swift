@@ -28,7 +28,11 @@ final class MainWindowController: NSObject, NSWindowDelegate {
 
   func windowWillClose(_ notification: Notification) {
     DispatchQueue.main.async {
-      NSApp.setActivationPolicy(.accessory)
+      if UserDefaults.standard.bool(forKey: AppIdentity.Defaults.showDock) {
+        NSApp.setActivationPolicy(.regular)
+      } else {
+        NSApp.setActivationPolicy(.accessory)
+      }
     }
   }
 }
@@ -82,7 +86,14 @@ struct MainWindowView: View {
         } label: {
           Label("查看日志", systemImage: "doc.text")
         }
-        .help("打开挂载日志或控制台")
+        .help("打开本机挂载日志")
+      }
+      ToolbarItem(placement: .automatic) {
+        Button {
+          store.showAbout()
+        } label: {
+          Label("关于", systemImage: "info.circle")
+        }
       }
     }
   }
@@ -146,9 +157,9 @@ private struct VolumeSidebarRow: View {
 
   private var caption: String {
     if busy { return "处理中…" }
-    if vol.isWritableFuse { return "NTFS · RW" }
-    if vol.isReadOnlyMounted { return "NTFS · RO" }
-    return "NTFS · 未挂载"
+    if vol.isWritableFuse { return "可写" }
+    if vol.isReadOnlyMounted { return "只读" }
+    return "未挂载"
   }
 }
 
@@ -272,7 +283,7 @@ private struct VolumeDetailView: View {
   }
 
   private var statusTitle: String {
-    if vol.isWritableFuse { return "Mounted (可读写)" }
+    if vol.isWritableFuse { return "已挂载（可读写）" }
     if vol.isReadOnlyMounted { return "已挂载（只读）" }
     return "未挂载"
   }
@@ -325,6 +336,8 @@ private struct VolumeDetailView: View {
 
       HStack(spacing: 10) {
         Button("查看日志") { LogViewer.open() }
+          .buttonStyle(.bordered)
+        Button("关于与隐私") { store.showAbout() }
           .buttonStyle(.bordered)
         Spacer(minLength: 8)
         if let disk = formatDisk {

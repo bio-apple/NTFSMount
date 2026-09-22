@@ -24,14 +24,19 @@ swiftc -parse-as-library -O \
   -framework SwiftUI \
   -framework AppKit \
   -framework ServiceManagement \
+  -framework DiskArbitration \
   "${SWIFT_SOURCES[@]}" \
   -o "$BIN"
 
 cp "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
 cp "$ROOT/Resources/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+cp "$ROOT/Resources/PrivacyInfo.xcprivacy" "$APP/Contents/Resources/PrivacyInfo.xcprivacy"
+cp "$ROOT/LICENSE" "$APP/Contents/Resources/LICENSE"
+cp "$ROOT/THIRD_PARTY_LICENSES.md" "$APP/Contents/Resources/THIRD_PARTY_LICENSES.md"
 cp "$ROOT/helper/ntfs-rw-helper" "$APP/Contents/Resources/ntfs-rw-helper"
 cp "$ROOT/helper/install-helper.sh" "$APP/Contents/Resources/install-helper.sh"
-chmod 755 "$APP/Contents/Resources/ntfs-rw-helper" "$APP/Contents/Resources/install-helper.sh" "$BIN"
+cp "$ROOT/helper/uninstall-helper.sh" "$APP/Contents/Resources/uninstall-helper.sh"
+chmod 755 "$APP/Contents/Resources/ntfs-rw-helper" "$APP/Contents/Resources/install-helper.sh" "$APP/Contents/Resources/uninstall-helper.sh" "$BIN"
 
 for f in ntfs-3g mkntfs go-nfsv4 libfuse.2.dylib libntfs-3g.90.dylib; do
   [[ -e "$ROOT/runtime/$f" ]] || { echo "error: missing runtime/$f" >&2; exit 1; }
@@ -45,6 +50,9 @@ codesign --force --sign - \
   "$MACOS/mkntfs" \
   "$MACOS/go-nfsv4" >/dev/null
 
-codesign --force --sign - --identifier local.ntfsmount "$APP" >/dev/null
+codesign --force --sign - --identifier com.bioapple.ntfsmount "$APP" >/dev/null
+if [[ -n "${CODESIGN_IDENTITY:-}" ]]; then
+  bash "$ROOT/scripts/notarize.sh" "$APP"
+fi
 echo "built $APP"
 /bin/ls -lh "$MACOS"

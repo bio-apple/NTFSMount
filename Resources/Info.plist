@@ -7,7 +7,7 @@
   <key>CFBundleExecutable</key>
   <string>NTFSMount</string>
   <key>CFBundleIdentifier</key>
-  <string>local.ntfsmount</string>
+  <string>com.bioapple.ntfsmount</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundleName</key>
@@ -21,9 +21,9 @@
   <key>CFBundleIconName</key>
   <string>AppIcon</string>
   <key>CFBundleShortVersionString</key>
-  <string>1.0.0</string>
+  <string>1.1.0</string>
   <key>CFBundleVersion</key>
-  <string>1</string>
+  <string>2</string>
   <key>LSMinimumSystemVersion</key>
   <string>13.0</string>
   <key>LSUIElement</key>

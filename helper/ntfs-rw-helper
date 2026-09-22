@@ -4,6 +4,8 @@
 # 全局旗标: --verbose（可在子命令前或后）
 set -euo pipefail
 
+HELPER_VERSION=4
+
 DISKUTIL="/usr/sbin/diskutil"
 MOUNT="/sbin/mount"
 UMOUNT="/sbin/umount"
@@ -146,25 +148,25 @@ log_ts() {
 }
 
 init_log_file() {
-  if [[ "$(/usr/bin/id -u)" -eq 0 ]]; then
-    if [[ -d /var/log && -w /var/log ]]; then
-      LOG_FILE="/var/log/ntfsmount.log"
-    else
-      LOG_FILE="/tmp/ntfsmount.log"
-    fi
-  else
-    local home="${HOME:-}"
-    if [[ -n "$home" && "$home" != "/" ]]; then
-      /bin/mkdir -p "$home/Library/Logs" 2>/dev/null || true
-      if [[ -d "$home/Library/Logs" && -w "$home/Library/Logs" ]]; then
-        LOG_FILE="$home/Library/Logs/ntfsmount.log"
-      else
-        LOG_FILE="/tmp/ntfsmount.log"
+  local user home
+  user="$(/usr/bin/stat -f '%Su' /dev/console 2>/dev/null || /usr/bin/id -un)"
+  home="$(/usr/bin/dscl . -read "/Users/${user}" NFSHomeDirectory 2>/dev/null | /usr/bin/awk '{print $2}')"
+  if [[ -z "$home" || "$home" == "/" ]]; then
+    home="${HOME:-}"
+  fi
+  if [[ -n "$home" && "$home" != "/" ]]; then
+    /bin/mkdir -p "$home/Library/Logs" 2>/dev/null || true
+    if [[ -d "$home/Library/Logs" ]]; then
+      LOG_FILE="$home/Library/Logs/ntfsmount.log"
+      if [[ "$(/usr/bin/id -u)" -eq 0 ]]; then
+        /usr/bin/touch "$LOG_FILE" 2>/dev/null || true
+        /usr/sbin/chown "${user}" "$LOG_FILE" 2>/dev/null || true
+        /bin/chmod 644 "$LOG_FILE" 2>/dev/null || true
       fi
-    else
-      LOG_FILE="/tmp/ntfsmount.log"
+      return
     fi
   fi
+  LOG_FILE="/tmp/ntfsmount.log"
 }
 
 rotate_log_if_needed() {
@@ -246,6 +248,19 @@ valid_whole() {
   [[ "$s" =~ ^disk[0-9]+$ ]]
 }
 
+# 自动挂载只针对外置可移动盘，避免改到 Boot Camp / 内置 NTFS。
+is_auto_safe_target() {
+  local ident="$1" plist internal proto
+  vlog "$DISKUTIL" info -plist "$ident"
+  plist="$("$DISKUTIL" info -plist "$ident" 2>/dev/null || true)"
+  [[ -n "$plist" ]] || return 1
+  internal="$(printf '%s' "$plist" | /usr/bin/plutil -extract Internal raw - 2>/dev/null || true)"
+  [[ "$internal" == "true" ]] && return 1
+  proto="$(printf '%s' "$plist" | /usr/bin/plutil -extract BusProtocol raw - 2>/dev/null || true)"
+  [[ "$proto" == "Disk Image" || "$proto" == "Apple Fabric" ]] && return 1
+  return 0
+}
+
 require_ntfs() {
   local fs
   vlog "$DISKUTIL" info -plist "$1"
@@ -275,7 +290,7 @@ notify() {
   msg="$(printf '%s' "$msg" | /usr/bin/tr -d '"$`\\')"
   user="$(/usr/bin/stat -f '%Su' /dev/console 2>/dev/null || /usr/bin/id -un)"
   uid="$(/usr/bin/id -u "$user" 2>/dev/null || true)"
-  e="display notification \"${msg}\" with title \"NTFSMount\""
+  e="display notification \"${msg}\" with title \"NTFS 读写\""
   if [[ "$(/usr/bin/id -u)" -eq 0 && -n "$uid" && "$uid" != "0" ]]; then
     /bin/launchctl asuser "$uid" /usr/bin/osascript -e "$e" >/dev/null 2>&1 \
       || /usr/bin/sudo -u "$user" /usr/bin/osascript -e "$e" >/dev/null 2>&1 \
@@ -709,8 +724,9 @@ do_format() {
   echo "ok formatted $part ($label)"
 }
 
-DAEMON_LABEL="local.ntfsmount.automount"
+DAEMON_LABEL="com.bioapple.ntfsmount.automount"
 DAEMON_PLIST="/Library/LaunchDaemons/${DAEMON_LABEL}.plist"
+LEGACY_DAEMON_LABEL="local.ntfsmount.automount"
 
 require_root() {
   [[ "$(/usr/bin/id -u)" -eq 0 ]] || die "需要 root"
@@ -732,6 +748,7 @@ do_automount() {
     [[ -n "$ident" ]] || continue
     valid_id "$ident" || continue
     is_ntfs "$ident" || continue
+    is_auto_safe_target "$ident" || continue
     name="$(volume_name "$ident")"
     mp="/Volumes/$name"
     if is_our_fuse_mount "$mp" || is_writable_mount "$mp"; then
@@ -751,13 +768,15 @@ do_enable_automount() {
   require_root
   [[ -x /usr/local/sbin/ntfs-rw-helper ]] || die "请先安装挂载助手"
   /usr/bin/launchctl bootout "system/${DAEMON_LABEL}" >/dev/null 2>&1 || true
+  /usr/bin/launchctl bootout "system/${LEGACY_DAEMON_LABEL}" >/dev/null 2>&1 || true
+  /bin/rm -f "/Library/LaunchDaemons/${LEGACY_DAEMON_LABEL}.plist"
   cat > "$DAEMON_PLIST" <<'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>local.ntfsmount.automount</string>
+  <string>com.bioapple.ntfsmount.automount</string>
   <key>ProgramArguments</key>
   <array>
     <string>/usr/local/sbin/ntfs-rw-helper</string>
@@ -785,13 +804,33 @@ EOF
 do_disable_automount() {
   require_root
   /usr/bin/launchctl bootout "system/${DAEMON_LABEL}" >/dev/null 2>&1 || true
-  /bin/rm -f "$DAEMON_PLIST"
+  /usr/bin/launchctl bootout "system/${LEGACY_DAEMON_LABEL}" >/dev/null 2>&1 || true
+  /bin/rm -f "$DAEMON_PLIST" "/Library/LaunchDaemons/${LEGACY_DAEMON_LABEL}.plist"
   echo "ok automount disabled"
+}
+
+do_selftest() {
+  if ! valid_id disk12s1; then
+    die "selftest: disk12s1 应为合法"
+  fi
+  if valid_id "disk12s1;whoami"; then
+    die "selftest: 注入 id 应拒绝"
+  fi
+  if valid_id "disk 12s1"; then
+    die "selftest: 空白 id 应拒绝"
+  fi
+  if ! valid_whole disk12; then
+    die "selftest: disk12 应为合法整盘"
+  fi
+  if valid_whole disk12s1; then
+    die "selftest: 分区不应当作整盘"
+  fi
+  echo "ok selftest HELPER_VERSION=${HELPER_VERSION}"
 }
 
 usage() {
   cat <<'EOF'
-用法: ntfs-rw-helper [--verbose] <mount|unmount|eject|format|automount|enable-automount|disable-automount> [diskNsM|diskN] [label]
+用法: ntfs-rw-helper [--verbose] <mount|unmount|eject|format|automount|enable-automount|disable-automount|version|selftest> [diskNsM|diskN] [label]
 示例: ntfs-rw-helper mount disk5s1
       ntfs-rw-helper --verbose mount disk5s1
       ntfs-rw-helper format disk4 DATA
@@ -826,6 +865,8 @@ case "$cmd" in
   automount) do_automount ;;
   enable-automount) do_enable_automount ;;
   disable-automount) do_disable_automount ;;
+  version) echo "HELPER_VERSION=${HELPER_VERSION}" ;;
+  selftest) do_selftest ;;
   -h|--help|help) usage ;;
   *) usage; exit 2 ;;
 esac
