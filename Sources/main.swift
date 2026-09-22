@@ -2,6 +2,50 @@ import AppKit
 import ServiceManagement
 import SwiftUI
 
+enum MacOSCompat {
+  static let version = ProcessInfo.processInfo.operatingSystemVersion
+  static var major: Int { version.majorVersion }
+  static var isBelowMinimum: Bool { major < 13 }
+
+  static var menuCaption: String {
+    if isBelowMinimum {
+      return "系统低于 macOS 13，未测试（最低 13.0）"
+    }
+    return "用户态 FUSE，不用内核扩展（macOS 13+ 已限制 kext）"
+  }
+
+  static var noticeTitle: String {
+    isBelowMinimum ? "系统版本过低" : "兼容性说明"
+  }
+
+  static var noticeBody: String {
+    if isBelowMinimum {
+      return "本应用面向 macOS 13 Ventura 及更高版本构建。当前系统未测试，挂载可能失败。"
+    }
+    return "本应用不使用内核扩展。macOS 13 Ventura 起对 kext 限制更严，因此使用用户态 FUSE（ntfs-3g + FUSE-T）。若提示 FSKit/模块未启用，可忽略——助手已优先使用 NFS/用户态路径，请勿安装内核扩展。"
+  }
+
+  static func looksLikeKextOrFSKitBlock(_ text: String) -> Bool {
+    let t = text.lowercased()
+    return t.contains("fskit")
+      || t.contains("kext")
+      || t.contains("kernel extension")
+      || t.contains("module is disabled")
+      || t.contains("system extension")
+      || text.contains("内核扩展")
+  }
+
+  private static let noticeKey = "local.ntfsmount.didShowCompatNotice"
+
+  static var shouldShowLaunchNotice: Bool {
+    !UserDefaults.standard.bool(forKey: noticeKey)
+  }
+
+  static func markLaunchNoticeShown() {
+    UserDefaults.standard.set(true, forKey: noticeKey)
+  }
+}
+
 @main
 struct NTFSMountApp: App {
   @StateObject private var store = VolumeStore()
@@ -24,6 +68,7 @@ final class VolumeStore: ObservableObject {
   @Published var launchAtLogin: Bool = SMAppService.mainApp.status == .enabled
   @Published var helperInstalled: Bool = Privileged.systemHelperInstalled
   @Published var formatDisks: [FormatDisk] = []
+  @Published var autoMount: Bool = Privileged.autoMountEnabled
 
   private var timer: Timer?
 
@@ -48,6 +93,7 @@ final class VolumeStore: ObservableObject {
     }
     DispatchQueue.main.async { [weak self] in
       self?.offerHelperInstallIfNeeded()
+      self?.offerCompatNoticeIfNeeded()
     }
   }
 
@@ -67,11 +113,36 @@ final class VolumeStore: ObservableObject {
     NSApp.activate(ignoringOtherApps: true)
     let alert = NSAlert()
     alert.messageText = "更新挂载助手"
-    alert.informativeText = "需要更新才能使用格式化等新功能。将请求一次管理员密码。"
+    alert.informativeText = "需要更新才能使用格式化、插入时自动挂载等新功能。将请求一次管理员密码。"
     alert.addButton(withTitle: "更新")
     alert.addButton(withTitle: "稍后")
     guard alert.runModal() == .alertFirstButtonReturn else { return }
     installHelper()
+  }
+
+  func offerCompatNoticeIfNeeded() {
+    guard MacOSCompat.shouldShowLaunchNotice else { return }
+    MacOSCompat.markLaunchNoticeShown()
+    NSApp.activate(ignoringOtherApps: true)
+    let alert = NSAlert()
+    alert.alertStyle = MacOSCompat.isBelowMinimum ? .warning : .informational
+    alert.messageText = MacOSCompat.noticeTitle
+    alert.informativeText = MacOSCompat.noticeBody
+    alert.addButton(withTitle: "知道了")
+    alert.runModal()
+  }
+
+  func alertKextIgnored(_ detail: String) {
+    NSApp.activate(ignoringOtherApps: true)
+    let alert = NSAlert()
+    alert.messageText = "挂载失败"
+    alert.informativeText = """
+    FSKit/内核扩展不可用是 macOS 13+ 的预期情况，可忽略。本应用不使用内核扩展，助手已优先使用 NFS/用户态 FUSE。请勿安装 kext。
+
+    \(detail)
+    """
+    alert.addButton(withTitle: "知道了")
+    alert.runModal()
   }
 
   func installHelper() {
@@ -83,6 +154,8 @@ final class VolumeStore: ObservableObject {
   func refresh() {
     volumes = NTFSVolume.scan()
     formatDisks = FormatDisk.scan()
+    autoMount = Privileged.autoMountEnabled
+    helperInstalled = Privileged.systemHelperInstalled
   }
 
   func mount(_ vol: NTFSVolume) {
@@ -149,6 +222,22 @@ final class VolumeStore: ObservableObject {
     }
   }
 
+  func toggleAutoMount() {
+    let cmd = autoMount ? "disable-automount" : "enable-automount"
+    busyId = "automount"
+    message = ""
+    DispatchQueue.global(qos: .userInitiated).async {
+      let result = Privileged.run(cmd)
+      DispatchQueue.main.async {
+        self.busyId = nil
+        self.autoMount = Privileged.autoMountEnabled
+        self.message = result.ok
+          ? (self.autoMount ? "已打开插入时自动挂载" : "已关闭插入时自动挂载")
+          : result.text
+      }
+    }
+  }
+
   private func run(_ cmd: String, _ vol: NTFSVolume) {
     busyId = vol.id
     message = ""
@@ -165,6 +254,9 @@ final class VolumeStore: ObservableObject {
         } else {
           self.message = result.text
           self.refresh()
+          if cmd == "mount", MacOSCompat.looksLikeKextOrFSKitBlock(result.text) {
+            self.alertKextIgnored(result.text)
+          }
         }
       }
     }
@@ -396,6 +488,10 @@ enum Privileged {
     FileManager.default.isExecutableFile(atPath: "/usr/local/sbin/ntfs-rw-helper")
   }
 
+  static var autoMountEnabled: Bool {
+    FileManager.default.fileExists(atPath: "/Library/LaunchDaemons/local.ntfsmount.automount.plist")
+  }
+
   static var helperNeedsUpdate: Bool {
     guard systemHelperInstalled,
           let bundled = Bundle.main.path(forResource: "ntfs-rw-helper", ofType: nil)
@@ -446,11 +542,18 @@ enum Privileged {
     }
   }
 
+  static func run(_ cmd: String, extra: [String] = []) -> Outcome {
+    runArgs([cmd] + extra)
+  }
+
   static func run(_ cmd: String, _ deviceId: String, extra: [String] = []) -> Outcome {
+    runArgs([cmd, deviceId] + extra)
+  }
+
+  private static func runArgs(_ args: [String]) -> Outcome {
     guard let helper = helperPath else {
       return Outcome(ok: false, text: "未找到挂载助手。请点菜单「安装挂载助手」。")
     }
-    let args = [cmd, deviceId] + extra
     let sudo = Process()
     sudo.executableURL = URL(fileURLWithPath: "/usr/bin/sudo")
     sudo.arguments = ["-n", helper] + args
@@ -566,11 +669,19 @@ struct MenuRoot: View {
     Button(store.launchAtLogin ? "开机启动：开" : "开机启动：关") {
       store.toggleLogin()
     }
+    Button(store.autoMount ? "插入时自动挂载：开" : "插入时自动挂载：关") {
+      store.toggleAutoMount()
+    }
+    .disabled(store.busyId != nil || !store.helperInstalled || Privileged.helperNeedsUpdate)
     if !store.helperInstalled {
       Button("安装挂载助手…") { store.installHelper() }
     } else if Privileged.helperNeedsUpdate {
       Button("更新挂载助手…") { store.installHelper() }
     }
+    Text(MacOSCompat.menuCaption)
+      .font(.caption)
+      .foregroundStyle(.secondary)
+      .lineLimit(2)
     if !store.message.isEmpty {
       Text(store.message)
         .font(.caption)

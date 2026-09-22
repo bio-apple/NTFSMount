@@ -1,5 +1,6 @@
 #!/bin/bash
-# Privileged helper: ntfs-3g over bundled FUSE-T userspace. Device id only, e.g. disk5s1.
+# Privileged helper: ntfs-3g over bundled FUSE-T userspace.
+# 命令: mount|unmount|eject|format|automount|enable-automount|disable-automount
 set -euo pipefail
 
 DISKUTIL="/usr/sbin/diskutil"
@@ -7,13 +8,86 @@ MOUNT="/sbin/mount"
 UMOUNT="/sbin/umount"
 PKILL="/usr/bin/pkill"
 
-# Prefer fully-bundled binaries inside NTFSMount.app.
-find_ntfs3g() {
-  local p
-  for p in \
-    /Applications/NTFSMount.app/Contents/MacOS/ntfs-3g \
-    /Users/yfan/Desktop/bio-apple/NTFSMount/runtime/ntfs-3g
-  do
+# Resolve this helper's real path. $0 may be:
+#   /usr/local/sbin/ntfs-rw-helper
+#   .../NTFSMount.app/Contents/Resources/ntfs-rw-helper
+#   <repo>/helper/ntfs-rw-helper
+helper_realpath() {
+  local src="${BASH_SOURCE[0]:-$0}"
+  if [[ "$src" != /* ]]; then
+    if [[ -e "$PWD/$src" ]]; then
+      src="$PWD/$src"
+    else
+      local found
+      found="$(command -v -- "$src" 2>/dev/null || true)"
+      [[ -n "$found" ]] && src="$found"
+    fi
+  fi
+  /usr/bin/realpath "$src" 2>/dev/null || printf '%s' "$src"
+}
+
+# Candidate dirs for ntfs-3g / mkntfs / go-nfsv4, in order:
+# 1. /Applications/NTFSMount.app/Contents/MacOS
+# 2. NTFSMount.app/Contents/MacOS derived by walking from this helper
+# 3. last resort (dev): <git repo>/runtime  — never a hardcoded home path
+BUNDLE_DIRS=()
+
+_add_bundle_dir() {
+  local d="$1" x
+  [[ -n "$d" ]] || return 0
+  if [[ -d "$d" ]]; then
+    d="$(/usr/bin/realpath "$d" 2>/dev/null || printf '%s' "$d")"
+  fi
+  for x in "${BUNDLE_DIRS[@]+"${BUNDLE_DIRS[@]}"}"; do
+    [[ "$x" == "$d" ]] && return 0
+  done
+  BUNDLE_DIRS+=("$d")
+}
+
+init_bundle_dirs() {
+  local helper helper_dir d parent
+  helper="$(helper_realpath)"
+  helper_dir="$(/usr/bin/dirname "$helper")"
+
+  _add_bundle_dir "/Applications/NTFSMount.app/Contents/MacOS"
+
+  d="$helper_dir"
+  while :; do
+    parent="$(/usr/bin/dirname "$d")"
+    if [[ "$(/usr/bin/basename "$d")" == "MacOS" && "$(/usr/bin/basename "$parent")" == "Contents" ]]; then
+      _add_bundle_dir "$d"
+    fi
+    if [[ "$(/usr/bin/basename "$d")" == "Contents" && -d "$d/MacOS" ]]; then
+      _add_bundle_dir "$d/MacOS"
+    fi
+    if [[ "$(/usr/bin/basename "$parent")" == "Contents" && -d "$parent/MacOS" ]]; then
+      _add_bundle_dir "$parent/MacOS"
+    fi
+    if [[ -d "$d/NTFSMount.app/Contents/MacOS" ]]; then
+      _add_bundle_dir "$d/NTFSMount.app/Contents/MacOS"
+    fi
+    [[ "$d" == "/" ]] && break
+    d="$parent"
+  done
+
+  d="$helper_dir"
+  while :; do
+    parent="$(/usr/bin/dirname "$d")"
+    if [[ "$(/usr/bin/basename "$d")" == "helper" && -d "$parent/runtime" ]]; then
+      _add_bundle_dir "$parent/runtime"
+    fi
+    if [[ -d "$d/runtime" && -e "$d/helper/ntfs-rw-helper" ]]; then
+      _add_bundle_dir "$d/runtime"
+    fi
+    [[ "$d" == "/" ]] && break
+    d="$parent"
+  done
+}
+
+find_bundled() {
+  local name="$1" dir p
+  for dir in "${BUNDLE_DIRS[@]+"${BUNDLE_DIRS[@]}"}"; do
+    p="${dir}/${name}"
     if [[ -x "$p" ]]; then
       printf '%s' "$p"
       return 0
@@ -22,6 +96,10 @@ find_ntfs3g() {
   return 1
 }
 
+init_bundle_dirs
+
+find_ntfs3g() { find_bundled ntfs-3g; }
+
 NTFS3G="${NTFS3G:-$(find_ntfs3g || true)}"
 NTFS3G_DIR=""
 if [[ -n "${NTFS3G}" ]]; then
@@ -29,39 +107,33 @@ if [[ -n "${NTFS3G}" ]]; then
 fi
 
 find_mkntfs() {
-  local p
-  for p in \
-    "${NTFS3G_DIR}/mkntfs" \
-    /Applications/NTFSMount.app/Contents/MacOS/mkntfs \
-    /Users/yfan/Desktop/bio-apple/NTFSMount/runtime/mkntfs
-  do
-    if [[ -n "$p" && -x "$p" ]]; then
-      printf '%s' "$p"
-      return 0
-    fi
-  done
-  return 1
+  if [[ -n "${NTFS3G_DIR}" && -x "${NTFS3G_DIR}/mkntfs" ]]; then
+    printf '%s' "${NTFS3G_DIR}/mkntfs"
+    return 0
+  fi
+  find_bundled mkntfs
 }
 
 MKNTFS="${MKNTFS:-$(find_mkntfs || true)}"
 
-# go-nfsv4 must sit next to ntfs-3g inside the app bundle.
+# go-nfsv4 must sit next to ntfs-3g inside the app bundle (or runtime/ when developing).
 resolve_nfs_srv() {
-  local cand
-  for cand in \
-    "${NTFS3G_DIR}/go-nfsv4" \
-    /Applications/NTFSMount.app/Contents/MacOS/go-nfsv4 \
-    /Users/yfan/Desktop/bio-apple/NTFSMount/runtime/go-nfsv4
-  do
-    if [[ -x "$cand" ]]; then
-      printf '%s' "$cand"
-      return 0
-    fi
-  done
-  return 1
+  if [[ -n "${NTFS3G_DIR}" && -x "${NTFS3G_DIR}/go-nfsv4" ]]; then
+    printf '%s' "${NTFS3G_DIR}/go-nfsv4"
+    return 0
+  fi
+  find_bundled go-nfsv4
 }
 
 die() { echo "error: $*" >&2; exit 1; }
+
+macos_major() {
+  /usr/bin/sw_vers -productVersion 2>/dev/null | /usr/bin/awk -F. '{print $1}'
+}
+
+looks_like_kext_or_fskit_block() {
+  echo "$1" | /usr/bin/grep -qiE 'fskit|kext|kernel extension|module .* is disabled|System Extension|内核扩展'
+}
 
 valid_id() {
   [[ "${1:-}" =~ ^disk[0-9]+s[0-9]+$ ]]
@@ -90,6 +162,22 @@ console_ids() {
   local user
   user="$(/usr/bin/stat -f '%Su' /dev/console 2>/dev/null || /usr/bin/id -un)"
   echo "$(/usr/bin/id -u "$user") $(/usr/bin/id -g "$user")"
+}
+
+notify() {
+  local msg="$1"
+  local user uid e
+  msg="$(printf '%s' "$msg" | /usr/bin/tr -d '"')"
+  user="$(/usr/bin/stat -f '%Su' /dev/console 2>/dev/null || /usr/bin/id -un)"
+  uid="$(/usr/bin/id -u "$user" 2>/dev/null || true)"
+  e="display notification \"${msg}\" with title \"NTFSMount\""
+  if [[ "$(/usr/bin/id -u)" -eq 0 && -n "$uid" && "$uid" != "0" ]]; then
+    /bin/launchctl asuser "$uid" /usr/bin/osascript -e "$e" >/dev/null 2>&1 \
+      || /usr/bin/sudo -u "$user" /usr/bin/osascript -e "$e" >/dev/null 2>&1 \
+      || true
+  else
+    /usr/bin/osascript -e "$e" >/dev/null 2>&1 || true
+  fi
 }
 
 mount_line() {
@@ -131,6 +219,33 @@ unmount_any() {
     "$UMOUNT" -f "$mp" >/dev/null 2>&1 || true
     sleep 0.2
   done
+}
+
+# diskutil MountPoint 为空，且 mount(1) 无该设备或 /Volumes/name。
+volume_still_mounted() {
+  local ident="$1"
+  local mp name
+  mp="$("$DISKUTIL" info -plist "$ident" 2>/dev/null | /usr/bin/plutil -extract MountPoint raw - 2>/dev/null || true)"
+  if [[ -n "$mp" && "$mp" != "null" ]]; then
+    return 0
+  fi
+  name="$(volume_name "$ident")"
+  [[ -n "$(mount_line "/Volumes/$name")" ]] && return 0
+  [[ -n "$("$MOUNT" | /usr/bin/grep "/dev/${ident} on " || true)" ]]
+}
+
+# 挂载前必须卸干净；仍占用则重试几次后失败，不启动 ntfs-3g。
+ensure_unmounted() {
+  local ident="$1"
+  local i
+  for i in 1 2 3 4 5; do
+    unmount_any "$ident"
+    if ! volume_still_mounted "$ident"; then
+      return 0
+    fi
+    sleep 0.4
+  done
+  die "卷宗仍被占用，无法挂载"
 }
 
 can_write() {
@@ -203,16 +318,17 @@ do_mount() {
     "backend=smb,force,remove_hiberfile"
     "backend=nfs"
     "backend=smb"
+    # FSKit 在 macOS 13+ 常被禁用；失败可忽略，勿改顺序。
     "backend=fskit,force,remove_hiberfile"
   )
   local err="" opts rc=1 errfile extra
 
-  unmount_any "$ident"
+  ensure_unmounted "$ident"
   /bin/mkdir -p "$mp"
 
   for extra in "${attempts[@]}"; do
     opts="${base},${extra}"
-    unmount_any "$ident"
+    ensure_unmounted "$ident"
     /bin/mkdir -p "$mp"
     errfile="$(/usr/bin/mktemp /tmp/ntfs-rw-err.XXXXXX)"
     set +e
@@ -226,13 +342,22 @@ do_mount() {
         echo "warning: 以 force 挂载（可能已清除 Windows 休眠文件）" >&2
       fi
       echo "ok rw $ident -> $mp (${extra})"
+      notify "NTFS 磁盘已成功挂载为可读写模式"
       return 0
     fi
   done
   unmount_any "$ident"
-  if echo "$err" | /usr/bin/grep -q 'Module org.fuset.fskit-srv.module is disabled'; then
-    die "挂载失败：FSKit 扩展未启用（可忽略，助手会优先用 NFS）。详情: $err"
+  local ver
+  ver="$(macos_major)"
+  if [[ -n "$ver" && "$ver" -lt 13 ]]; then
+    notify "挂载失败：系统低于 macOS 13（未测试）"
+    die "挂载失败：当前系统低于 macOS 13（未测试，最低要求 13.0）。详情: $err"
   fi
+  if looks_like_kext_or_fskit_block "$err"; then
+    notify "挂载失败：FSKit/kext 不可用可忽略，本应用不用内核扩展"
+    die "挂载失败：FSKit/内核扩展不可用是预期情况（可忽略）。macOS ${ver:-?} 已限制 kext，本助手不使用内核扩展，已优先尝试 NFS/用户态 FUSE。请勿安装 kext。详情: $err"
+  fi
+  notify "NTFS 磁盘挂载失败"
   die "挂载失败: $err"
 }
 
@@ -316,11 +441,88 @@ do_format() {
   echo "ok formatted $part ($label)"
 }
 
+DAEMON_LABEL="local.ntfsmount.automount"
+DAEMON_PLIST="/Library/LaunchDaemons/${DAEMON_LABEL}.plist"
+
+require_root() {
+  [[ "$(/usr/bin/id -u)" -eq 0 ]] || die "需要 root"
+}
+
+is_ntfs() {
+  local fs
+  fs="$("$DISKUTIL" info -plist "$1" 2>/dev/null | /usr/bin/plutil -extract FilesystemName raw - 2>/dev/null || true)"
+  [[ "$fs" == "NTFS" ]]
+}
+
+# 只处理系统只读挂上的 NTFS（刚插入）。用户主动卸载的不自动再挂。
+do_automount() {
+  local ident name mp
+  local ids
+  ids="$("$DISKUTIL" list | /usr/bin/awk '$NF ~ /^disk[0-9]+s[0-9]+$/ { print $NF }')"
+  for ident in $ids; do
+    valid_id "$ident" || continue
+    is_ntfs "$ident" || continue
+    name="$(volume_name "$ident")"
+    mp="/Volumes/$name"
+    if is_writable_mount "$mp"; then
+      continue
+    fi
+    if ! volume_still_mounted "$ident"; then
+      continue
+    fi
+    ( do_mount "$ident" ) || echo "automount skip $ident" >&2
+  done
+  echo "ok automount"
+}
+
+do_enable_automount() {
+  require_root
+  [[ -x /usr/local/sbin/ntfs-rw-helper ]] || die "请先安装挂载助手"
+  /usr/bin/launchctl bootout "system/${DAEMON_LABEL}" >/dev/null 2>&1 || true
+  cat > "$DAEMON_PLIST" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>local.ntfsmount.automount</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/sbin/ntfs-rw-helper</string>
+    <string>automount</string>
+  </array>
+  <key>WatchPaths</key>
+  <array>
+    <string>/Volumes</string>
+  </array>
+  <key>StartOnMount</key>
+  <true/>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>5</integer>
+</dict>
+</plist>
+EOF
+  /usr/sbin/chown root:wheel "$DAEMON_PLIST"
+  /bin/chmod 644 "$DAEMON_PLIST"
+  /usr/bin/launchctl bootstrap system "$DAEMON_PLIST" || die "launchctl bootstrap 失败"
+  echo "ok automount enabled"
+}
+
+do_disable_automount() {
+  require_root
+  /usr/bin/launchctl bootout "system/${DAEMON_LABEL}" >/dev/null 2>&1 || true
+  /bin/rm -f "$DAEMON_PLIST"
+  echo "ok automount disabled"
+}
+
 usage() {
   cat <<'EOF'
-用法: ntfs-rw-helper <mount|unmount|eject|format> <diskNsM|diskN> [label]
+用法: ntfs-rw-helper <mount|unmount|eject|format|automount|enable-automount|disable-automount> [diskNsM|diskN] [label]
 示例: ntfs-rw-helper mount disk5s1
       ntfs-rw-helper format disk4 DATA
+      ntfs-rw-helper enable-automount
 EOF
 }
 
@@ -331,6 +533,9 @@ case "$cmd" in
   unmount) do_unmount "$id" ;;
   eject) do_eject "$id" ;;
   format) do_format "$id" "${3:-NTFS}" ;;
+  automount) do_automount ;;
+  enable-automount) do_enable_automount ;;
+  disable-automount) do_disable_automount ;;
   -h|--help|help) usage ;;
   *) usage; exit 2 ;;
 esac
