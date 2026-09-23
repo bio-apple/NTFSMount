@@ -1,0 +1,20 @@
+NTFS 读写（NTFSMount）许可拆分
+================================
+
+本仓库含两类授权，不可混为一谈。
+
+1. GPL-2.0-or-later
+   适用于本仓库的 Swift 源码、helper 脚本、以及捆绑的 ntfs-3g / mkntfs / libntfs-3g
+   （GPL-2.0）和 libfuse.2.dylib（LGPL-2.1）。完整文本见 LICENSE。
+
+2. FUSE-T go-nfsv4（非 GPL）
+   `go-nfsv4` 由 FUSE-T 提供，默认仅供个人使用。它不是 GPL 作品的一部分，
+   不能按 GPL 再分发。作为产品嵌入、公开发布安装包、镜像或销售前，必须取得
+   FUSE-T 的书面许可：https://www.fuse-t.org/
+
+   未取得书面许可时：
+   - GitHub Release 必须标为 pre-release（个人使用）
+   - 禁止第三方镜像或把本 DMG 当作可商用产品分发
+   - 正式对外下载页必须同时完成 Developer ID 公证与 FUSE-T 授权
+
+详见 THIRD_PARTY_LICENSES.md 与 docs/DISTRIBUTION.md。

@@ -12,5 +12,6 @@ sudo rm -f /var/run/com.bioapple.ntfsmount.sock \
   /Library/LaunchDaemons/com.bioapple.ntfsmount.automount.plist \
   /Library/LaunchDaemons/local.ntfsmount.automount.plist
 sudo rm -rf "/Library/Application Support/NTFSMount" /Applications/NTFSMount.app
-rm -rf "$HOME/Library/LaunchAgents/local.ntfsmount.plist"
+rm -rf "$HOME/Library/LaunchAgents/local.ntfsmount.plist" \
+  "$HOME/Library/Application Support/com.bioapple.ntfsmount"
 echo "已卸载 NTFS 读写（助手 + 应用；系统里若另装过 FUSE-T 不会自动删除）。"

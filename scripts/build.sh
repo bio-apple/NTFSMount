@@ -23,18 +23,10 @@ clang -O2 -arch arm64 -mmacosx-version-min=13.0 \
   -framework Security -framework CoreFoundation \
   -o "$HELPERD" "$ROOT/helper/ntfsmount-helperd.c"
 
-# shellcheck disable=SC2206
-SWIFT_SOURCES=("$ROOT/Sources"/*.swift)
-swiftc -parse-as-library -O \
-  -target arm64-apple-macosx13.0 \
-  -sdk "$SDK" \
-  -framework SwiftUI \
-  -framework AppKit \
-  -framework ServiceManagement \
-  -framework DiskArbitration \
-  -framework CryptoKit \
-  "${SWIFT_SOURCES[@]}" \
-  -o "$BIN"
+export MACOSX_DEPLOYMENT_TARGET=13.0
+swift build -c release --arch arm64 --product NTFSMount --package-path "$ROOT"
+BIN_DIR="$(swift build -c release --arch arm64 --product NTFSMount --package-path "$ROOT" --show-bin-path)"
+cp "$BIN_DIR/NTFSMount" "$BIN"
 
 cp "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
 cp "$ROOT/Resources/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
@@ -47,6 +39,7 @@ cp "$ROOT/helper/ntfs-rw-helper" "$APP/Contents/Resources/ntfs-rw-helper"
 cp "$ROOT/helper/install-helper.sh" "$APP/Contents/Resources/install-helper.sh"
 cp "$ROOT/helper/uninstall-helper.sh" "$APP/Contents/Resources/uninstall-helper.sh"
 cp "$ROOT/helper/com.bioapple.ntfsmount.helper.plist" "$APP/Contents/Library/LaunchDaemons/com.bioapple.ntfsmount.helper.plist"
+/usr/bin/shasum -a 256 "$ROOT/helper/ntfs-rw-helper" | /usr/bin/awk '{print $1}' > "$APP/Contents/Resources/ntfs-rw-helper.sha256"
 chmod 755 "$APP/Contents/Resources/ntfs-rw-helper" "$APP/Contents/Resources/install-helper.sh" "$APP/Contents/Resources/uninstall-helper.sh" "$BIN" "$HELPERD"
 
 for f in ntfs-3g mkntfs go-nfsv4 libfuse.2.dylib libntfs-3g.90.dylib; do
@@ -64,6 +57,7 @@ sign() {
     extra+=(--options runtime --entitlements "$ENTITLEMENTS")
   fi
   codesign --force --sign "$id" --identifier com.bioapple.ntfsmount.helperd "${extra[@]}" "$HELPERD"
+  codesign --force --sign "$id" --identifier com.bioapple.ntfsmount.helper "${extra[@]}" "$APP/Contents/Resources/ntfs-rw-helper"
   codesign --force --sign "$id" \
     "$MACOS/libfuse.2.dylib" \
     "$MACOS/libntfs-3g.90.dylib" \

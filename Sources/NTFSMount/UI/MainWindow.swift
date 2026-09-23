@@ -1,4 +1,5 @@
 import AppKit
+import NTFSMountCore
 import SwiftUI
 
 @MainActor
@@ -121,7 +122,7 @@ struct MainWindowView: View {
             .foregroundStyle(.secondary)
         }
         ForEach(store.volumes) { vol in
-          VolumeSidebarRow(vol: vol, busy: store.busyId == vol.id)
+          VolumeSidebarRow(store: store, vol: vol, busy: store.busyId == vol.id)
             .tag(vol.id)
         }
       }
@@ -137,7 +138,7 @@ struct MainWindowView: View {
   @ViewBuilder
   private var detail: some View {
     if selectedId == "__settings__" {
-      SettingsDetailView(store: store)
+      SettingsView(store: store)
     } else if let vol = store.volumes.first(where: { $0.id == selectedId }) {
       VolumeDetailView(store: store, vol: vol)
     } else {
@@ -152,6 +153,7 @@ struct MainWindowView: View {
 }
 
 private struct VolumeSidebarRow: View {
+  @ObservedObject var store: VolumeStore
   let vol: NTFSVolume
   let busy: Bool
 
@@ -163,7 +165,7 @@ private struct VolumeSidebarRow: View {
         Text(caption)
           .font(.caption)
           .foregroundStyle(.secondary)
-          .lineLimit(1)
+          .lineLimit(2)
       }
     } icon: {
       if busy {
@@ -178,10 +180,7 @@ private struct VolumeSidebarRow: View {
   }
 
   private var caption: String {
-    if busy { return "处理中…" }
-    if vol.isWritableFuse { return "可写" }
-    if vol.isReadOnlyMounted { return "只读" }
-    return "未挂载"
+    store.statusLabel(vol)
   }
 }
 
@@ -298,16 +297,10 @@ private struct VolumeDetailView: View {
       Circle()
         .fill(statusColor)
         .frame(width: 8, height: 8)
-      Text(statusTitle)
+        Text(store.detailStatus(vol))
         .font(.subheadline.weight(.medium))
         .foregroundStyle(statusColor)
     }
-  }
-
-  private var statusTitle: String {
-    if vol.isWritableFuse { return "已挂载（可读写）" }
-    if vol.isReadOnlyMounted { return "已挂载（只读）" }
-    return "未挂载"
   }
 
   private var statusColor: Color {
@@ -415,121 +408,5 @@ private struct CapacityBar: View {
       .font(.caption)
       .foregroundStyle(.secondary)
     }
-  }
-}
-
-private struct SettingsDetailView: View {
-  @ObservedObject var store: VolumeStore
-  @State private var logText = AppLog.tail()
-
-  var body: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 20) {
-        Text("设置")
-          .font(.title2.weight(.semibold))
-
-        GroupBox("挂载") {
-          VStack(alignment: .leading, spacing: 10) {
-            Toggle("插入时自动挂载外置 NTFS", isOn: Binding(
-              get: { store.autoMount },
-              set: { _ in store.toggleAutoMount() }
-            ))
-            .disabled(store.busyId != nil || !store.helperInstalled || Privileged.helperNeedsUpdate)
-            Text("内置盘与 Boot Camp 不会自动挂载。")
-              .font(.caption)
-              .foregroundStyle(.secondary)
-          }
-          .padding(8)
-        }
-
-        GroupBox("外观与启动") {
-          VStack(alignment: .leading, spacing: 10) {
-            Toggle("登录时打开", isOn: Binding(
-              get: { store.launchAtLogin },
-              set: { _ in store.toggleLogin() }
-            ))
-            Toggle("在程序坞显示", isOn: Binding(
-              get: { store.showDock },
-              set: { _ in store.toggleDock() }
-            ))
-          }
-          .padding(8)
-        }
-
-        GroupBox("挂载助手") {
-          VStack(alignment: .leading, spacing: 10) {
-            Text(helperStatus)
-              .font(.callout)
-            HStack {
-              if !store.helperInstalled {
-                Button("安装…") { store.installHelper() }
-              } else if Privileged.helperNeedsUpdate {
-                Button("更新…") { store.installHelper() }
-              }
-              if store.helperInstalled {
-                Button("卸载助手…", role: .destructive) { store.confirmUninstallHelper() }
-              }
-            }
-            Text(MacOSCompat.menuCaption)
-              .font(.caption)
-              .foregroundStyle(.secondary)
-          }
-          .padding(8)
-        }
-
-        GroupBox("日志") {
-          VStack(alignment: .leading, spacing: 8) {
-            ScrollView {
-              Text(logText)
-                .font(.system(.caption, design: .monospaced))
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .frame(minHeight: 140, maxHeight: 220)
-            HStack {
-              Button("刷新日志") { logText = AppLog.tail() }
-              Button("在控制台打开") { LogViewer.open() }
-            }
-          }
-          .padding(8)
-        }
-
-        GroupBox("关于与隐私") {
-          VStack(alignment: .leading, spacing: 8) {
-            Text("NTFS 读写（NTFSMount）· 直发，不上 Mac App Store。不联网。")
-              .font(.callout)
-            Text(SigningStatus.isNotarized
-              ? "当前构建已公证。"
-              : (SigningStatus.isDeveloperID
-                ? "已用 Developer ID 签名，尚未公证。"
-                : "当前构建未公证（ad-hoc），Gatekeeper 可能拦截。"))
-              .font(.caption)
-              .foregroundStyle(.secondary)
-            HStack {
-              Button("关于与隐私…") { store.showAbout() }
-            }
-          }
-          .padding(8)
-        }
-
-        if !store.message.isEmpty {
-          Text(store.message)
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            .textSelection(.enabled)
-        }
-      }
-      .padding(28)
-    }
-    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    .background(Color(nsColor: .windowBackgroundColor))
-    .onAppear { logText = AppLog.tail() }
-  }
-
-  private var helperStatus: String {
-    if !store.helperInstalled { return "尚未安装。第一次使用需要管理员密码。" }
-    if Privileged.helperNeedsUpdate { return "需要更新后才能使用全部功能。" }
-    if Privileged.hasLegacySudoers { return "仍有旧版 sudo 规则，请更新助手以换成签名钉扎。" }
-    return "已安装。特权调用经守护进程校验本应用签名。"
   }
 }

@@ -26,7 +26,7 @@ Userspace FUSE library used by the bundled ntfs-3g. No kernel extension is requi
 
 `go-nfsv4` is the NFSv4 userspace server shipped with FUSE-T. It is not GPL. Packaged-app users do not need a system FUSE-T install; this binary is copied into the app bundle at build time.
 
-**Personal use only until you have written permission or a commercial license from the FUSE-T authors.** Do not sell or redistribute this app as a product without that license. Set `FUSE_T_REDISTRIBUTION_OK=1` when packaging only after you have it. Contact: https://www.fuse-t.org/
+**Personal use only until you have written permission or a commercial license from the FUSE-T authors.** Do not sell or redistribute this app as a product without that license. Pre-release GitHub downloads are not a commercial distribution grant. See [NOTICE](./NOTICE). Set `FUSE_T_REDISTRIBUTION_OK=1` when packaging only after you have it. Contact: https://www.fuse-t.org/
 
 ## Notices
 

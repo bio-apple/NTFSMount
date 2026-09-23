@@ -31,6 +31,8 @@
   <key>NSHighResolutionCapable</key>
   <true/>
   <key>NSAppleEventsUsageDescription</key>
-  <string>挂载 NTFS 硬盘需要管理员权限，以便用 ntfs-3g 以可写方式打开磁盘设备。</string>
+  <string>安装或更新挂载助手时需要管理员权限。未公证包会弹出系统密码框；已公证包优先使用系统服务授权。</string>
+  <key>ITSAppUsesNonExemptEncryption</key>
+  <false/>
 </dict>
 </plist>

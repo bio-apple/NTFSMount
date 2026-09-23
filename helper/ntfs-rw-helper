@@ -1,5 +1,6 @@
 #!/bin/bash
 # Privileged helper: ntfs-3g over bundled FUSE-T userspace.
+# 本仓库源码（bash），不是第三方预编译二进制。构建时 codesign + SHA-256。
 # 命令: mount|unmount|eject|format|automount|enable-automount|disable-automount
 # 全局旗标: --verbose（可在子命令前或后）
 set -euo pipefail
