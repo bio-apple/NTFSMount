@@ -2,16 +2,60 @@ name: build
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   pull_request:
   release:
     types: [published]
+
 jobs:
-  helper-and-app:
+  shellcheck:
+    name: ShellCheck
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
-      - name: Helper selftest
+      - name: Install ShellCheck
+        run: brew install shellcheck
+      - name: Lint shell scripts
+        run: |
+          shellcheck --severity=warning \
+            uninstall.sh \
+            helper/install-helper.sh \
+            helper/uninstall-helper.sh \
+            scripts/build.sh \
+            scripts/test-helper.sh \
+            scripts/package-dmg.sh \
+            scripts/write-dmg-sha256.sh \
+            scripts/check-helper-gone.sh \
+            scripts/prepare-runtime.sh \
+            scripts/notarize.sh
+
+  helper:
+    name: Helper Build
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Helper selftest and compile
         run: bash scripts/test-helper.sh
+
+  swift:
+    name: Swift Build
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swift tests
+        run: swift test
+      - name: Swift release build
+        run: swift build -c release --arch arm64 --product NTFSMount
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "13.0"
+
+  app:
+    name: App
+    runs-on: macos-14
+    needs: [helper, swift]
+    if: github.event_name != 'release'
+    steps:
+      - uses: actions/checkout@v4
       - name: Build app
         run: bash scripts/build.sh
         env:
@@ -30,3 +74,78 @@ jobs:
             dist/NTFSMount.app
             /tmp/NTFSMount.app
           if-no-files-found: warn
+
+  dmg-on-tag:
+    name: DMG (tag)
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-14
+    permissions:
+      contents: write
+    needs: [helper, swift, shellcheck]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package DMG when runtime is present
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CODESIGN_IDENTITY: ${{ secrets.CODESIGN_IDENTITY }}
+          NOTARY_PROFILE: ${{ secrets.NOTARY_PROFILE }}
+        run: |
+          set -euo pipefail
+          if [[ ! -x runtime/ntfs-3g || ! -x runtime/go-nfsv4 || ! -x runtime/mkntfs || ! -f runtime/libntfs-3g.90.dylib ]]; then
+            echo "skip DMG: runtime/ not in checkout (need ntfs-3g, mkntfs, go-nfsv4, libntfs-3g). Attach DMG manually, SHA256 job still runs on published release."
+            exit 0
+          fi
+          bash scripts/package-dmg.sh
+          notes="$(/usr/bin/mktemp)"
+          {
+            echo "个人使用预发布。未取得 FUSE-T 书面许可前不要镜像或当产品分发。见 NOTICE。"
+            echo
+            /bin/cat dist/NTFSMount.dmg.release-notes.md
+          } > "$notes"
+          assets=(dist/NTFSMount.dmg)
+          [[ -f dist/NTFSMount.dmg.sha256 ]] && assets+=(dist/NTFSMount.dmg.sha256)
+          if gh release view "${GITHUB_REF_NAME}" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "${GITHUB_REF_NAME}" --repo "$GITHUB_REPOSITORY" "${assets[@]}" --clobber
+          else
+            gh release create "${GITHUB_REF_NAME}" --repo "$GITHUB_REPOSITORY" \
+              --prerelease \
+              --title "${GITHUB_REF_NAME}（个人使用，未公证）" \
+              --notes-file "$notes" \
+              "${assets[@]}"
+          fi
+
+  # 本 workflow 不把 latest 指到预发布。人工或 tag job 附上 NTFSMount.dmg 后补 SHA256。
+  release-sha256:
+    if: github.event_name == 'release'
+    runs-on: macos-14
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Attach DMG SHA256 to the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          work="$(/usr/bin/mktemp -d /tmp/ntfsmount-sha256.XXXXXX)"
+          if ! gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir "$work" --pattern 'NTFSMount.dmg'; then
+            echo "error: Release $TAG 没有 NTFSMount.dmg。先用 ./scripts/package-dmg.sh 打包并附上 DMG。" >&2
+            exit 1
+          fi
+          dmg="$work/NTFSMount.dmg"
+          [[ -f "$dmg" ]] || { echo "error: 未下载到 $dmg" >&2; exit 1; }
+          bash scripts/write-dmg-sha256.sh "$dmg"
+          gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" "$work/NTFSMount.dmg.sha256" --clobber
+          hash="$(/usr/bin/awk '{print $1; exit}' "$work/NTFSMount.dmg.sha256")"
+          body="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body --jq .body)"
+          if printf '%s\n' "$body" | /usr/bin/grep -q "$hash"; then
+            echo "Release body already contains SHA256"
+          else
+            {
+              printf '%s\n' "$body"
+              echo
+              /bin/cat "$work/NTFSMount.dmg.release-notes.md"
+            } > "$work/release-body.md"
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes-file "$work/release-body.md"
+          fi

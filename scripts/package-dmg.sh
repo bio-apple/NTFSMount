@@ -28,19 +28,22 @@ trap cleanup EXIT
 /bin/cp -R "$APP_SRC" "$STAGE/NTFSMount.app"
 /bin/ln -s /Applications "$STAGE/Applications"
 /bin/cp "$ROOT/LICENSE" "$STAGE/LICENSE"
+/bin/cp "$ROOT/NOTICE" "$STAGE/NOTICE"
 /bin/cp "$ROOT/THIRD_PARTY_LICENSES.md" "$STAGE/THIRD_PARTY_LICENSES.md"
 /bin/cp "$ROOT/docs/DISTRIBUTION.md" "$STAGE/DISTRIBUTION.md"
 printf '%s\n' "源码: https://github.com/bio-apple/NTFSMount" > "$STAGE/源码.txt"
 /bin/cat > "$STAGE/使用说明.txt" <<'EOF'
 NTFS 读写（NTFSMount，直发，不上 Mac App Store）
 
+仅支持 Apple Silicon（M 芯片）与 macOS 13.0+。不支持 Intel Mac（x86_64），请勿在 Intel Mac 上安装。
+
 安装
 1. 把 NTFS 读写拖到右边的「应用程序」
 2. 打开后菜单栏显示 NTFS，并出现主窗口
-3. 首次需同意备份与个人使用条款
-4. 在窗口点「安装…」输入一次管理员密码（安装签名钉扎的特权守护进程）
+3. 首次只有一个确认框：备份、个人使用、未公证说明。回车是「退出」，需点「同意并继续」
+4. 在窗口点「安装…」。未公证包会要管理员密码；已公证包优先系统服务授权
    升级后若提示「更新挂载助手」，再输入一次密码
-5. 若系统提示无法验证开发者：需要已公证的安装包。未公证包可按住 Control 点应用 → 打开
+5. 若系统提示无法验证开发者：需要已公证的安装包。未公证包可按住 Control 点应用 → 打开；也可在「系统设置 → 隐私与安全性」点「仍要打开」
 
 读写
 1. 插入外置 NTFS 硬盘。第一次可写挂载会再确认一次「已备份」
@@ -58,12 +61,12 @@ EOF
 
 if [[ "${FUSE_T_REDISTRIBUTION_OK:-}" != "1" ]]; then
   /bin/cat > "$STAGE/个人使用说明.txt" <<'EOF'
-本安装包仅供个人使用。
+本安装包仅供个人使用。仅支持 Apple Silicon（M 芯片）与 macOS 13.0+，不支持 Intel Mac（x86_64）。
 
 捆绑的 FUSE-T go-nfsv4 不是 GPL。作为产品嵌入、分发或销售前，须向 FUSE-T 取得许可：
 https://www.fuse-t.org/
 
-未公证的构建会被 Gatekeeper 拦截。正式发给他人请使用 Developer ID 公证。
+未公证的构建会被 Gatekeeper 拦截。按住 Control 点应用 → 打开；也可在「系统设置 → 隐私与安全性」点「仍要打开」。正式发给他人请使用 Developer ID 公证。
 详见 DISTRIBUTION.md 与 THIRD_PARTY_LICENSES.md。
 EOF
 fi
@@ -80,6 +83,7 @@ MNT="$(printf '%s\n' "$ATTACH" | /usr/bin/awk -F'\t' '/\/Volumes\//{print $NF; e
 /bin/ln -s /Applications "$MNT/Applications"
 /bin/cp "$STAGE/使用说明.txt" "$MNT/使用说明.txt"
 /bin/cp "$STAGE/LICENSE" "$MNT/LICENSE"
+/bin/cp "$STAGE/NOTICE" "$MNT/NOTICE"
 /bin/cp "$STAGE/THIRD_PARTY_LICENSES.md" "$MNT/THIRD_PARTY_LICENSES.md"
 /bin/cp "$STAGE/DISTRIBUTION.md" "$MNT/DISTRIBUTION.md"
 /bin/cp "$STAGE/源码.txt" "$MNT/源码.txt"
@@ -135,6 +139,8 @@ echo "ok $OUT"
 if [[ -n "${CODESIGN_IDENTITY:-}" && -n "${NOTARY_PROFILE:-}" ]]; then
   xcrun stapler staple "$OUT" && echo "ok stapled $OUT" || echo "warning: staple DMG failed" >&2
 fi
+# staple 会改 DMG，哈希必须在最后算
+bash "$ROOT/scripts/write-dmg-sha256.sh" "$OUT"
 if [[ "${FUSE_T_REDISTRIBUTION_OK:-}" != "1" ]]; then
   echo "note: FUSE_T_REDISTRIBUTION_OK unset; DMG is personal-use only" >&2
 fi

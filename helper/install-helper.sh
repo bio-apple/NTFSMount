@@ -25,7 +25,7 @@ if [[ "$USER_NAME" == "root" ]]; then
 fi
 
 APP="$(/usr/bin/realpath "$APP")"
-/bin/mkdir -p "$SUPPORT" /Library/PrivilegedHelperTools /usr/local/sbin
+/bin/mkdir -p "$SUPPORT" /Library/PrivilegedHelperTools
 
 /bin/cp "$HELPER_SRC" "$HELPER_DST"
 /usr/sbin/chown root:wheel "$HELPER_DST"
@@ -69,8 +69,7 @@ EOF
 /usr/bin/launchctl bootstrap system "$PLIST" || true
 /usr/bin/launchctl kickstart -k system/com.bioapple.ntfsmount.helper >/dev/null 2>&1 || true
 
-# 去掉旧版 sudoers 免密（已改用守护进程钉扎）
+# 只清理旧版 sudoers / 符号链接，绝不写入 /etc/sudoers.d
 /bin/rm -f "$SUDOERS" "$LEGACY_HELPER"
-/bin/ln -sf "$HELPER_DST" "$LEGACY_HELPER"
 
 echo "ok helper daemon $HELPERD_DST"

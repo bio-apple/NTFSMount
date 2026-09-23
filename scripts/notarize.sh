@@ -18,6 +18,9 @@ sign_nested() {
   if [[ -x "$HELPERD" ]]; then
     codesign --force --sign "$identity" --identifier com.bioapple.ntfsmount.helperd "${extra[@]}" "$HELPERD"
   fi
+  if [[ -x "$APP/Contents/Resources/ntfs-rw-helper" ]]; then
+    codesign --force --sign "$identity" --identifier com.bioapple.ntfsmount.helper "${extra[@]}" "$APP/Contents/Resources/ntfs-rw-helper"
+  fi
   codesign --force --sign "$identity" \
     "$MACOS/libfuse.2.dylib" \
     "$MACOS/libntfs-3g.90.dylib" \
