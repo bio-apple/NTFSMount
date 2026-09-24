@@ -1,14 +1,14 @@
 # Third-party licenses
 
-NTFSMount ships the following binaries inside `NTFSMount.app/Contents/MacOS` (and `runtime/` when building from source). Each component remains under its upstream license.
+NTFSMount ships the following binaries inside `NTFSMount.app/Contents/MacOS` (filled by `scripts/prepare-runtime.sh` into `runtime/`, which is not committed). Each component remains under its upstream license.
 
-## ntfs-3g, mkntfs, libntfs-3g
+## ntfs-3g, mkntfs, ntfsfix, libntfs-3g
 
 - **Upstream:** Tuxera ntfs-3g
 - **License:** GNU General Public License v2.0 (GPL-2.0)
 - **Source:** https://github.com/tuxera/ntfs-3g
 
-These binaries provide NTFS read/write mounting and formatting. Because they are GPL-2.0, the combined work in this repository is offered under **GPL-2.0-or-later**. See [LICENSE](./LICENSE).
+These binaries provide NTFS read/write mounting, optional dirty-volume repair (`ntfsfix`), and formatting. Because they are GPL-2.0, the combined work in this repository is offered under **GPL-2.0-or-later**. See [LICENSE](./LICENSE).
 
 ## libfuse.2.dylib
 

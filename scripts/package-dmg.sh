@@ -1,6 +1,10 @@
 #!/bin/bash
 # 打包成可双击分发的 DMG：把 NTFSMount.app 拖进「应用程序」即可。
 set -euo pipefail
+if [[ "$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null || true)" != "1" && "$(/usr/bin/uname -m)" != "arm64" ]]; then
+  echo "error: NTFSMount 仅支持 Apple Silicon（M 芯片 / arm64），不支持 Intel Mac（x86_64）。当前架构：$(/usr/bin/uname -m)" >&2
+  exit 1
+fi
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="${1:-$ROOT/dist/NTFSMount.dmg}"
 VOLNAME="NTFS 读写"
@@ -40,10 +44,11 @@ NTFS 读写（NTFSMount，直发，不上 Mac App Store）
 安装
 1. 把 NTFS 读写拖到右边的「应用程序」
 2. 打开后菜单栏显示 NTFS，并出现主窗口
-3. 首次只有一个确认框：备份、个人使用、未公证说明。回车是「退出」，需点「同意并继续」
+3. 首次只有一个确认框：备份、个人使用、未公证说明。回车是「同意并继续」，Esc 为「退出」
 4. 在窗口点「安装…」。未公证包会要管理员密码；已公证包优先系统服务授权
    升级后若提示「更新挂载助手」，再输入一次密码
-5. 若系统提示无法验证开发者：需要已公证的安装包。未公证包可按住 Control 点应用 → 打开；也可在「系统设置 → 隐私与安全性」点「仍要打开」
+5. 若系统提示无法验证开发者：按住 Control 点应用 → 打开；或「系统设置 → 隐私与安全性」点「仍要打开」。仍被隔离时：
+   xattr -d com.apple.quarantine /Applications/NTFSMount.app
 
 读写
 1. 插入外置 NTFS 硬盘。第一次可写挂载会再确认一次「已备份」
@@ -56,7 +61,7 @@ NTFS 读写（NTFSMount，直发，不上 Mac App Store）
 必须输入当前卷名确认。内置盘不能格式化。
 
 卸载助手：设置 → 卸载助手
-完全卸载：仓库中的 ./uninstall.sh
+完全卸载：仓库中的 ./uninstall.sh（只删 NTFSMount；不碰系统级 FUSE-T / MacFUSE）
 EOF
 
 if [[ "${FUSE_T_REDISTRIBUTION_OK:-}" != "1" ]]; then
@@ -136,8 +141,8 @@ echo "==> 压缩为 $OUT"
 
 echo "ok $OUT"
 /bin/ls -lh "$OUT"
-if [[ -n "${CODESIGN_IDENTITY:-}" && -n "${NOTARY_PROFILE:-}" ]]; then
-  xcrun stapler staple "$OUT" && echo "ok stapled $OUT" || echo "warning: staple DMG failed" >&2
+if [[ -n "${CODESIGN_IDENTITY:-}" ]]; then
+  bash "$ROOT/scripts/notarize.sh" "$OUT" || echo "warning: DMG 公证/staple 失败（应用若已公证仍可用）" >&2
 fi
 # staple 会改 DMG，哈希必须在最后算
 bash "$ROOT/scripts/write-dmg-sha256.sh" "$OUT"

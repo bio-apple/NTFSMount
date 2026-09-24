@@ -6,7 +6,8 @@
 
 - [ ] `bash scripts/test-helper.sh`
 - [ ] `bash scripts/build.sh`
-- [ ] `CODESIGN_IDENTITY='Developer ID Application: …' NOTARY_PROFILE=… ./scripts/notarize.sh`
+- [ ] `CODESIGN_IDENTITY='Developer ID Application: …' NOTARY_PROFILE=… ./scripts/notarize.sh`（本机）；或 CI Secrets：`APPLE_CERTIFICATE_BASE64` + `APPLE_CERTIFICATE_PASSWORD` + `APPLE_API_KEY_ID` / `APPLE_API_ISSUER` / `APPLE_API_KEY`
+- [ ] 推送 `v*` tag 后 Actions「DMG (tag)」成功，Release 含 `NTFSMount.dmg` 与 `.sha256`
 - [ ] `FUSE_T_REDISTRIBUTION_OK=1 ./scripts/package-dmg.sh`（有 FUSE-T 书面授权时才设此变量；否则 DMG 带个人使用说明）
 - [ ] 对 DMG 再 `xcrun stapler staple dist/NTFSMount.dmg`（staple 后再算 SHA256；`package-dmg.sh` 已在 staple 之后写出 sidecar）
 - [ ] `dist/NTFSMount.dmg.sha256` 已生成（`HASH  NTFSMount.dmg`）
@@ -25,7 +26,7 @@
 
 - [ ] 干净用户访达双击 DMG → 应用可打开（已公证）
 - [ ] 未公证包会提示无法验证开发者；Control-点击「打开」能进，或「系统设置 → 隐私与安全性」点「仍要打开」能进
-- [ ] 首次启动只有一个确认框（条款 + 未公证 + 助手提示）；回车是「退出」
+- [ ] 首次启动只有一个确认框（条款 + 未公证 + 助手提示）；回车是「同意并继续」，Esc 是「退出」
 
 ## 助手
 
@@ -40,7 +41,7 @@
 
 - [ ] 菜单栏只有磁盘操作、打开窗口/设置、退出
 - [ ] 自动挂载 / 登录 / 程序坞 / 助手 / 日志在窗口「设置」
-- [ ] 首次启动只有一个确认框；回车是「退出」
+- [ ] 首次启动只有一个确认框；回车是「同意并继续」，Esc 是「退出」
 - [ ] 未公证安装助手走管理员密码；已公证优先系统服务
 - [ ] 系统 NTFS 只读显示「只读 · 系统 NTFS」；脏盘/休眠显示「只读 · 休眠/未正常关机」
 - [ ] `bash scripts/check-helper-gone.sh` 在卸载助手后全部 gone

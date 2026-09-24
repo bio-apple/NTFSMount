@@ -3,3 +3,10 @@ dist/
 .DS_Store
 .build/
 .swiftpm/
+/runtime/.cache/
+/runtime/go-nfsv4
+/runtime/ntfs-3g
+/runtime/mkntfs
+/runtime/ntfsfix
+/runtime/libfuse.2.dylib
+/runtime/libntfs-3g.90.dylib

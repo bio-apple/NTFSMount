@@ -24,6 +24,12 @@ struct MenuRoot: View {
             }
             .disabled(store.busyId != nil)
           }
+          if store.canOfferDirtyFix(vol) {
+            Button("尝试修复脏卷…") {
+              store.confirmDirtyFix(vol)
+            }
+            .disabled(store.busyId != nil)
+          }
           Button("在访达中打开") {
             NSWorkspace.shared.open(URL(fileURLWithPath: vol.expectedMountPoint))
           }
@@ -32,7 +38,8 @@ struct MenuRoot: View {
           Button("卸载") { store.unmount(vol) }
             .disabled(vol.mountPoint.isEmpty || store.busyId != nil)
           Button("推出（可安全拔出）") { store.eject(vol) }
-            .disabled(store.busyId != nil)
+            .disabled(store.busyId != nil || vol.isInternal)
+            .help(vol.isInternal ? "内置磁盘不能推出" : "先释放 ntfs-3g 再弹出")
           Divider()
           Button("格式化为 NTFS…") {
             if let disk = store.formatDisks.first(where: { $0.id == wholeDiskId(vol.id) }) {

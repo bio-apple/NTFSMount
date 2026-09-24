@@ -30,10 +30,10 @@ $HASH
 校验完整性 · Verify:
 
 \`\`\`bash
-shasum -a 256 $BASE
+shasum -a 256 "$BASE"
 \`\`\`
 
-结果应与上面的 SHA256 完全一致。也可下载 \`$BASE.sha256\` 后执行 \`shasum -a 256 -c $BASE.sha256\`。
+结果应与上面的 SHA256 完全一致。也可下载 \`$BASE.sha256\` 后执行 \`shasum -a 256 -c "$BASE.sha256"\`。
 EOF
 
 echo "ok $SIDECAR"

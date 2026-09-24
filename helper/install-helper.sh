@@ -2,6 +2,10 @@
 # 安装特权守护进程（LaunchDaemon + 签名钉扎）。必须以 root 运行。
 # 用法: install-helper.sh <helper> <helperd> <用户名> <NTFSMount.app路径>
 set -euo pipefail
+if [[ "$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null || true)" != "1" && "$(/usr/bin/uname -m)" != "arm64" ]]; then
+  echo "error: NTFSMount 仅支持 Apple Silicon（M 芯片 / arm64），不支持 Intel Mac（x86_64）。当前架构：$(/usr/bin/uname -m)" >&2
+  exit 1
+fi
 if [[ "$(/usr/bin/id -u)" -ne 0 ]]; then
   echo "需要 root" >&2
   exit 1

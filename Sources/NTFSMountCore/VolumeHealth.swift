@@ -1,16 +1,30 @@
 import Foundation
 
 public enum VolumeHealth {
-  public static func looksDirtyOrHibernated(_ text: String) -> Bool {
+  public static func looksHibernated(_ text: String) -> Bool {
     let t = text.lowercased()
     return t.contains("hibernat")
       || t.contains("hiberfile")
-      || t.contains("unclean")
+      || t.contains("hiberfil")
+  }
+
+  public static func looksDirty(_ text: String) -> Bool {
+    let t = text.lowercased()
+    return t.contains("unclean")
       || t.contains("not cleanly")
       || t.contains("unsafe state")
       || t.contains("windows cache")
       || t.contains("fast restart")
       || t.contains("volume is dirty")
+  }
+
+  public static func looksDirtyOrHibernated(_ text: String) -> Bool {
+    looksHibernated(text) || looksDirty(text)
+  }
+
+  /// 仅脏卷（未确认休眠文件）才允许提示 ntfsfix。休眠优先，避免破坏恢复数据。
+  public static func canOfferDirtyFix(_ text: String) -> Bool {
+    looksDirty(text) && !looksHibernated(text)
   }
 
   public static func looksLikeKextOrFSKitBlock(_ text: String) -> Bool {

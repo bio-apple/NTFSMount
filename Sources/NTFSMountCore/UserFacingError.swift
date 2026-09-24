@@ -17,6 +17,17 @@ public enum UserFacingError {
     if lower.contains("password") && lower.contains("sudo") {
       return "挂载助手需要更新。请在窗口点「更新…」。"
     }
+    if t.contains("磁盘正被占用") {
+      if t.hasPrefix("error:") {
+        return String(t.dropFirst(6)).trimmingCharacters(in: .whitespaces)
+      }
+      return t
+    }
+    if lower.contains("resource busy")
+      || lower.contains("volume busy")
+      || lower.contains("in use and cannot be ejected") {
+      return "磁盘正被占用：请关闭访达窗口/文件后点推出"
+    }
     if t.hasPrefix("error:") {
       return String(t.dropFirst(6)).trimmingCharacters(in: .whitespaces)
     }

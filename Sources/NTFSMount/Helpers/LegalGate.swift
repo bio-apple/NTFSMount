@@ -14,15 +14,12 @@ enum LegalGate {
     alert.alertStyle = .warning
     alert.messageText = OnboardingCopy.messageTitle
     alert.informativeText = OnboardingCopy.body(notarized: notarized)
-    alert.addButton(withTitle: OnboardingCopy.quitTitle)
     alert.addButton(withTitle: OnboardingCopy.agreeTitle)
-    if let quit = alert.buttons.first {
-      quit.keyEquivalent = "\r"
-    }
+    alert.addButton(withTitle: OnboardingCopy.quitTitle)
     if alert.buttons.count > 1 {
-      alert.buttons[1].keyEquivalent = ""
+      alert.buttons[1].keyEquivalent = "\u{1b}"
     }
-    if alert.runModal() != .alertSecondButtonReturn {
+    if alert.runModal() != .alertFirstButtonReturn {
       NSApp.terminate(nil)
       return
     }

@@ -20,6 +20,9 @@ final class VolumeStore: ObservableObject {
   private var skippedUnmount = Set<String>()
   private var autoMountAttempted = Set<String>()
   private var lastAdvice: [String: VolumeHealth.MountAdvice] = [:]
+  private var lastHelperText: [String: String] = [:]
+  private var refreshRunning = false
+  private var refreshQueued = false
 
   var writableCount: Int { volumes.filter(\.isWritableFuse).count }
   var menuBarTitle: String {
@@ -117,9 +120,22 @@ final class VolumeStore: ObservableObject {
       if let bundled = Bundle.main.path(forResource: "ntfs-rw-helper", ofType: nil) {
         UserDefaults.standard.set(AppIdentity.sha256File(bundled), forKey: AppIdentity.Defaults.lastHelperSHA)
       }
-      Thread.sleep(forTimeInterval: 0.5)
-      helperInstalled = Privileged.systemHelperInstalled
-      enableAutoMountDefault()
+      waitForHelperSocketThenFinishInstall()
+    }
+  }
+
+  private func waitForHelperSocketThenFinishInstall() {
+    let path = AppIdentity.helperSocket
+    DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+      let deadline = Date().addingTimeInterval(5)
+      while !FileManager.default.fileExists(atPath: path), Date() < deadline {
+        Thread.sleep(forTimeInterval: 0.1)
+      }
+      DispatchQueue.main.async {
+        guard let self else { return }
+        self.helperInstalled = Privileged.systemHelperInstalled
+        self.enableAutoMountDefault()
+      }
     }
   }
 
@@ -177,18 +193,96 @@ final class VolumeStore: ObservableObject {
   }
 
   func refresh() {
-    volumes = NTFSVolume.scan()
-    formatDisks = FormatDisk.scan()
+    if refreshRunning {
+      refreshQueued = true
+      return
+    }
+    refreshRunning = true
+    DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+      let volumes = NTFSVolume.scan()
+      let formatDisks = FormatDisk.scan()
+      DispatchQueue.main.async {
+        self?.applyScan(volumes: volumes, formatDisks: formatDisks)
+      }
+    }
+  }
+
+  private func applyScan(volumes: [NTFSVolume], formatDisks: [FormatDisk]) {
+    self.volumes = volumes
+    self.formatDisks = formatDisks
     autoMount = Privileged.autoMountEnabled
     helperInstalled = Privileged.systemHelperInstalled
     let ids = Set(volumes.map(\.id))
     skippedUnmount.formIntersection(ids)
     autoMountAttempted.formIntersection(ids)
     lastAdvice = lastAdvice.filter { ids.contains($0.key) }
+    lastHelperText = lastHelperText.filter { ids.contains($0.key) }
     for vol in volumes where vol.isWritableFuse {
       lastAdvice[vol.id] = .writable
     }
     mountDefaultWritableIfNeeded()
+    refreshRunning = false
+    if refreshQueued {
+      refreshQueued = false
+      refresh()
+    }
+  }
+
+  func canOfferDirtyFix(_ vol: NTFSVolume) -> Bool {
+    !vol.isInternal
+      && lastAdvice[vol.id] == .readOnlyDirty
+      && VolumeHealth.canOfferDirtyFix(lastHelperText[vol.id] ?? "")
+  }
+
+  func confirmDirtyFix(_ vol: NTFSVolume) {
+    guard canOfferDirtyFix(vol) else { return }
+    NSApp.activate(ignoringOtherApps: true)
+    let alert = NSAlert()
+    alert.alertStyle = .warning
+    alert.messageText = "尝试修复脏卷？"
+    alert.informativeText = """
+    「\(vol.name)」未正常关机或处于快速启动，卷标记为不干净。
+    ntfsfix 只能做基本修复，可能丢失尚未写入磁盘的 Windows 缓存。请先备份。
+    不会清除 Windows 休眠文件。若这是休眠盘，请在 Windows 彻底关机后再试。
+    """
+    alert.addButton(withTitle: FormatPolicy.cancelTitle)
+    alert.addButton(withTitle: "尝试修复")
+    makeCancelDefault(alert)
+    guard alert.runModal() == .alertSecondButtonReturn else { return }
+    fixDirtyThenMount(vol)
+  }
+
+  private func fixDirtyThenMount(_ vol: NTFSVolume) {
+    busyId = vol.id
+    message = ""
+    DispatchQueue.global(qos: .userInitiated).async {
+      let fixResult = Privileged.run("fix", vol.id)
+      if !fixResult.ok {
+        DispatchQueue.main.async {
+          self.busyId = nil
+          self.lastHelperText[vol.id] = fixResult.text
+          if VolumeHealth.looksDirtyOrHibernated(fixResult.text) {
+            self.lastAdvice[vol.id] = .readOnlyDirty
+          }
+          self.message = self.display(fixResult.text)
+          self.refresh()
+        }
+        return
+      }
+      let mountResult = Privileged.run("mount", vol.id)
+      DispatchQueue.main.async {
+        self.busyId = nil
+        self.lastAdvice[vol.id] = VolumeHealth.advice(for: mountResult.text, success: mountResult.ok)
+        self.lastHelperText[vol.id] = mountResult.text
+        self.message = self.display(mountResult.text)
+        self.refresh()
+        if mountResult.ok {
+          NSWorkspace.shared.open(URL(fileURLWithPath: vol.expectedMountPoint))
+        } else if VolumeHealth.looksLikeKextOrFSKitBlock(mountResult.text) {
+          self.alertKextIgnored(self.display(mountResult.text))
+        }
+      }
+    }
   }
 
   func mount(_ vol: NTFSVolume, openFinder: Bool = true) {
@@ -204,6 +298,10 @@ final class VolumeStore: ObservableObject {
   }
 
   func eject(_ vol: NTFSVolume) {
+    if vol.isInternal {
+      message = "拒绝推出内置磁盘。"
+      return
+    }
     skippedUnmount.insert(vol.id)
     run("eject", vol)
   }
@@ -340,8 +438,7 @@ final class VolumeStore: ObservableObject {
       DispatchQueue.main.async {
         self.busyId = nil
         self.autoMount = Privileged.autoMountEnabled
-        if !result.ok { self.message = self.display(result.text) }
-        else { self.mountDefaultWritableIfNeeded() }
+        if !result.ok { self.message = self.display(result.text) } else { self.mountDefaultWritableIfNeeded() }
       }
     }
   }
@@ -389,6 +486,7 @@ final class VolumeStore: ObservableObject {
         self.busyId = nil
         if cmd == "mount" {
           self.lastAdvice[vol.id] = VolumeHealth.advice(for: result.text, success: result.ok)
+          self.lastHelperText[vol.id] = result.text
         }
         let shown = self.display(result.text)
         if result.ok {

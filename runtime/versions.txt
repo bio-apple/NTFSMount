@@ -1,0 +1,30 @@
+# 已知可用的捆绑运行时（Apple Silicon / arm64，macOS 13+）
+# 校验哈希见同目录 SHA256SUMS。二进制本身不进 Git。
+# FUSE-T 钉死 1.2.7：与 scripts/prepare-runtime.sh 的 FUSE_T_VERSION 一致。
+# Package.swift（Swift SPM）无法钉 macOS pkg，不要为此加假的 SPM 依赖。
+#
+# 记录日期：2026-09-23
+
+# FUSE-T（官方 pkg；go-nfsv4 与 libfuse.2.dylib 从中取出）
+FUSE-T          1.2.7
+pkg             https://github.com/macos-fuse-t/fuse-t/releases/download/1.2.7/fuse-t-macos-installer-1.2.7.pkg
+pkg SHA256      6a29c747e61a86a405a189efc3de42812d73147135f93a1bb0624c1e7b90e654
+go-nfsv4        1.2.7          # 包内文件名 go-nfsv4-1.2.7；无独立 --version
+libfuse.2.dylib 2.9.9          # FUSE library version；compat 12.9.0
+
+# ntfs-3g（Homebrew formula / Tuxera；brew 核对 bottle SHA256）
+ntfs-3g         2026.7.7       # `ntfs-3g --version` → ntfs-3g 2026.7.7 external FUSE 29
+mkntfs          2026.7.7       # `mkntfs --version` → mkntfs v2026.7.7 (libntfs-3g)
+ntfsfix         2026.7.7       # `ntfsfix --version` → ntfsfix v2026.7.7；与 ntfs-3g 同包
+libntfs-3g      90.dylib       # compatibility 91.0.0
+formula         https://github.com/Homebrew/homebrew-core/blob/HEAD/Formula/n/ntfs-3g.rb
+upstream        https://github.com/tuxera/ntfs-3g
+
+# 复现
+#   brew install ntfs-3g          # 需要 2026.7.7（或之后仍能挂载的版本）
+#   ./scripts/prepare-runtime.sh  # 拉 FUSE-T 1.2.7 pkg 并校验 SHA256
+#                                 # 缺 Homebrew / ntfs-3g / 本机 FUSE-T 时会打印安装命令
+#                                 # 不必启动 FUSE-T.app；不会静默把 FUSE-T 装进系统
+#
+# 换 FUSE-T 大版本时：改 scripts/prepare-runtime.sh 里的 FUSE_T_VERSION，
+# 更新本文件与 SHA256SUMS 后再构建。本机已装但不是 1.2.7 的 FUSE-T 会被拒绝，改用官方 pkg。

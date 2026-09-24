@@ -1,16 +1,17 @@
 #!/bin/bash
 # Privileged helper: ntfs-3g over bundled FUSE-T userspace.
 # 本仓库源码（bash），不是第三方预编译二进制。构建时 codesign + SHA-256。
-# 命令: mount|unmount|eject|format|automount|enable-automount|disable-automount
+# 命令: mount|unmount|eject|format|fix|automount|enable-automount|disable-automount
 # 全局旗标: --verbose（可在子命令前或后）
 set -euo pipefail
 
-HELPER_VERSION=5
+HELPER_VERSION=6
 
 DISKUTIL="/usr/sbin/diskutil"
 MOUNT="/sbin/mount"
 UMOUNT="/sbin/umount"
 PKILL="/usr/bin/pkill"
+LSOF="/usr/sbin/lsof"
 # macOS diskutil 把 -- 当成非法参数；id 必须先 valid_id/valid_whole，再作为独立 argv 传入，永不拼进 shell 字符串。
 # umount(8) 支持 --，卸载挂载点时使用。
 
@@ -38,7 +39,7 @@ helper_realpath() {
   /usr/bin/realpath "$src" 2>/dev/null || printf '%s' "$src"
 }
 
-# Candidate dirs for ntfs-3g / mkntfs / go-nfsv4, in order:
+# Candidate dirs for ntfs-3g / mkntfs / ntfsfix / go-nfsv4, in order:
 # 1. /Applications/NTFSMount.app/Contents/MacOS
 # 2. NTFSMount.app/Contents/MacOS derived by walking from this helper
 # 3. last resort (dev): <git repo>/runtime  — never a hardcoded home path
@@ -127,6 +128,16 @@ find_mkntfs() {
 }
 
 MKNTFS="${MKNTFS:-$(find_mkntfs || true)}"
+
+find_ntfsfix() {
+  if [[ -n "${NTFS3G_DIR}" && -x "${NTFS3G_DIR}/ntfsfix" ]]; then
+    printf '%s' "${NTFS3G_DIR}/ntfsfix"
+    return 0
+  fi
+  find_bundled ntfsfix
+}
+
+NTFSFIX="${NTFSFIX:-$(find_ntfsfix || true)}"
 
 # go-nfsv4 must sit next to ntfs-3g inside the app bundle (or runtime/ when developing).
 resolve_nfs_srv() {
@@ -218,8 +229,50 @@ looks_like_kext_or_fskit_block() {
   echo "$1" | /usr/bin/grep -qiE 'fskit|kext|kernel extension|module .* is disabled|System Extension|内核扩展'
 }
 
+looks_like_hiber() {
+  echo "$1" | /usr/bin/grep -qiE 'hibernat|hiberfile|hiberfil'
+}
+
+looks_like_dirty() {
+  echo "$1" | /usr/bin/grep -qiE 'unclean|not cleanly|unsafe state|windows cache|fast restart|volume is dirty'
+}
+
 looks_like_dirty_or_hiber() {
-  echo "$1" | /usr/bin/grep -qiE 'hibernat|hiberfile|unclean|not cleanly|unsafe state|windows cache|fast restart|volume is dirty'
+  looks_like_hiber "$1" || looks_like_dirty "$1"
+}
+
+# hiber 优先：确认休眠文件时不得当脏卷修。
+volume_state_from_text() {
+  if looks_like_hiber "$1"; then
+    printf '%s' hiber
+  elif looks_like_dirty "$1"; then
+    printf '%s' dirty
+  else
+    printf '%s' unknown
+  fi
+}
+
+# 只读探测，不写盘。已确认休眠则跳过。
+probe_volume_state() {
+  local ident="$1" text="$2" probe="" state
+  state="$(volume_state_from_text "$text")"
+  if [[ "$state" == "hiber" ]]; then
+    printf '%s' hiber
+    return
+  fi
+  if [[ -n "$NTFSFIX" && -x "$NTFSFIX" ]]; then
+    ensure_unmounted "$ident"
+    set +e
+    vlog "$NTFSFIX" -n "/dev/$ident"
+    probe="$("$NTFSFIX" -n "/dev/$ident" 2>&1)"
+    set -e
+    if [[ -n "$probe" ]]; then
+      printf '%s\n' "$probe" >&2
+      text="${text}"$'\n'"${probe}"
+    fi
+    state="$(volume_state_from_text "$text")"
+  fi
+  printf '%s' "$state"
 }
 
 # 拒绝路径、空白、shell 元字符；再套 diskNsM / diskN。
@@ -277,6 +330,22 @@ volume_name() {
     name="NTFS-$1"
   fi
   printf '%s' "$name"
+}
+
+# Volume names often contain spaces ("My Passport"). Always one path argument.
+volume_mount_point() {
+  local name="$1"
+  local n="${2:-}"
+  if [[ -n "$n" ]]; then
+    printf '%s' "/Volumes/${name} ${n}"
+  else
+    printf '%s' "/Volumes/${name}"
+  fi
+}
+
+# pkill -f is a regex; escape so "Data (1)" / "My.Passport" cannot match another volume.
+regex_escape() {
+  printf '%s' "$1" | /usr/bin/sed -e 's/[][().^$*+?{|\\]/\\&/g'
 }
 
 console_ids() {
@@ -343,21 +412,48 @@ dev_mount_points() {
     }'
 }
 
+# 只杀这一卷的 ntfs-3g / go-nfsv4（quoted -f，带 /dev/diskNsM 或卷名）。禁止 pkill 全部 ntfs-3g。
 kill_ntfs3g() {
   local ident="$1"
-  local name
+  local sig="${2:-TERM}"
+  local name qname
   name="$(volume_name "$ident")"
-  "$PKILL" -f "/ntfs-3g /dev/${ident} " >/dev/null 2>&1 || true
-  "$PKILL" -f "ntfs-3g /dev/${ident} " >/dev/null 2>&1 || true
-  "$PKILL" -f "go-nfsv4 --volname ${name} " >/dev/null 2>&1 || true
+  qname="$(regex_escape "$name")"
+  "$PKILL" -"$sig" -f -- "/ntfs-3g /dev/${ident} " >/dev/null 2>&1 || true
+  "$PKILL" -"$sig" -f -- "ntfs-3g /dev/${ident} " >/dev/null 2>&1 || true
+  "$PKILL" -"$sig" -f -- "go-nfsv4 --volname ${qname} " >/dev/null 2>&1 || true
+  if [[ -n "$qname" ]]; then
+    "$PKILL" -"$sig" -f -- "go-nfsv4 .* /Volumes/${qname}" >/dev/null 2>&1 || true
+  fi
   sleep 0.2
+}
+
+occupiers_for_mp() {
+  local mp="$1"
+  local names=""
+  [[ -n "$mp" && -e "$mp" && -x "$LSOF" ]] || return 0
+  names="$("$LSOF" -nP "$mp" 2>/dev/null | /usr/bin/awk 'NR>1 && $1 != "lsof" && $1 != "ntfs-rw-helper" { print $1 }' | /usr/bin/sort -u | /usr/bin/head -6)" || true
+  if [[ -z "$names" ]]; then
+    names="$(/usr/bin/perl -e 'alarm 2; exec @ARGV' "$LSOF" -nP +D "$mp" 2>/dev/null | /usr/bin/awk 'NR>1 && $1 != "lsof" && $1 != "ntfs-rw-helper" { print $1 }' | /usr/bin/sort -u | /usr/bin/head -6)" || true
+  fi
+  printf '%s' "$names" | /usr/bin/tr '\n' ',' | /usr/bin/sed -e 's/,$//' -e 's/,/, /g'
+}
+
+busy_eject_message() {
+  local who="$1"
+  if [[ -n "$who" ]]; then
+    printf '磁盘正被占用：%s。请关闭访达窗口/文件后点推出' "$who"
+  else
+    printf '磁盘正被占用：请关闭访达窗口/文件后点推出'
+  fi
 }
 
 unmount_numbered_leftovers() {
   local ident="$1"
   local name="$2"
-  local mp line
-  for mp in "/Volumes/${name} 1" "/Volumes/${name} 2" "/Volumes/${name} 3"; do
+  local mp line n
+  for n in 1 2 3; do
+    mp="$(volume_mount_point "$name" "$n")"
     line="$(mount_line "$mp")"
     [[ -n "$line" ]] || {
       if [[ -d "$mp" ]]; then
@@ -383,7 +479,7 @@ unmount_any() {
   local ident="$1"
   local name mp
   name="$(volume_name "$ident")"
-  mp="/Volumes/$name"
+  mp="$(volume_mount_point "$name")"
   kill_ntfs3g "$ident"
   vlog "$DISKUTIL" unmount force "$ident"
   "$DISKUTIL" unmount force "$ident" >/dev/null 2>&1 || true
@@ -396,7 +492,7 @@ unmount_any() {
     vlog "$DISKUTIL" unmount force "$mp"
     "$DISKUTIL" unmount force "$mp" >/dev/null 2>&1 || true
   done < <(dev_mount_points "$ident")
-  mp="/Volumes/$name"
+  mp="$(volume_mount_point "$name")"
   vlog "$UMOUNT" -f -- "$mp"
   "$UMOUNT" -f -- "$mp" >/dev/null 2>&1 || true
   unmount_numbered_leftovers "$ident" "$name"
@@ -421,9 +517,9 @@ volume_still_mounted() {
     return 0
   fi
   name="$(volume_name "$ident")"
-  [[ -n "$(mount_line "/Volumes/$name")" ]] && return 0
+  [[ -n "$(mount_line "$(volume_mount_point "$name")")" ]] && return 0
   local line
-  line="$(mount_line "/Volumes/${name} 1")"
+  line="$(mount_line "$(volume_mount_point "$name" 1)")"
   case "$line" in
     "/dev/${ident} on "*) return 0 ;;
   esac
@@ -493,7 +589,7 @@ try_mount() {
       fi
     fi
     if ! /bin/kill -0 "$pid" 2>/dev/null; then
-      if ! /usr/bin/pgrep -f "ntfs-3g /dev/${ident} " >/dev/null 2>&1; then
+      if ! /usr/bin/pgrep -f -- "ntfs-3g /dev/${ident} " >/dev/null 2>&1; then
         if [[ "$mode" == "ro" ]]; then
           if [[ -z "$(mount_line "$mp")" ]]; then
             if [[ "$VERBOSE" -eq 1 ]]; then
@@ -533,7 +629,7 @@ do_mount() {
 
   local name mp uid gid
   name="$(volume_name "$ident")"
-  mp="/Volumes/$name"
+  mp="$(volume_mount_point "$name")"
   read -r uid gid <<<"$(console_ids)"
 
   local base="volname=${name},local,allow_other,uid=${uid},gid=${gid}"
@@ -576,8 +672,18 @@ do_mount() {
   done
 
   if [[ "$dirty" -eq 1 ]]; then
-    local ro_msg
-    ro_msg="该 NTFS 磁盘未正常关机或仍处于 Windows 休眠，已只读挂载。请在 Windows 中彻底关机（不要休眠/快速启动）后再以可写方式挂载。"
+    local ro_msg state classify_line
+    state="$(probe_volume_state "$ident" "$err")"
+    if [[ "$state" == "hiber" ]]; then
+      classify_line="classify: Windows is hibernated"
+      ro_msg="该 NTFS 磁盘仍处于 Windows 休眠，已只读挂载。请在 Windows 中彻底关机（不要休眠/快速启动）后再以可写方式挂载。不会清除休眠文件。"
+    elif [[ "$state" == "dirty" ]]; then
+      classify_line="classify: volume is dirty"
+      ro_msg="该 NTFS 磁盘未正常关机或处于快速启动，已只读挂载。可在应用中选择「尝试修复脏卷」，或在 Windows 彻底关机后重试。不会清除休眠文件。"
+    else
+      classify_line="classify: dirty/hibernation"
+      ro_msg="该 NTFS 磁盘未正常关机或仍处于 Windows 休眠，已只读挂载。请在 Windows 中彻底关机（不要休眠/快速启动）后再以可写方式挂载。"
+    fi
     for extra in "${ro_attempts[@]}"; do
       opts="${base},${extra}"
       ensure_unmounted "$ident"
@@ -590,12 +696,14 @@ do_mount() {
       err="$(/bin/cat "$errfile" 2>/dev/null || true)"
       /bin/rm -f "$errfile"
       if [[ $rc -eq 0 ]]; then
-        echo "ok ro $ident -> $mp (dirty/hibernation, 未清除休眠文件)"
+        echo "ok ro $ident -> $mp (${state}, 未清除休眠文件)"
+        echo "$classify_line"
         echo "warning: $ro_msg"
         notify "$ro_msg"
         return 0
       fi
     done
+    echo "$classify_line"
     notify "无法挂载：磁盘未正常关机或处于 Windows 休眠"
     die "挂载失败：磁盘 dirty 或 Windows 休眠，只读挂载也失败。请在 Windows 彻底关机后重试。详情: $err"
   fi
@@ -627,17 +735,72 @@ do_eject() {
   local ident="$1"
   CURRENT_IDENT="$ident"
   valid_id "$ident" || die "非法设备: $ident"
+  refuse_eject_target "$ident"
+
+  local name mp whole occupiers i still=1 eject_out eject_rc
+  name="$(volume_name "$ident")"
+  mp="$("$DISKUTIL" info -plist "$ident" 2>/dev/null | /usr/bin/plutil -extract MountPoint raw - 2>/dev/null || true)"
+  if [[ -z "$mp" || "$mp" == "null" ]]; then
+    mp="$(volume_mount_point "$name")"
+  fi
+
+  # 先释放本卷 FUSE（ntfs-3g / go-nfsv4），再 umount 挂载点，最后才 diskutil eject 整盘。
+  kill_ntfs3g "$ident"
+  if [[ -n "$mp" ]]; then
+    vlog "$UMOUNT" -f -- "$mp"
+    "$UMOUNT" -f -- "$mp" >/dev/null 2>&1 || true
+    vlog "$DISKUTIL" unmount force "$mp"
+    "$DISKUTIL" unmount force "$mp" >/dev/null 2>&1 || true
+  fi
   unmount_any "$ident"
-  local whole="${ident%%s*}"
+  if ! volume_still_mounted "$ident"; then
+    still=0
+  fi
+  for i in 1 2; do
+    [[ "$still" -ne 0 ]] || break
+    occupiers="$(occupiers_for_mp "$mp")"
+    if [[ -n "$occupiers" ]]; then
+      echo "磁盘正被占用：${occupiers}" >&2
+    fi
+    if [[ "$i" -eq 2 ]]; then
+      kill_ntfs3g "$ident" KILL
+    else
+      kill_ntfs3g "$ident"
+    fi
+    if [[ -n "$mp" ]]; then
+      vlog "$UMOUNT" -f -- "$mp"
+      "$UMOUNT" -f -- "$mp" >/dev/null 2>&1 || true
+      vlog "$DISKUTIL" unmount force "$mp"
+      "$DISKUTIL" unmount force "$mp" >/dev/null 2>&1 || true
+    fi
+    sleep 0.5
+    if ! volume_still_mounted "$ident"; then
+      still=0
+      break
+    fi
+  done
+
+  if [[ "$still" -ne 0 ]] || volume_still_mounted "$ident"; then
+    occupiers="$(occupiers_for_mp "$mp")"
+    die "$(busy_eject_message "$occupiers")"
+  fi
+
+  whole="${ident%%s*}"
   valid_whole "$whole" || whole=""
-  if [[ -n "$whole" ]]; then
-    vlog "$DISKUTIL" eject "$whole"
-    "$DISKUTIL" eject "$whole" >/dev/null 2>&1 \
-      || { vlog "$DISKUTIL" eject "$ident"; "$DISKUTIL" eject "$ident" >/dev/null 2>&1; } \
-      || die "推出失败: $ident"
-  else
-    vlog "$DISKUTIL" eject "$ident"
-    "$DISKUTIL" eject "$ident" >/dev/null 2>&1 || die "推出失败: $ident"
+  if [[ -z "$whole" ]]; then
+    whole="$ident"
+  fi
+  vlog "$DISKUTIL" eject "$whole"
+  set +e
+  eject_out="$("$DISKUTIL" eject "$whole" 2>&1)"
+  eject_rc=$?
+  set -e
+  if [[ "$eject_rc" -ne 0 ]]; then
+    occupiers="$(occupiers_for_mp "$mp")"
+    if [[ -n "$occupiers" ]] || echo "$eject_out" | /usr/bin/grep -qiE 'busy|in use|占用'; then
+      die "$(busy_eject_message "$occupiers")"
+    fi
+    die "推出失败: $ident"
   fi
   echo "ok ejected $ident"
 }
@@ -649,7 +812,7 @@ data_partition() {
 
 refuse_format_target() {
   local ident="$1"
-  local plist internal sys proto
+  local plist internal sys proto store i root_plist
   vlog "$DISKUTIL" info -plist "$ident"
   plist="$("$DISKUTIL" info -plist "$ident" 2>/dev/null || true)"
   [[ -n "$plist" ]] || die "读不到磁盘信息: $ident"
@@ -662,10 +825,87 @@ refuse_format_target() {
     die "拒绝格式化该磁盘: $ident ($proto)"
   fi
   vlog "$DISKUTIL" info -plist /
-  sys="$("$DISKUTIL" info -plist / 2>/dev/null | /usr/bin/plutil -extract ParentWholeDisk raw - 2>/dev/null || true)"
-  if [[ -n "$sys" && "$ident" == "$sys" ]]; then
+  root_plist="$("$DISKUTIL" info -plist / 2>/dev/null || true)"
+  sys="$(printf '%s' "$root_plist" | /usr/bin/plutil -extract ParentWholeDisk raw - 2>/dev/null || true)"
+  if [[ -n "$sys" && ( "$ident" == "$sys" || "$ident" == "${sys%%s*}" ) ]]; then
     die "拒绝格式化系统盘: $ident"
   fi
+  i=0
+  while [[ $i -le 8 ]]; do
+    store="$(printf '%s' "$root_plist" | /usr/bin/plutil -extract "APFSPhysicalStores.$i.APFSPhysicalStore" raw - 2>/dev/null || true)"
+    [[ -n "$store" && "$store" != "null" ]] || break
+    if [[ "$ident" == "$store" || "$ident" == "${store%%s*}" ]]; then
+      die "拒绝格式化系统盘: $ident"
+    fi
+    i=$((i + 1))
+  done
+}
+
+refuse_fix_target() {
+  local ident="$1"
+  local whole="${ident%%s*}"
+  local plist internal sys proto store i root_plist
+  vlog "$DISKUTIL" info -plist "$ident"
+  plist="$("$DISKUTIL" info -plist "$ident" 2>/dev/null || true)"
+  [[ -n "$plist" ]] || die "读不到磁盘信息: $ident"
+  internal="$(printf '%s' "$plist" | /usr/bin/plutil -extract Internal raw - 2>/dev/null || true)"
+  if [[ "$internal" == "true" ]]; then
+    die "拒绝修复内置磁盘: $ident"
+  fi
+  proto="$(printf '%s' "$plist" | /usr/bin/plutil -extract BusProtocol raw - 2>/dev/null || true)"
+  if [[ "$proto" == "Disk Image" || "$proto" == "Apple Fabric" ]]; then
+    die "拒绝修复该磁盘: $ident ($proto)"
+  fi
+  vlog "$DISKUTIL" info -plist /
+  root_plist="$("$DISKUTIL" info -plist / 2>/dev/null || true)"
+  sys="$(printf '%s' "$root_plist" | /usr/bin/plutil -extract ParentWholeDisk raw - 2>/dev/null || true)"
+  if [[ -n "$sys" && ( "$ident" == "$sys" || "$whole" == "$sys" || "$ident" == "${sys%%s*}" ) ]]; then
+    die "拒绝修复系统盘: $ident"
+  fi
+  i=0
+  while [[ $i -le 8 ]]; do
+    store="$(printf '%s' "$root_plist" | /usr/bin/plutil -extract "APFSPhysicalStores.$i.APFSPhysicalStore" raw - 2>/dev/null || true)"
+    [[ -n "$store" && "$store" != "null" ]] || break
+    if [[ "$ident" == "$store" || "$whole" == "$store" || "$ident" == "${store%%s*}" || "$whole" == "${store%%s*}" ]]; then
+      die "拒绝修复系统盘: $ident"
+    fi
+    i=$((i + 1))
+  done
+}
+
+refuse_eject_target() {
+  local ident="$1"
+  local whole="${ident%%s*}"
+  local plist wplist internal winternal sys store i root_plist
+  vlog "$DISKUTIL" info -plist "$ident"
+  plist="$("$DISKUTIL" info -plist "$ident" 2>/dev/null || true)"
+  [[ -n "$plist" ]] || die "读不到磁盘信息: $ident"
+  internal="$(printf '%s' "$plist" | /usr/bin/plutil -extract Internal raw - 2>/dev/null || true)"
+  if [[ "$internal" == "true" ]]; then
+    die "拒绝推出内置磁盘: $ident"
+  fi
+  if valid_whole "$whole" && [[ "$whole" != "$ident" ]]; then
+    wplist="$("$DISKUTIL" info -plist "$whole" 2>/dev/null || true)"
+    winternal="$(printf '%s' "$wplist" | /usr/bin/plutil -extract Internal raw - 2>/dev/null || true)"
+    if [[ "$winternal" == "true" ]]; then
+      die "拒绝推出内置磁盘: $ident"
+    fi
+  fi
+  vlog "$DISKUTIL" info -plist /
+  root_plist="$("$DISKUTIL" info -plist / 2>/dev/null || true)"
+  sys="$(printf '%s' "$root_plist" | /usr/bin/plutil -extract ParentWholeDisk raw - 2>/dev/null || true)"
+  if [[ -n "$sys" && ( "$ident" == "$sys" || "$whole" == "$sys" || "$ident" == "${sys%%s*}" ) ]]; then
+    die "拒绝推出系统盘: $ident"
+  fi
+  i=0
+  while [[ $i -le 8 ]]; do
+    store="$(printf '%s' "$root_plist" | /usr/bin/plutil -extract "APFSPhysicalStores.$i.APFSPhysicalStore" raw - 2>/dev/null || true)"
+    [[ -n "$store" && "$store" != "null" ]] || break
+    if [[ "$ident" == "$store" || "$whole" == "$store" || "$ident" == "${store%%s*}" || "$whole" == "${store%%s*}" ]]; then
+      die "拒绝推出系统盘: $ident"
+    fi
+    i=$((i + 1))
+  done
 }
 
 sanitize_label() {
@@ -685,14 +925,14 @@ do_format() {
   local label
   CURRENT_IDENT="$ident"
   valid_whole "$ident" || die "非法设备: ${ident}（格式化需要整个磁盘，例如 disk4）"
+  refuse_format_target "$ident"
   [[ -e "/dev/$ident" ]] || die "设备不存在: /dev/$ident"
   [[ -n "$MKNTFS" && -x "$MKNTFS" ]] || die "找不到捆绑的 mkntfs。请把 NTFSMount.app 重新装到 /Applications"
   [[ -n "$NTFS3G_DIR" && -f "${NTFS3G_DIR}/libntfs-3g.90.dylib" ]] || die "找不到捆绑的 libntfs-3g。请把 NTFSMount.app 重新装到 /Applications"
-  refuse_format_target "$ident"
   label="$(sanitize_label "${2:-NTFS}")"
 
   export PATH="${NTFS3G_DIR}:/usr/bin:/bin:/usr/sbin:/sbin"
-  "$PKILL" -f "ntfs-3g /dev/${ident}" >/dev/null 2>&1 || true
+  "$PKILL" -f -- "ntfs-3g /dev/${ident}" >/dev/null 2>&1 || true
   vlog "$DISKUTIL" unmountDisk force "$ident"
   "$DISKUTIL" unmountDisk force "$ident" >/dev/null 2>&1 || true
 
@@ -725,6 +965,44 @@ do_format() {
   echo "ok formatted $part ($label)"
 }
 
+do_fix() {
+  local ident="$1"
+  CURRENT_IDENT="$ident"
+  valid_id "$ident" || die "非法设备: $ident"
+  refuse_fix_target "$ident"
+  [[ -e "/dev/$ident" ]] || die "设备不存在: /dev/$ident"
+  require_ntfs "$ident"
+  [[ -n "$NTFSFIX" && -x "$NTFSFIX" ]] || die "找不到捆绑的 ntfsfix。请把 NTFSMount.app 重新装到 /Applications"
+  [[ -n "$NTFS3G_DIR" && -f "${NTFS3G_DIR}/libntfs-3g.90.dylib" ]] || die "找不到捆绑的 libntfs-3g。请把 NTFSMount.app 重新装到 /Applications"
+
+  export PATH="${NTFS3G_DIR}:/usr/bin:/bin:/usr/sbin:/sbin"
+  ensure_unmounted "$ident"
+
+  local probe out rc
+  set +e
+  vlog "$NTFSFIX" -n "/dev/$ident"
+  probe="$("$NTFSFIX" -n "/dev/$ident" 2>&1)"
+  set -e
+  [[ -n "$probe" ]] && printf '%s\n' "$probe"
+  if looks_like_hiber "$probe"; then
+    echo "classify: Windows is hibernated"
+    die "该卷处于 Windows 休眠（hiberfil）。不会运行 ntfsfix，以免破坏休眠数据。请在 Windows 彻底关机（不要休眠/快速启动）后再试。"
+  fi
+
+  # man ntfsfix: -d 在可修复时清除 dirty，以便挂载。不用 -d 反而会把 dirty 再标上。
+  # 不清除 hiberfile（ntfsfix 也没有该选项；挂载路径同样不用 remove_hiberfile）。
+  set +e
+  vlog "$NTFSFIX" -d "/dev/$ident"
+  out="$("$NTFSFIX" -d "/dev/$ident" 2>&1)"
+  rc=$?
+  set -e
+  [[ -n "$out" ]] && printf '%s\n' "$out"
+  [[ $rc -eq 0 ]] || die "ntfsfix 失败: $out"
+  /bin/sync
+  echo "classify: volume is dirty"
+  echo "ok fixed $ident"
+}
+
 DAEMON_LABEL="com.bioapple.ntfsmount.automount"
 DAEMON_PLIST="/Library/LaunchDaemons/${DAEMON_LABEL}.plist"
 LEGACY_DAEMON_LABEL="local.ntfsmount.automount"
@@ -751,7 +1029,7 @@ do_automount() {
     is_ntfs "$ident" || continue
     is_auto_safe_target "$ident" || continue
     name="$(volume_name "$ident")"
-    mp="/Volumes/$name"
+    mp="$(volume_mount_point "$name")"
     if is_our_fuse_mount "$mp" || is_writable_mount "$mp"; then
       unmount_numbered_leftovers "$ident" "$name"
       continue
@@ -846,14 +1124,22 @@ do_selftest() {
   if valid_whole 'disk4;id'; then
     die "selftest: 整盘注入应拒绝"
   fi
+  local mp name
+  name="My Passport"
+  mp="$(volume_mount_point "$name")"
+  [[ "$mp" == "/Volumes/My Passport" ]] || die "selftest: 带空格卷名应为单一挂载点"
+  mp="$(volume_mount_point "$name" 1)"
+  [[ "$mp" == "/Volumes/My Passport 1" ]] || die "selftest: leftover 挂载点应保留空格"
+  [[ "$(regex_escape 'Data (1)')" == 'Data \(1\)' ]] || die "selftest: pkill 卷名应转义正则"
   echo "ok selftest HELPER_VERSION=${HELPER_VERSION}"
 }
 
 usage() {
   cat <<'EOF'
-用法: ntfs-rw-helper [--verbose] <mount|unmount|eject|format|automount|enable-automount|disable-automount|version|selftest> [diskNsM|diskN] [label]
+用法: ntfs-rw-helper [--verbose] <mount|unmount|eject|format|fix|automount|enable-automount|disable-automount|version|selftest> [diskNsM|diskN] [label]
 示例: ntfs-rw-helper mount disk5s1
       ntfs-rw-helper --verbose mount disk5s1
+      ntfs-rw-helper fix disk5s1
       ntfs-rw-helper format disk4 DATA
       ntfs-rw-helper enable-automount
 EOF
@@ -883,6 +1169,7 @@ case "$cmd" in
   unmount) do_unmount "$id" ;;
   eject) do_eject "$id" ;;
   format) do_format "$id" "${POS[2]:-NTFS}" ;;
+  fix|ntfsfix) do_fix "$id" ;;
   automount) do_automount ;;
   enable-automount) do_enable_automount ;;
   disable-automount) do_disable_automount ;;

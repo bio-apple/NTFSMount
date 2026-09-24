@@ -114,6 +114,102 @@ final class NTFSVolumeScanTests: XCTestCase {
     XCTAssertEqual(disks[0].serial, "ABCD-1234-DISK")
     XCTAssertEqual(disks[0].mediaName, "SanDisk")
   }
+
+  func testFormatScanProtectsAPFSPhysicalStoreEvenIfNotInternal() {
+    let catalog = MockCatalog()
+    catalog.list = [
+      "AllDisksAndPartitions": [
+        ["DeviceIdentifier": "disk0", "Partitions": [["DeviceIdentifier": "disk0s2"]]],
+        ["DeviceIdentifier": "disk4", "Partitions": [["DeviceIdentifier": "disk4s1"]]],
+      ],
+    ]
+    catalog.info["/"] = [
+      "ParentWholeDisk": "disk3",
+      "APFSPhysicalStores": [
+        ["APFSPhysicalStore": "disk0s2"],
+      ],
+    ]
+    catalog.info["disk0"] = [
+      "Internal": false,
+      "TotalSize": NSNumber(value: 500_000_000_000),
+      "BusProtocol": "PCI",
+    ]
+    catalog.info["disk4"] = [
+      "Internal": false,
+      "TotalSize": NSNumber(value: 8_000_000_000),
+      "BusProtocol": "USB",
+      "MediaName": "SanDisk",
+    ]
+    catalog.info["disk4s1"] = [
+      "FilesystemName": "ExFAT",
+      "VolumeName": "CAMERA",
+    ]
+
+    let disks = FormatDisk.scan(using: catalog)
+    XCTAssertEqual(disks.map(\.id), ["disk4"])
+    XCTAssertFalse(disks.contains(where: { $0.id == "disk0" }))
+  }
+
+  func testFormatScanSkipsVirtualAndZeroSize() {
+    let catalog = MockCatalog()
+    catalog.list = [
+      "AllDisksAndPartitions": [
+        ["DeviceIdentifier": "disk6", "Partitions": [["DeviceIdentifier": "disk6s1"]]],
+        ["DeviceIdentifier": "disk7", "Partitions": [["DeviceIdentifier": "disk7s1"]]],
+        ["DeviceIdentifier": "disk8", "Partitions": [["DeviceIdentifier": "disk8s1"]]],
+      ],
+    ]
+    catalog.info["disk6"] = [
+      "Internal": false,
+      "TotalSize": NSNumber(value: 8_000_000_000),
+      "VirtualOrPhysical": "Virtual",
+      "BusProtocol": "USB",
+    ]
+    catalog.info["disk7"] = [
+      "Internal": false,
+      "TotalSize": NSNumber(value: 0),
+      "BusProtocol": "USB",
+    ]
+    catalog.info["disk8"] = [
+      "Internal": false,
+      "TotalSize": NSNumber(value: 4_000_000_000),
+      "BusProtocol": "USB",
+      "MediaName": "Stick",
+    ]
+    catalog.info["disk8s1"] = [
+      "FilesystemName": "FAT32",
+      "VolumeName": "KEY",
+    ]
+
+    let disks = FormatDisk.scan(using: catalog)
+    XCTAssertEqual(disks.map(\.id), ["disk8"])
+  }
+
+  func testFormatSerialFallsBackToPartVolumeUUIDAndEmptyNameSuggestsNTFS() {
+    let catalog = MockCatalog()
+    catalog.list = [
+      "AllDisksAndPartitions": [
+        ["DeviceIdentifier": "disk9", "Partitions": [["DeviceIdentifier": "disk9s1"]]],
+      ],
+    ]
+    catalog.info["disk9"] = [
+      "Internal": false,
+      "TotalSize": NSNumber(value: 2_000_000_000),
+      "BusProtocol": "USB",
+    ]
+    catalog.info["disk9s1"] = [
+      "FilesystemName": "ExFAT",
+      "VolumeUUID": "VOL-FROM-PART",
+      "VolumeName": "",
+    ]
+
+    let disks = FormatDisk.scan(using: catalog)
+    XCTAssertEqual(disks.map(\.id), ["disk9"])
+    XCTAssertEqual(disks[0].serial, "VOL-FROM-PART")
+    XCTAssertEqual(disks[0].name, "disk9")
+    XCTAssertEqual(disks[0].suggestedLabel, "NTFS")
+    XCTAssertEqual(FormatDisk(id: "disk4", name: "  ", size: 1, fsHint: "").suggestedLabel, "NTFS")
+  }
 }
 
 final class VolumeHealthTests: XCTestCase {
@@ -123,6 +219,23 @@ final class VolumeHealthTests: XCTestCase {
     XCTAssertTrue(VolumeHealth.looksDirtyOrHibernated("hiberfil.sys present, unsafe state"))
     XCTAssertFalse(VolumeHealth.looksDirtyOrHibernated("Mounted successfully"))
     XCTAssertEqual(VolumeHealth.advice(for: "hibernated", success: true), .readOnlyDirty)
+  }
+
+  func testDistinguishesDirtyFromHibernated() {
+    XCTAssertTrue(VolumeHealth.looksHibernated("Windows is hibernated, refused to mount."))
+    XCTAssertTrue(VolumeHealth.looksHibernated("hiberfil.sys present"))
+    XCTAssertFalse(VolumeHealth.looksHibernated("Volume is dirty. Please run chkdsk."))
+    XCTAssertTrue(VolumeHealth.looksDirty("Volume is dirty. Please run chkdsk."))
+    XCTAssertTrue(VolumeHealth.looksDirty("The disk contains an unclean file system"))
+    XCTAssertTrue(VolumeHealth.looksDirty("Windows fast restart left the volume dirty"))
+    XCTAssertFalse(VolumeHealth.looksDirty("Mounted successfully"))
+    XCTAssertTrue(VolumeHealth.canOfferDirtyFix("volume is dirty"))
+    XCTAssertTrue(VolumeHealth.canOfferDirtyFix("unclean / fast restart"))
+    XCTAssertFalse(VolumeHealth.canOfferDirtyFix("Windows is hibernated"))
+    XCTAssertFalse(VolumeHealth.canOfferDirtyFix("Volume is dirty. Windows is hibernated."))
+    XCTAssertTrue(VolumeHealth.canOfferDirtyFix("classify: volume is dirty"))
+    XCTAssertFalse(VolumeHealth.canOfferDirtyFix("classify: Windows is hibernated"))
+    XCTAssertFalse(VolumeHealth.canOfferDirtyFix("classify: dirty/hibernation"))
   }
 
   func testKextBlockIsClassified() {
@@ -148,13 +261,15 @@ final class VolumeHealthTests: XCTestCase {
 }
 
 final class OnboardingCopyTests: XCTestCase {
-  func testQuitIsDefaultLabelAndBodyMentionsHelper() {
+  func testAgreeIsPrimaryAndBodyMentionsHelper() {
     XCTAssertEqual(OnboardingCopy.quitTitle, "退出")
     XCTAssertEqual(OnboardingCopy.agreeTitle, "同意并继续")
     let body = OnboardingCopy.body(notarized: false)
     XCTAssertTrue(body.contains("仍要打开"))
+    XCTAssertTrue(body.contains("xattr -d com.apple.quarantine"))
     XCTAssertTrue(body.contains("管理员密码"))
     XCTAssertTrue(body.contains("go-nfsv4"))
+    XCTAssertTrue(body.contains("回车即同意"))
     XCTAssertFalse(OnboardingCopy.body(notarized: true).contains("当前构建未公证"))
   }
 }
@@ -203,5 +318,16 @@ final class UserFacingErrorTests: XCTestCase {
     XCTAssertEqual(UserFacingError.message(from: "0:205: execution error"), "未能取得管理员权限。若刚才点了取消，可再试。详情已写入日志。")
     XCTAssertEqual(UserFacingError.message(from: "User canceled. (-128)"), "已取消。")
     XCTAssertEqual(UserFacingError.message(from: "bash: foo: No such file or directory (127)"), "安装助手失败，请再试一次。详情已写入日志。")
+  }
+
+  func testMapsBusyEject() {
+    XCTAssertEqual(
+      UserFacingError.message(from: "error: 磁盘正被占用：Finder。请关闭访达窗口/文件后点推出"),
+      "磁盘正被占用：Finder。请关闭访达窗口/文件后点推出"
+    )
+    XCTAssertEqual(
+      UserFacingError.message(from: "Unmount failed: Resource busy"),
+      "磁盘正被占用：请关闭访达窗口/文件后点推出"
+    )
   }
 }

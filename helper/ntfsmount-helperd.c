@@ -26,7 +26,7 @@
 #define MAX_BODY (256 * 1024)
 
 static const char *kAllowed[] = {
-    "mount", "unmount", "eject", "format", "automount",
+    "mount", "unmount", "eject", "format", "fix", "ntfsfix", "automount",
     "enable-automount", "disable-automount", "version", "selftest",
     NULL};
 

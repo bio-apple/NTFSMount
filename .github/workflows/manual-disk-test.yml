@@ -1,0 +1,23 @@
+# 真盘手工测试的可脚本化子集。GitHub-hosted 无法插 USB，必须 self-hosted Apple Silicon。
+# 不公证、不需要 secrets、不抹盘。无 NTFS 卷立刻失败。
+name: manual-disk-test
+on:
+  workflow_dispatch:
+
+jobs:
+  real-disk:
+    name: Real disk (self-hosted)
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Arch and macOS
+        run: |
+          set -euo pipefail
+          echo "arch=$(/usr/bin/uname -m)  macos=$(/usr/bin/sw_vers -productVersion)"
+          if [[ "$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null || true)" != "1" && "$(/usr/bin/uname -m)" != "arm64" ]]; then
+            echo "error: 需要 Apple Silicon runner。给机器打标签 self-hosted, macOS, ARM64。" >&2
+            exit 1
+          fi
+      - name: Scriptable subset of docs/MANUAL_TEST.md
+        run: bash scripts/ci-manual-disk-test.sh

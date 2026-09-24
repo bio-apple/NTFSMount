@@ -1,0 +1,32 @@
+#!/bin/bash
+# 仓库内 CLI。目前仅 diagnose（只读，不挂载、不装助手）。
+# 用法: ./scripts/ntfsmount diagnose [--json]
+set -euo pipefail
+DIR="$(cd "$(/usr/bin/dirname "$0")" && pwd)"
+
+usage() {
+  echo "用法: ntfsmount diagnose [--json]" >&2
+  echo "      $DIR/ntfsmount diagnose [--json]" >&2
+  echo "      $DIR/ntfsmount-diagnose.sh [--json]" >&2
+}
+
+if [[ $# -lt 1 ]]; then
+  usage
+  exit 2
+fi
+cmd="$1"
+shift
+case "$cmd" in
+  diagnose)
+    exec "$DIR/ntfsmount-diagnose.sh" "$@"
+    ;;
+  -h|--help|help)
+    usage
+    exit 0
+    ;;
+  *)
+    echo "error: 未知子命令: ${cmd}（目前仅支持 diagnose）" >&2
+    usage
+    exit 2
+    ;;
+esac

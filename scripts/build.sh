@@ -1,5 +1,9 @@
 #!/bin/bash
 set -euo pipefail
+if [[ "$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null || true)" != "1" && "$(/usr/bin/uname -m)" != "arm64" ]]; then
+  echo "error: NTFSMount 仅支持 Apple Silicon（M 芯片 / arm64），不支持 Intel Mac（x86_64）。当前架构：$(/usr/bin/uname -m)" >&2
+  exit 1
+fi
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APP="$ROOT/dist/NTFSMount.app"
 if ! mkdir -p "$ROOT/dist" 2>/dev/null || ! rm -rf "$APP" 2>/dev/null; then
@@ -14,7 +18,7 @@ ENTITLEMENTS="$ROOT/Resources/NTFSMount.entitlements"
 mkdir -p "$MACOS" "$APP/Contents/Resources" "$APP/Contents/Library/LaunchDaemons"
 
 # Ensure bundled userspace stack is present.
-if [[ ! -x "$ROOT/runtime/ntfs-3g" || ! -x "$ROOT/runtime/go-nfsv4" || ! -x "$ROOT/runtime/mkntfs" || ! -f "$ROOT/runtime/libntfs-3g.90.dylib" ]]; then
+if [[ ! -x "$ROOT/runtime/ntfs-3g" || ! -x "$ROOT/runtime/go-nfsv4" || ! -x "$ROOT/runtime/mkntfs" || ! -x "$ROOT/runtime/ntfsfix" || ! -f "$ROOT/runtime/libntfs-3g.90.dylib" ]]; then
   bash "$ROOT/scripts/prepare-runtime.sh"
 fi
 
@@ -42,7 +46,7 @@ cp "$ROOT/helper/com.bioapple.ntfsmount.helper.plist" "$APP/Contents/Library/Lau
 /usr/bin/shasum -a 256 "$ROOT/helper/ntfs-rw-helper" | /usr/bin/awk '{print $1}' > "$APP/Contents/Resources/ntfs-rw-helper.sha256"
 chmod 755 "$APP/Contents/Resources/ntfs-rw-helper" "$APP/Contents/Resources/install-helper.sh" "$APP/Contents/Resources/uninstall-helper.sh" "$BIN" "$HELPERD"
 
-for f in ntfs-3g mkntfs go-nfsv4 libfuse.2.dylib libntfs-3g.90.dylib; do
+for f in ntfs-3g mkntfs ntfsfix go-nfsv4 libfuse.2.dylib libntfs-3g.90.dylib; do
   [[ -e "$ROOT/runtime/$f" ]] || { echo "error: missing runtime/$f" >&2; exit 1; }
   cp "$ROOT/runtime/$f" "$MACOS/$f"
   chmod 755 "$MACOS/$f"
@@ -63,6 +67,7 @@ sign() {
     "$MACOS/libntfs-3g.90.dylib" \
     "$MACOS/ntfs-3g" \
     "$MACOS/mkntfs" \
+    "$MACOS/ntfsfix" \
     "$MACOS/go-nfsv4" >/dev/null
   codesign --force --sign "$id" --identifier com.bioapple.ntfsmount "${extra[@]}" "$APP"
 }

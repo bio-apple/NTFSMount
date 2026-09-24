@@ -332,14 +332,24 @@ private struct VolumeDetailView: View {
       HStack(spacing: 10) {
         if vol.isWritableFuse {
           Button("卸载") { store.unmount(vol) }
+            .buttonStyle(.bordered)
+          Button("推出（可安全拔出）") { store.eject(vol) }
             .buttonStyle(.borderedProminent)
+            .disabled(vol.isInternal)
+            .help("先释放 ntfs-3g 再弹出")
         } else {
           Button("以可写方式挂载") { store.mount(vol) }
             .buttonStyle(.borderedProminent)
+          Button("推出（可安全拔出）") { store.eject(vol) }
+            .buttonStyle(.bordered)
+            .disabled(vol.isInternal)
+            .help(vol.isInternal ? "内置磁盘不能推出" : "先释放 ntfs-3g 再弹出")
         }
 
-        Button("推出（可安全拔出）") { store.eject(vol) }
-          .buttonStyle(.bordered)
+        if store.canOfferDirtyFix(vol) {
+          Button("尝试修复脏卷…") { store.confirmDirtyFix(vol) }
+            .buttonStyle(.bordered)
+        }
 
         Button("在访达中打开") {
           NSWorkspace.shared.open(URL(fileURLWithPath: vol.expectedMountPoint))
@@ -348,6 +358,9 @@ private struct VolumeDetailView: View {
         .disabled(vol.mountPoint.isEmpty)
       }
       .controlSize(.large)
+      Text("先释放 ntfs-3g 再弹出")
+        .font(.caption)
+        .foregroundStyle(.secondary)
 
       HStack(spacing: 10) {
         Button("查看日志") { LogViewer.open() }

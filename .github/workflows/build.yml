@@ -6,10 +6,39 @@ on:
   pull_request:
   release:
     types: [published]
+  workflow_dispatch:
+
+# 只取消进行中的 PR；tag 上的 DMG/公证不能被同 ref 的新 run 杀掉。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  shellcheck:
-    name: ShellCheck
+  lint:
+    name: SwiftLint
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SwiftLint
+        run: brew install swiftlint
+      - name: Lint Sources and Tests
+        run: swiftlint lint --strict --config .swiftlint.yml
+
+  test:
+    name: UnitTest
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Helper selftest and compile
+        run: bash scripts/test-helper.sh
+      - name: Swift tests with coverage
+        run: bash scripts/coverage.sh
+      - name: Diagnose dump
+        continue-on-error: true
+        run: bash scripts/ntfsmount diagnose --json
+
+  security:
+    name: Security Scan
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
@@ -27,46 +56,79 @@ jobs:
             scripts/write-dmg-sha256.sh \
             scripts/check-helper-gone.sh \
             scripts/prepare-runtime.sh \
-            scripts/notarize.sh
+            scripts/coverage.sh \
+            scripts/notarize.sh \
+            scripts/ci-import-signing.sh \
+            scripts/ntfsmount \
+            scripts/ntfsmount-diagnose.sh
+      - name: Privilege and secret greps
+        run: |
+          set -euo pipefail
+          SCAN=()
+          for f in helper/*.sh helper/ntfs-rw-helper scripts/*.sh uninstall.sh; do
+            [[ -f "$f" ]] || continue
+            [[ "${f##*/}" == "test-helper.sh" ]] && continue
+            SCAN+=("$f")
+          done
+          fail=0
+          if /usr/bin/grep -nE 'ALL=\(root\) NOPASSWD' "${SCAN[@]}"; then
+            echo "error: helper/scripts must not write sudoers NOPASSWD" >&2
+            fail=1
+          fi
+          if /usr/bin/grep -nE 'sudo[[:space:]]+-S\b|SUDO_ASKPASS|[[:space:]]ASKPASS=|^ASKPASS=' "${SCAN[@]}"; then
+            echo "error: helper/scripts must not feed sudo from stdin or set an ask-pass helper" >&2
+            fail=1
+          fi
+          if /usr/bin/grep -nE 'echo[[:space:]].*\|[[:space:]]*sudo|printf[[:space:]].*\|[[:space:]]*sudo' "${SCAN[@]}"; then
+            echo "error: helper/scripts must not pipe a secret into sudo" >&2
+            fail=1
+          fi
+          # Literal password assignments only. Do not match env names like APPLE_CERTIFICATE_PASSWORD.
+          if /usr/bin/grep -nE '(password|passwd|PASSWORD)[[:space:]]*=[[:space:]]*["'\''][^"'\'']+["'\'']' "${SCAN[@]}"; then
+            echo "error: helper/scripts must not hardcode passwords" >&2
+            fail=1
+          fi
+          if /usr/bin/grep -R -nE 'BEGIN (RSA |OPENSSH |EC |DSA )?PRIVATE KEY' \
+            --include='*.swift' --include='*.sh' --include='*.c' --include='*.plist' \
+            --include='*.yml' --include='*.entitlements' \
+            --exclude-dir=.git --exclude-dir=.build --exclude-dir=.swiftpm \
+            .; then
+            echo "error: private key material must not be in the tree" >&2
+            fail=1
+          fi
+          exit "$fail"
 
-  helper:
-    name: Helper Build
+  build:
+    name: Build
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
-      - name: Helper selftest and compile
-        run: bash scripts/test-helper.sh
-
-  swift:
-    name: Swift Build
-    runs-on: macos-14
-    steps:
-      - uses: actions/checkout@v4
-      - name: Swift tests
-        run: swift test
       - name: Swift release build
         run: swift build -c release --arch arm64 --product NTFSMount
         env:
           MACOSX_DEPLOYMENT_TARGET: "13.0"
 
+  # 完整 .app（含 runtime）只在 main / 手动跑；PR 不跑 brew ntfs-3g，避免第五个检查名和 flaky 依赖。
   app:
     name: App
     runs-on: macos-14
-    needs: [helper, swift]
-    if: github.event_name != 'release'
+    needs: [test, build]
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
+      - name: Import Developer ID
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          CODESIGN_IDENTITY: ${{ secrets.CODESIGN_IDENTITY }}
+        run: bash scripts/ci-import-signing.sh
+      - name: Install ntfs-3g for bundled runtime
+        run: brew install ntfs-3g
       - name: Build app
         run: bash scripts/build.sh
         env:
-          CODESIGN_IDENTITY: ${{ secrets.CODESIGN_IDENTITY }}
-      - name: Notarize
-        if: ${{ secrets.NOTARY_PROFILE != '' && secrets.CODESIGN_IDENTITY != '' }}
-        run: bash scripts/notarize.sh dist/NTFSMount.app || bash scripts/notarize.sh /tmp/NTFSMount.app
-        env:
-          CODESIGN_IDENTITY: ${{ secrets.CODESIGN_IDENTITY }}
-          NOTARY_PROFILE: ${{ secrets.NOTARY_PROFILE }}
-      - name: Upload unsigned/ad-hoc artifact
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: NTFSMount-app
@@ -74,6 +136,12 @@ jobs:
             dist/NTFSMount.app
             /tmp/NTFSMount.app
           if-no-files-found: warn
+      - name: Delete signing keychain
+        if: always()
+        run: |
+          if [[ -n "${APP_SIGNING_KEYCHAIN:-}" ]]; then
+            security delete-keychain "$APP_SIGNING_KEYCHAIN" || true
+          fi
 
   dmg-on-tag:
     name: DMG (tag)
@@ -81,40 +149,83 @@ jobs:
     runs-on: macos-14
     permissions:
       contents: write
-    needs: [helper, swift, shellcheck]
+    needs: [lint, test, security, build]
     steps:
       - uses: actions/checkout@v4
-      - name: Package DMG when runtime is present
+      - name: Import Developer ID
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          CODESIGN_IDENTITY: ${{ secrets.CODESIGN_IDENTITY }}
+        run: bash scripts/ci-import-signing.sh
+      - name: Prepare runtime, package DMG, publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CODESIGN_IDENTITY: ${{ secrets.CODESIGN_IDENTITY }}
           NOTARY_PROFILE: ${{ secrets.NOTARY_PROFILE }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          FUSE_T_REDISTRIBUTION_OK: ${{ vars.FUSE_T_REDISTRIBUTION_OK }}
         run: |
           set -euo pipefail
-          if [[ ! -x runtime/ntfs-3g || ! -x runtime/go-nfsv4 || ! -x runtime/mkntfs || ! -f runtime/libntfs-3g.90.dylib ]]; then
-            echo "skip DMG: runtime/ not in checkout (need ntfs-3g, mkntfs, go-nfsv4, libntfs-3g). Attach DMG manually, SHA256 job still runs on published release."
-            exit 0
-          fi
+          brew install ntfs-3g
+          bash scripts/prepare-runtime.sh
           bash scripts/package-dmg.sh
+          app=""
+          [[ -d dist/NTFSMount.app ]] && app=dist/NTFSMount.app
+          [[ -z "$app" && -d /tmp/NTFSMount.app ]] && app=/tmp/NTFSMount.app
+          notarized=0
+          if [[ -n "$app" ]] && xcrun stapler validate "$app" >/dev/null 2>&1; then
+            notarized=1
+          elif xcrun stapler validate dist/NTFSMount.dmg >/dev/null 2>&1; then
+            notarized=1
+          fi
           notes="$(/usr/bin/mktemp)"
           {
-            echo "个人使用预发布。未取得 FUSE-T 书面许可前不要镜像或当产品分发。见 NOTICE。"
+            if [[ "${FUSE_T_REDISTRIBUTION_OK:-}" == "1" && "$notarized" == "1" ]]; then
+              echo "已公证。仍须确认 FUSE-T 书面许可后再当作产品分发。见 NOTICE。"
+            else
+              echo "个人使用预发布。未取得 FUSE-T 书面许可前不要镜像或当产品分发。见 NOTICE。"
+              if [[ "$notarized" != "1" ]]; then
+                echo "本构建未公证：Gatekeeper 会拦截。仓库 Secrets 配好证书与 App Store Connect API Key 后重打 tag。"
+              fi
+            fi
             echo
             /bin/cat dist/NTFSMount.dmg.release-notes.md
           } > "$notes"
           assets=(dist/NTFSMount.dmg)
           [[ -f dist/NTFSMount.dmg.sha256 ]] && assets+=(dist/NTFSMount.dmg.sha256)
+          official=0
+          [[ "$notarized" == "1" && "${FUSE_T_REDISTRIBUTION_OK:-}" == "1" ]] && official=1
+          if [[ "$official" == "1" ]]; then
+            title="${GITHUB_REF_NAME}"
+          elif [[ "$notarized" == "1" ]]; then
+            title="${GITHUB_REF_NAME}（个人使用，已公证）"
+          else
+            title="${GITHUB_REF_NAME}（个人使用，未公证）"
+          fi
           if gh release view "${GITHUB_REF_NAME}" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload "${GITHUB_REF_NAME}" --repo "$GITHUB_REPOSITORY" "${assets[@]}" --clobber
+            if [[ "$official" == "1" ]]; then
+              gh release edit "${GITHUB_REF_NAME}" --repo "$GITHUB_REPOSITORY" --title "$title" --notes-file "$notes" --latest
+            else
+              gh release edit "${GITHUB_REF_NAME}" --repo "$GITHUB_REPOSITORY" --title "$title" --notes-file "$notes" --prerelease
+            fi
+          elif [[ "$official" == "1" ]]; then
+            gh release create "${GITHUB_REF_NAME}" --repo "$GITHUB_REPOSITORY" \
+              --title "$title" --notes-file "$notes" "${assets[@]}"
           else
             gh release create "${GITHUB_REF_NAME}" --repo "$GITHUB_REPOSITORY" \
-              --prerelease \
-              --title "${GITHUB_REF_NAME}（个人使用，未公证）" \
-              --notes-file "$notes" \
-              "${assets[@]}"
+              --prerelease --title "$title" --notes-file "$notes" "${assets[@]}"
+          fi
+      - name: Delete signing keychain
+        if: always()
+        run: |
+          if [[ -n "${APP_SIGNING_KEYCHAIN:-}" ]]; then
+            security delete-keychain "$APP_SIGNING_KEYCHAIN" || true
           fi
 
-  # 本 workflow 不把 latest 指到预发布。人工或 tag job 附上 NTFSMount.dmg 后补 SHA256。
+  # 人工创建 Release 并附上 DMG 时补 SHA256。tag job 已带 sidecar。
   release-sha256:
     if: github.event_name == 'release'
     runs-on: macos-14

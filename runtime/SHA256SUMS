@@ -1,0 +1,15 @@
+# 捆绑运行时的上游输入校验（prepare-runtime.sh 在 rpath 改写之前核对）。
+# 格式：HASH  filename（与 shasum -a 256 相同）
+#
+# FUSE-T 1.2.7 官方安装包（必须校验）：
+#   https://github.com/macos-fuse-t/fuse-t/releases/download/1.2.7/fuse-t-macos-installer-1.2.7.pkg
+# go-nfsv4 / libfuse.2.dylib 从该 pkg 解出，或来自本机已装的 FUSE-T 1.2.7。
+#
+# ntfs-3g / mkntfs / ntfsfix / libntfs-3g 由 Homebrew 拉取；bottles 的 SHA256 由 brew 自己核对，
+# 本文件不钉死 cellar 里的文件哈希（formula 升级会变）。脚本会检查其为 arm64 Mach-O。
+#
+# 版本与复现步骤见 runtime/versions.txt。不要把 runtime 下的二进制提交进 Git。
+
+6a29c747e61a86a405a189efc3de42812d73147135f93a1bb0624c1e7b90e654  fuse-t-macos-installer-1.2.7.pkg
+76d9fd335f0c2007b7ac02bb424a4ae41dde3380daa1d7d510d9a7c9e5f534bb  go-nfsv4
+7f8284463379f48034e38913804920719fb2c13a42e04027533fd1d19ff8bb42  libfuse.2.dylib

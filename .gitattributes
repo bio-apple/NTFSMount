@@ -1,0 +1,8 @@
+# 若有人强制把 runtime 二进制加进 Git，走 LFS 而不是普通 blob。
+# 默认应 gitignore 这些文件，用 scripts/prepare-runtime.sh 下载并校验 SHA256。
+runtime/go-nfsv4 filter=lfs diff=lfs merge=lfs -text
+runtime/ntfs-3g filter=lfs diff=lfs merge=lfs -text
+runtime/mkntfs filter=lfs diff=lfs merge=lfs -text
+runtime/ntfsfix filter=lfs diff=lfs merge=lfs -text
+runtime/libfuse.2.dylib filter=lfs diff=lfs merge=lfs -text
+runtime/libntfs-3g.90.dylib filter=lfs diff=lfs merge=lfs -text

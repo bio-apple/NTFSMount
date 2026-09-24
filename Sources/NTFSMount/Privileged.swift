@@ -3,6 +3,9 @@ import Foundation
 import NTFSMountCore
 import ServiceManagement
 
+/// 持续提权走 SMAppService + LaunchDaemon（Cocoa 原生平权）。
+/// osascript「do shell script … with administrator privileges」仅用于一次性安装/卸载。
+/// 不引入 AuthorizationServices 平行 API，也不写 sudoers NOPASSWD。
 enum Privileged {
   static var systemHelperInstalled: Bool {
     FileManager.default.fileExists(atPath: AppIdentity.helperDaemonPath)
@@ -109,11 +112,13 @@ enum Privileged {
   }
 
   private static func copyToTempAndRun(_ prefix: [String], files: [String], extra: [String]) -> Outcome {
-    let dir = URL(fileURLWithPath: "/tmp/ntfsmount-helper-install")
+    let dir = FileManager.default.temporaryDirectory
+      .appendingPathComponent("ntfsmount-helper-install-\(ProcessInfo.processInfo.globallyUniqueString)")
     let fm = FileManager.default
-    try? fm.removeItem(at: dir)
+    defer { try? fm.removeItem(at: dir) }
     do {
       try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+      try fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: dir.path)
       var copied: [String] = []
       for src in files {
         let dest = dir.appendingPathComponent((src as NSString).lastPathComponent)
@@ -193,17 +198,28 @@ enum Privileged {
   }
 
   private static func runAdmin(parts: [String]) -> Outcome {
-    let expr = parts.map(appleScriptQuoted).joined(separator: " & \" \" & ")
-    let source = "do shell script \(expr) with administrator privileges"
+    let source = """
+    on run argv
+      set cmd to ""
+      repeat with a in argv
+        set cmd to cmd & quoted form of (contents of a) & space
+      end repeat
+      do shell script cmd with administrator privileges
+    end run
+    """
     let osa = Process()
     osa.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-    osa.arguments = ["-e", source]
+    osa.arguments = ["-"] + parts
+    let stdin = Pipe()
     let osaOut = Pipe()
     let osaErr = Pipe()
+    osa.standardInput = stdin
     osa.standardOutput = osaOut
     osa.standardError = osaErr
     do {
       try osa.run()
+      stdin.fileHandleForWriting.write(Data(source.utf8))
+      stdin.fileHandleForWriting.closeFile()
       osa.waitUntilExit()
       let out = String(data: osaOut.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
       let err = String(data: osaErr.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
@@ -214,9 +230,5 @@ enum Privileged {
     } catch {
       return Outcome(ok: false, text: error.localizedDescription)
     }
-  }
-
-  private static func appleScriptQuoted(_ s: String) -> String {
-    "quoted form of \"\(s.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\""))\""
   }
 }
