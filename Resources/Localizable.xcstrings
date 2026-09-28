@@ -327,25 +327,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "1. Mounting NTFS writable or formatting it can damage data. Back up first.\n2. Bundled FUSE-T go-nfsv4 is not GPL and is for personal use by default. Before distributing or selling this as a product, you must obtain written permission from FUSE-T (https://www.fuse-t.org/). This package is not currently a redistributable product.\n3. By default this app does not use the network or collect accounts. If you enable “Check for Updates Automatically” or choose “Check for Updates…”, the app contacts GitHub for the Sparkle appcast (pre-release v1.2.0 asset, not GitHub Latest). Disk contents are not uploaded. Logs stay on this Mac. After you uninstall the app, log files remain in your user folder.\n4. The mount helper runs as a root daemon and can mount, unmount, and format external disks. The administrator password entered at install time is not saved.\n\nOn first use, click “Install…” in the window to install the mount helper. Un-notarized builds ask for an administrator password; notarized builds prefer system service authorization.\n\nReturn means you agree. Click “Quit” if you do not."
+            "value": "1. Mounting NTFS writable or formatting it can damage data. Back up first.\n2. Bundled FUSE-T go-nfsv4 is not GPL and is for personal use by default. Before distributing or selling this as a product, you must obtain written permission from FUSE-T (https://www.fuse-t.org/). This package is not currently a redistributable product.\n3. By default this app does not use the network or collect accounts. This build is not notarized. Download updates from GitHub Releases. Disk contents are not uploaded. Logs stay on this Mac. After you uninstall the app, log files remain in your user folder.\n4. The mount helper runs as a root daemon and can mount, unmount, and format external disks. The administrator password entered at install time is not saved.\n\nOn first use, click “Install…” in the window to install the mount helper. Un-notarized builds ask for an administrator password; notarized builds prefer system service authorization.\n\nReturn means you agree. Click “Quit” if you do not."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "1. 以可写方式挂载或格式化 NTFS 可能损坏数据。请先备份。\n2. 捆绑的 FUSE-T go-nfsv4 不是 GPL，默认仅供个人使用。作为产品分发或销售前，须向 FUSE-T 取得书面许可（https://www.fuse-t.org/）。本安装包目前不是可公开再分发的产品。\n3. 默认不联网、不收集账户。若打开设置「自动检查更新」或点菜单「检查更新…」，应用会访问 GitHub 上的 Sparkle appcast（pre-release v1.2.0 资产，不是 GitHub Latest）。不会上传磁盘内容。日志只写在本机。卸载应用后日志文件仍会留在本机用户目录。\n4. 挂载助手以 root 守护进程运行，可挂载、卸载与格式化外置盘；安装时输入的管理员密码不会保存。\n\n第一次使用请在窗口点「安装…」安装挂载助手。未公证包会请求管理员密码；已公证包优先用系统服务授权。\n\n回车即同意。不同意请点「退出」。"
+            "value": "1. 以可写方式挂载或格式化 NTFS 可能损坏数据。请先备份。\n2. 捆绑的 FUSE-T go-nfsv4 不是 GPL，默认仅供个人使用。作为产品分发或销售前，须向 FUSE-T 取得书面许可（https://www.fuse-t.org/）。本安装包目前不是可公开再分发的产品。\n3. 默认不联网、不收集账户。当前构建未公证。请到 GitHub Releases 手动下载。不会上传磁盘内容。日志只写在本机。卸载应用后日志文件仍会留在本机用户目录。\n4. 挂载助手以 root 守护进程运行，可挂载、卸载与格式化外置盘；安装时输入的管理员密码不会保存。\n\n第一次使用请在窗口点「安装…」安装挂载助手。未公证包会请求管理员密码；已公证包优先用系统服务授权。\n\n回车即同意。不同意请点「退出」。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "1. 以可寫方式掛載或格式化 NTFS 可能損壞資料。請先備份。\n2. 內附的 FUSE-T go-nfsv4 不是 GPL，預設僅供個人使用。作為產品散佈或銷售前，須向 FUSE-T 取得書面許可（https://www.fuse-t.org/）。本安裝包目前不是可公開再散佈的產品。\n3. 預設不連網、不收集帳號。若打開設定「自動檢查更新」或點選單「檢查更新…」，App 會連線 GitHub 上的 Sparkle appcast（pre-release v1.2.0 資產，不是 GitHub Latest）。不會上傳磁碟內容。紀錄只寫在本機。解除安裝後紀錄檔仍會留在本機使用者目錄。\n4. 掛載助手以 root 守護程式執行，可掛載、卸載與格式化外接碟；安裝時輸入的管理員密碼不會儲存。\n\n第一次使用請在視窗點「安裝…」安裝掛載助手。未公證套件會要求管理員密碼；已公證套件優先用系統服務授權。\n\nReturn 即同意。不同意請點「結束」。"
+            "value": "1. 以可寫方式掛載或格式化 NTFS 可能損壞資料。請先備份。\n2. 內附的 FUSE-T go-nfsv4 不是 GPL，預設僅供個人使用。作為產品散佈或銷售前，須向 FUSE-T 取得書面許可（https://www.fuse-t.org/）。本安裝包目前不是可公開再散佈的產品。\n3. 預設不連網、不收集帳號。目前建置未公證。請到 GitHub Releases 手動下載。不會上傳磁碟內容。紀錄只寫在本機。解除安裝後紀錄檔仍會留在本機使用者目錄。\n4. 掛載助手以 root 守護程式執行，可掛載、卸載與格式化外接碟；安裝時輸入的管理員密碼不會儲存。\n\n第一次使用請在視窗點「安裝…」安裝掛載助手。未公證套件會要求管理員密碼；已公證套件優先用系統服務授權。\n\nReturn 即同意。不同意請點「結束」。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "1. NTFS を書き込み可能でマウントしたりフォーマットしたりすると、データが破損する可能性があります。先にバックアップしてください。\n2. 同梱の FUSE-T go-nfsv4 は GPL ではなく、既定では個人利用向けです。製品として配布または販売する前に、FUSE-T（https://www.fuse-t.org/）から書面の許可を得てください。本パッケージは現時点で再配布可能な製品ではありません。\n3. 既定ではネットワークを使わず、アカウントも収集しません。設定の「更新を自動確認」または「更新を確認…」を使うと、GitHub 上の Sparkle appcast（pre-release v1.2.0、GitHub Latest ではない）に接続します。ディスク内容は送信しません。ログはこの Mac にだけ書き込まれます。アプリをアンインストールしてもログファイルはユーザフォルダに残ります。\n4. マウントヘルパーは root デーモンとして動作し、外付けディスクのマウント、アンマウント、フォーマットができます。インストール時に入力した管理者パスワードは保存されません。\n\n初回はウィンドウで「インストール…」を押してマウントヘルパーを入れてください。未公証ビルドは管理者パスワードを求めます。公証済みビルドはシステムサービスの承認を優先します。\n\nReturn で同意します。同意しない場合は「終了」を押してください。"
+            "value": "1. NTFS を書き込み可能でマウントしたりフォーマットしたりすると、データが破損する可能性があります。先にバックアップしてください。\n2. 同梱の FUSE-T go-nfsv4 は GPL ではなく、既定では個人利用向けです。製品として配布または販売する前に、FUSE-T（https://www.fuse-t.org/）から書面の許可を得てください。本パッケージは現時点で再配布可能な製品ではありません。\n3. 既定ではネットワークを使わず、アカウントも収集しません。このビルドは未公証です。更新は GitHub Releases から手動でダウンロードしてください。ディスク内容は送信しません。ログはこの Mac にだけ書き込まれます。アプリをアンインストールしてもログファイルはユーザフォルダに残ります。\n4. マウントヘルパーは root デーモンとして動作し、外付けディスクのマウント、アンマウント、フォーマットができます。インストール時に入力した管理者パスワードは保存されません。\n\n初回はウィンドウで「インストール…」を押してマウントヘルパーを入れてください。未公証ビルドは管理者パスワードを求めます。公証済みビルドはシステムサービスの承認を優先します。\n\nReturn で同意します。同意しない場合は「終了」を押してください。"
           }
         }
       }
@@ -2705,25 +2705,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Off by default until the helper is installed, terms are accepted, and writable risk is confirmed. Internal disks and Boot Camp are never auto-mounted. Auto-mount is still not a v1.2.0 selling point (Issue #1)."
+            "value": "After inserting an external NTFS disk, try writable mount; skip internal disks."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "默认关闭，直到已安装助手、同意条款并确认过可写风险。内置盘与 Boot Camp 不会自动挂载。自动挂载仍非 v1.2.0 卖点（Issue #1）。"
+            "value": "插入外置 NTFS 磁盘后尝试以可写方式挂载；跳过内置磁盘。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "預設關閉，直到已安裝助手、同意條款並確認過可寫風險。內建碟與 Boot Camp 不會自動掛載。自動掛載仍非 v1.2.0 賣點（Issue #1）。"
+            "value": "插入外接 NTFS 磁碟後嘗試以可寫方式掛載；略過內建磁碟。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ヘルパーのインストール、条項への同意、書き込みリスクの確認が済むまで既定はオフです。内蔵ディスクと Boot Camp は自動マウントしません。自動マウントは v1.2.0 の売りではありません（Issue #1）。"
+            "value": "外付け NTFS ディスクを接続すると、書き込み可能なマウントを試みます。内蔵ディスクは対象外です。"
           }
         }
       }
@@ -3111,25 +3111,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "NTFS Read-Write (NTFSMount) · direct distribution, not on the Mac App Store. No network by default; enabling “Check for Updates Automatically” or “Check for Updates…” contacts GitHub."
+            "value": "NTFS Read-Write (NTFSMount) · direct distribution, not on the Mac App Store. This build is not notarized. Download updates from GitHub Releases."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "NTFS 读写（NTFSMount）· 直发，不上 Mac App Store。默认不联网；打开「自动检查更新」或「检查更新…」时会访问 GitHub。"
+            "value": "NTFS 读写（NTFSMount）· 直发，不上 Mac App Store。当前构建未公证。请到 GitHub Releases 手动下载。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "NTFS 讀寫（NTFSMount）· 直發，不上 Mac App Store。預設不連網；打開「自動檢查更新」或「檢查更新…」時會連線 GitHub。"
+            "value": "NTFS 讀寫（NTFSMount）· 直發，不上 Mac App Store。目前建置未公證。請到 GitHub Releases 手動下載。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "NTFS 読み書き（NTFSMount）· 直配布、Mac App Store 未掲載。既定ではネットワーク不使用。更新の自動確認や「更新を確認…」を使うと GitHub に接続します。"
+            "value": "NTFS 読み書き（NTFSMount）· 直配布、Mac App Store 未掲載。このビルドは未公証です。更新は GitHub Releases から手動でダウンロードしてください。"
           }
         }
       }
@@ -3691,25 +3691,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Direct distribution. Not on the Mac App Store.\n\nPrivacy: no network by default; no accounts or contacts collected. Enabling “Check for Updates Automatically” or “Check for Updates…” contacts GitHub (Sparkle appcast, not Latest). Logs stay on this Mac:\n%@\nThe log remains on this Mac after you uninstall the app.\n\nSource and licenses: %@\nBundles ntfs-3g / mkntfs (GPL-2.0) and FUSE-T’s go-nfsv4. go-nfsv4 is for personal use; distributing it as a product requires a FUSE-T license.\n\nWriting NTFS can damage data. Back up first.\n\n%@"
+            "value": "Direct distribution. Not on the Mac App Store.\n\nPrivacy: no network by default; no accounts or contacts collected. This build is not notarized. Download updates from GitHub Releases. Logs stay on this Mac:\n%@\nThe log remains on this Mac after you uninstall the app.\n\nSource and licenses: %@\nBundles ntfs-3g / mkntfs (GPL-2.0) and FUSE-T’s go-nfsv4. go-nfsv4 is for personal use; distributing it as a product requires a FUSE-T license.\n\nWriting NTFS can damage data. Back up first.\n\n%@"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "直发应用，不上 Mac App Store。\n\n隐私：默认不联网、不收集账户或通讯录。打开「自动检查更新」或点「检查更新…」时会访问 GitHub（Sparkle appcast，不是 Latest）。日志只写在本机：\n%@\n卸载应用后该日志仍会留在本机。\n\n源码与许可证：%@\n捆绑 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 仅供个人使用；作为产品分发须向 FUSE-T 取得许可。\n\n写 NTFS 有损坏数据的风险，请先备份。\n\n%@"
+            "value": "直发应用，不上 Mac App Store。\n\n隐私：默认不联网、不收集账户或通讯录。当前构建未公证。请到 GitHub Releases 手动下载。日志只写在本机：\n%@\n卸载应用后该日志仍会留在本机。\n\n源码与许可证：%@\n捆绑 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 仅供个人使用；作为产品分发须向 FUSE-T 取得许可。\n\n写 NTFS 有损坏数据的风险，请先备份。\n\n%@"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "直發 App，不上 Mac App Store。\n\n隱私權：預設不連網、不收集帳號或通訊錄。打開「自動檢查更新」或點「檢查更新…」時會連線 GitHub（Sparkle appcast，不是 Latest）。紀錄只寫在本機：\n%@\n解除安裝後該紀錄仍會留在本機。\n\n原始碼與授權：%@\n內附 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 僅供個人使用；作為產品散佈須向 FUSE-T 取得許可。\n\n寫入 NTFS 有損壞資料的風險，請先備份。\n\n%@"
+            "value": "直發 App，不上 Mac App Store。\n\n隱私權：預設不連網、不收集帳號或通訊錄。目前建置未公證。請到 GitHub Releases 手動下載。紀錄只寫在本機：\n%@\n解除安裝後該紀錄仍會留在本機。\n\n原始碼與授權：%@\n內附 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 僅供個人使用；作為產品散佈須向 FUSE-T 取得許可。\n\n寫入 NTFS 有損壞資料的風險，請先備份。\n\n%@"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "直配布です。Mac App Store にはありません。\n\nプライバシー：既定ではネットワーク不使用。アカウントや連絡先は収集しません。「更新を自動確認」または「更新を確認…」を使うと GitHub（Sparkle appcast、Latest ではない）に接続します。ログはこの Mac にだけ書き込まれます：\n%@\nアプリをアンインストールしてもこのログは残ります。\n\nソースとライセンス：%@\nntfs-3g / mkntfs（GPL-2.0）と FUSE-T の go-nfsv4 を同梱しています。go-nfsv4 は個人利用向けです。製品として配布するには FUSE-T の許可が必要です。\n\nNTFS への書き込みはデータを破損するリスクがあります。先にバックアップしてください。\n\n%@"
+            "value": "直配布です。Mac App Store にはありません。\n\nプライバシー：既定ではネットワーク不使用。アカウントや連絡先は収集しません。このビルドは未公証です。更新は GitHub Releases から手動でダウンロードしてください。ログはこの Mac にだけ書き込まれます：\n%@\nアプリをアンインストールしてもこのログは残ります。\n\nソースとライセンス：%@\nntfs-3g / mkntfs（GPL-2.0）と FUSE-T の go-nfsv4 を同梱しています。go-nfsv4 は個人利用向けです。製品として配布するには FUSE-T の許可が必要です。\n\nNTFS への書き込みはデータを破損するリスクがあります。先にバックアップしてください。\n\n%@"
           }
         }
       }
@@ -6475,25 +6475,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Off by default. No network until you turn it on. When on, it periodically queries the Sparkle appcast on GitHub for a new version (currently the pre-release v1.2.0 asset, not GitHub Latest). If an update is found you can install it in one click; it never installs silently. This build is ad-hoc and not notarized; update trust is Sparkle EdDSA, not Developer ID."
+            "value": "This build is not notarized. Download updates from GitHub Releases."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "默认关闭。打开前不会访问网络。打开后会定期向 GitHub 上的 Sparkle appcast 查询新版本（当前指向 pre-release v1.2.0 资产，不是 GitHub Latest）。发现更新后可一键安装，不会静默安装。当前构建为 ad-hoc、未公证；更新信任靠 Sparkle EdDSA 签名，不是 Developer ID。"
+            "value": "当前构建未公证。请到 GitHub Releases 手动下载。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "預設關閉。打開前不會造訪網路。打開後會定期向 GitHub 上的 Sparkle appcast 查詢新版本（目前指向 pre-release v1.2.0 資產，不是 GitHub Latest）。發現更新後可一鍵安裝，不會靜默安裝。目前建置為 ad-hoc、未公證；更新信任靠 Sparkle EdDSA 簽名，不是 Developer ID。"
+            "value": "目前建置未公證。請到 GitHub Releases 手動下載。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "既定はオフです。オンにするまでネットワークは使いません。オンにすると GitHub 上の Sparkle appcast を定期的に問い合わせます（現在は pre-release v1.2.0 の資産で、GitHub Latest ではありません）。更新が見つかればワンクリックでインストールでき、サイレントインストールはしません。このビルドは ad-hoc で未公証です。更新の信頼は Sparkle の EdDSA 署名であり、Developer ID ではありません。"
+            "value": "このビルドは未公証です。更新は GitHub Releases から手動でダウンロードしてください。"
           }
         }
       }
@@ -6504,25 +6504,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "NTFS Read-Write (NTFSMount) · direct distribution, not on the Mac App Store. No network by default; “Check for Updates Automatically” or “Check for Updates…” contacts GitHub."
+            "value": "NTFS Read-Write (NTFSMount) · direct distribution, not on the Mac App Store. This build is not notarized. Download updates from GitHub Releases."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "NTFS 读写（NTFSMount）· 直发，不上 Mac App Store。默认不联网；打开「自动检查更新」或「检查更新…」时会访问 GitHub。"
+            "value": "NTFS 读写（NTFSMount）· 直发，不上 Mac App Store。当前构建未公证。请到 GitHub Releases 手动下载。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "NTFS 讀寫（NTFSMount）· 直發，不上 Mac App Store。預設不連網；打開「自動檢查更新」或「檢查更新…」時會造訪 GitHub。"
+            "value": "NTFS 讀寫（NTFSMount）· 直發，不上 Mac App Store。目前建置未公證。請到 GitHub Releases 手動下載。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "NTFS 読み書き（NTFSMount）· 直配布、Mac App Store 未掲載。既定はネットワーク不使用。「更新を自動で確認」または「更新を確認…」で GitHub にアクセスします。"
+            "value": "NTFS 読み書き（NTFSMount）· 直配布、Mac App Store 未掲載。このビルドは未公証です。更新は GitHub Releases から手動でダウンロードしてください。"
           }
         }
       }
@@ -6533,25 +6533,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Direct distribution. Not on the Mac App Store.\n\nPrivacy: no network by default, no accounts or contacts collected. Opening “Check for Updates Automatically” or “Check for Updates…” contacts GitHub (Sparkle appcast, not Latest). Logs stay on this Mac:\n%@\nThe log remains on this Mac after you uninstall the app.\n\nSource and licenses: %@\nBundles ntfs-3g / mkntfs (GPL-2.0) and FUSE-T’s go-nfsv4. go-nfsv4 is for personal use; distributing it as a product requires a FUSE-T license. The updater is Sparkle (MIT).\n\nWriting NTFS can damage data. Back up first.\n\n%@"
+            "value": "Direct distribution. Not on the Mac App Store.\n\nPrivacy: no network by default, no accounts or contacts collected. This build is not notarized. Download updates from GitHub Releases. Logs stay on this Mac:\n%@\nThe log remains on this Mac after you uninstall the app.\n\nSource and licenses: %@\nBundles ntfs-3g / mkntfs (GPL-2.0) and FUSE-T’s go-nfsv4. go-nfsv4 is for personal use; distributing it as a product requires a FUSE-T license.\n\nWriting NTFS can damage data. Back up first.\n\n%@"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "直发应用，不上 Mac App Store。\n\n隐私：默认不联网、不收集账户或通讯录。打开「自动检查更新」或点「检查更新…」时会访问 GitHub（Sparkle appcast，不是 Latest）。日志只写在本机：\n%@\n卸载应用后该日志仍会留在本机。\n\n源码与许可证：%@\n捆绑 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 仅供个人使用；作为产品分发须向 FUSE-T 取得许可。更新框架为 Sparkle（MIT）。\n\n写 NTFS 有损坏数据的风险，请先备份。\n\n%@"
+            "value": "直发应用，不上 Mac App Store。\n\n隐私：默认不联网、不收集账户或通讯录。当前构建未公证。请到 GitHub Releases 手动下载。日志只写在本机：\n%@\n卸载应用后该日志仍会留在本机。\n\n源码与许可证：%@\n捆绑 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 仅供个人使用；作为产品分发须向 FUSE-T 取得许可。\n\n写 NTFS 有损坏数据的风险，请先备份。\n\n%@"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "直發 App，不上 Mac App Store。\n\n隱私權：預設不連網、不收集帳號或通訊錄。打開「自動檢查更新」或點「檢查更新…」時會造訪 GitHub（Sparkle appcast，不是 Latest）。紀錄只寫在本機：\n%@\n解除安裝後該紀錄仍會留在本機。\n\n原始碼與授權：%@\n內附 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 僅供個人使用；作為產品散佈須向 FUSE-T 取得許可。更新框架為 Sparkle（MIT）。\n\n寫入 NTFS 有損壞資料的風險，請先備份。\n\n%@"
+            "value": "直發 App，不上 Mac App Store。\n\n隱私權：預設不連網、不收集帳號或通訊錄。目前建置未公證。請到 GitHub Releases 手動下載。紀錄只寫在本機：\n%@\n解除安裝後該紀錄仍會留在本機。\n\n原始碼與授權：%@\n內附 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 僅供個人使用；作為產品散佈須向 FUSE-T 取得許可。\n\n寫入 NTFS 有損壞資料的風險，請先備份。\n\n%@"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "直配布です。Mac App Store にはありません。\n\nプライバシー：既定はネットワーク不使用。アカウントや連絡先は収集しません。「更新を自動で確認」または「更新を確認…」を開くと GitHub にアクセスします（Sparkle appcast。Latest ではありません）。ログはこの Mac にだけ書き込まれます：\n%@\nアプリをアンインストールしてもこのログは残ります。\n\nソースとライセンス：%@\nntfs-3g / mkntfs（GPL-2.0）と FUSE-T の go-nfsv4 を同梱しています。go-nfsv4 は個人利用向けです。製品として配布するには FUSE-T の許可が必要です。アップデータは Sparkle（MIT）です。\n\nNTFS への書き込みはデータを破損するリスクがあります。先にバックアップしてください。\n\n%@"
+            "value": "直配布です。Mac App Store にはありません。\n\nプライバシー：既定はネットワーク不使用。アカウントや連絡先は収集しません。このビルドは未公証です。更新は GitHub Releases から手動でダウンロードしてください。ログはこの Mac にだけ書き込まれます：\n%@\nアプリをアンインストールしてもこのログは残ります。\n\nソースとライセンス：%@\nntfs-3g / mkntfs（GPL-2.0）と FUSE-T の go-nfsv4 を同梱しています。go-nfsv4 は個人利用向けです。製品として配布するには FUSE-T の許可が必要です。\n\nNTFS への書き込みはデータを破損するリスクがあります。先にバックアップしてください。\n\n%@"
           }
         }
       }
@@ -6678,25 +6678,25 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "默认关闭。打开前不会访问网络。打开后会定期向 GitHub 上的 Sparkle appcast 查询新版本（当前指向 pre-release v1.2.0 资产，不是 GitHub Latest）。发现更新后可一键安装，不会静默安装。当前构建为 ad-hoc、未公证；更新信任靠 Sparkle EdDSA 签名，不是 Developer ID。"
+            "value": "当前构建未公证。请到 GitHub Releases 手动下载。"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Off by default. The app does not use the network for updates until you turn this on. When on, it periodically asks GitHub for the Sparkle appcast (pre-release v1.2.0 asset, not GitHub Latest). Updates are one-click, not silent. This build is ad-hoc and not notarized; update trust is Sparkle EdDSA, not Developer ID."
+            "value": "This build is not notarized. Download updates from GitHub Releases."
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "預設關閉。打開前不會連網。打開後會定期向 GitHub 上的 Sparkle appcast 查詢新版本（目前指向 pre-release v1.2.0 資產，不是 GitHub Latest）。發現更新後可一鍵安裝，不會靜默安裝。目前建置為 ad-hoc、未公證；更新信任靠 Sparkle EdDSA 簽名，不是 Developer ID。"
+            "value": "目前建置未公證。請到 GitHub Releases 手動下載。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "既定はオフです。オンにするまで更新のためにネットワークを使いません。オンにすると GitHub の Sparkle appcast（pre-release v1.2.0、GitHub Latest ではない）を定期的に確認します。更新はワンクリックで、サイレントインストールしません。現在のビルドは ad-hoc で未公証です。更新の信頼は Sparkle EdDSA であり、Developer ID ではありません。"
+            "value": "このビルドは未公証です。更新は GitHub Releases から手動でダウンロードしてください。"
           }
         }
       }

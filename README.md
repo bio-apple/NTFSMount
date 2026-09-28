@@ -1,7 +1,5 @@
 # NTFSMount
 
-**English** · [简体中文](./README_ZH.md)
-
 Writable **external NTFS** on Apple Silicon Macs (macOS 13+). No kernel extension, no SIP change. Intel is not supported. The UI follows the system language (English / 简体中文 / 繁體中文 / 日本語).
 
 **[Download v1.2.1 DMG](https://github.com/bio-apple/NTFSMount/releases/download/v1.2.1/NTFSMount.dmg)** · [SHA256](https://github.com/bio-apple/NTFSMount/releases/tag/v1.2.1)
@@ -29,27 +27,17 @@ Closing the window keeps the menu-bar icon; Quit from the menu or Dock to exit.
 </tr>
 </table>
 
-## Use
+## Compared with
 
-| Status | What to do |
-| --- | --- |
-| Writable | Use it |
-| Read-only · system NTFS | Volume is clean; switch to writable from the submenu |
-| Read-only · hibernate / unclean | Fully shut down Windows. Do not force writable |
+| | NTFSMount | Paragon NTFS for Mac | Microsoft NTFS for Mac by Tuxera | Mounty |
+| --- | --- | --- | --- | --- |
+| Cost | Free personal-use pre-release | Paid commercial | Paid commercial | Free (older) |
+| Macs | Apple Silicon, macOS 13+ | Intel + Apple Silicon (typical) | Broader Mac support (typical) | Historically broader |
+| Stack | Userspace FUSE-T (`go-nfsv4`) + bundled GPL ntfs-3g; LaunchDaemon; menu bar (mount / format / diagnose); no kext, SIP on | Commercial signed driver; drop-in volume support | Commercial signed driver (not open-source ntfs-3g) | Commonly macFUSE kext + ntfs-3g |
+| Shipping | Not notarized; not App Store / not official Homebrew. FUSE-T is **not** GPL | Typically notarized | Typically notarized | — |
 
-Erase as NTFS is **whole external disks** only, from the root menu. Return defaults to **Cancel**. This app never silently deletes `hiberfil.sys`.
-
-## FAQ
-
-**Won’t open?** Control-click → Open. Last resort:
-
-```bash
-xattr -d com.apple.quarantine /Applications/NTFSMount.app
-```
-
-**Always asked for an admin password?** Expected on this un-notarized build.
-
-**Install looks wrong?** Menu **Diagnose Environment…** (read-only; does not mount or install the helper).
+- NTFSMount uses **open-source ntfs-3g**, not Tuxera’s commercial driver — not the same license, support, or product.
+- Runtime is bundled in the app. Versus Mounty, that means Apple Silicon only, FUSE-T personal use, and an unnotarized build.
 
 ## Architecture
 

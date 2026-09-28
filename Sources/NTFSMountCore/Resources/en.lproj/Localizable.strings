@@ -24,7 +24,7 @@
 
 "onboarding.body" = "1. Mounting NTFS writable or formatting it can damage data. Back up first.
 2. Bundled FUSE-T go-nfsv4 is not GPL and is for personal use by default. Before distributing or selling this as a product, you must obtain written permission from FUSE-T (https://www.fuse-t.org/). This package is not currently a redistributable product.
-3. By default this app does not use the network or collect accounts. If you enable “Check for Updates Automatically” or choose “Check for Updates…”, the app contacts GitHub for the Sparkle appcast (pre-release v1.2.0 asset, not GitHub Latest). Disk contents are not uploaded. Logs stay on this Mac. After you uninstall the app, log files remain in your user folder.
+3. By default this app does not use the network or collect accounts. This build is not notarized. Download updates from GitHub Releases. Disk contents are not uploaded. Logs stay on this Mac. After you uninstall the app, log files remain in your user folder.
 4. The mount helper runs as a root daemon and can mount, unmount, and format external disks. The administrator password entered at install time is not saved.
 
 On first use, click “Install…” in the window to install the mount helper. Un-notarized builds ask for an administrator password; notarized builds prefer system service authorization.
@@ -253,7 +253,7 @@ Return means you agree. Click “Quit” if you do not.";
 
 "settings.aboutPrivacy" = "About & Privacy";
 
-"settings.aboutLine" = "NTFS Read-Write (NTFSMount) · direct distribution, not on the Mac App Store. No network by default; enabling “Check for Updates Automatically” or “Check for Updates…” contacts GitHub.";
+"settings.aboutLine" = "NTFS Read-Write (NTFSMount) · direct distribution, not on the Mac App Store. This build is not notarized. Download updates from GitHub Releases.";
 
 "settings.notarized" = "This build is notarized.";
 
@@ -293,7 +293,7 @@ Return means you agree. Click “Quit” if you do not.";
 
 "alert.uninstall" = "Uninstall Helper";
 
-"about.body" = "Direct distribution. Not on the Mac App Store.\n\nPrivacy: no network by default; no accounts or contacts collected. Enabling “Check for Updates Automatically” or “Check for Updates…” contacts GitHub (Sparkle appcast, not Latest). Logs stay on this Mac:\n%@\nThe log remains on this Mac after you uninstall the app.\n\nSource and licenses: %@\nBundles ntfs-3g / mkntfs (GPL-2.0) and FUSE-T’s go-nfsv4. go-nfsv4 is for personal use; distributing it as a product requires a FUSE-T license.\n\nWriting NTFS can damage data. Back up first.\n\n%@";
+"about.body" = "Direct distribution. Not on the Mac App Store.\n\nPrivacy: no network by default; no accounts or contacts collected. This build is not notarized. Download updates from GitHub Releases. Logs stay on this Mac:\n%@\nThe log remains on this Mac after you uninstall the app.\n\nSource and licenses: %@\nBundles ntfs-3g / mkntfs (GPL-2.0) and FUSE-T’s go-nfsv4. go-nfsv4 is for personal use; distributing it as a product requires a FUSE-T license.\n\nWriting NTFS can damage data. Back up first.\n\n%@";
 
 "about.openSource" = "Open Source Page";
 
@@ -499,11 +499,11 @@ Return means you agree. Click “Quit” if you do not.";
 
 "update.checkNow" = "Check for Updates…";
 
-"update.autoCheckNote" = "Off by default. When on, the app contacts GitHub to look for updates.";
+"update.autoCheckNote" = "This build is not notarized. Download updates from GitHub Releases.";
 
-"update.settingsAboutLine" = "NTFS Read-Write (NTFSMount) · direct distribution, not on the Mac App Store. No network by default; “Check for Updates Automatically” or “Check for Updates…” contacts GitHub.";
+"update.settingsAboutLine" = "NTFS Read-Write (NTFSMount) · direct distribution, not on the Mac App Store. This build is not notarized. Download updates from GitHub Releases.";
 
-"update.aboutPrivacy" = "Direct distribution. Not on the Mac App Store.\n\nPrivacy: no network by default, no accounts or contacts collected. Opening “Check for Updates Automatically” or “Check for Updates…” contacts GitHub (Sparkle appcast, not Latest). Logs stay on this Mac:\n%@\nThe log remains on this Mac after you uninstall the app.\n\nSource and licenses: %@\nBundles ntfs-3g / mkntfs (GPL-2.0) and FUSE-T’s go-nfsv4. go-nfsv4 is for personal use; distributing it as a product requires a FUSE-T license. The updater is Sparkle (MIT).\n\nWriting NTFS can damage data. Back up first.\n\n%@";
+"update.aboutPrivacy" = "Direct distribution. Not on the Mac App Store.\n\nPrivacy: no network by default, no accounts or contacts collected. This build is not notarized. Download updates from GitHub Releases. Logs stay on this Mac:\n%@\nThe log remains on this Mac after you uninstall the app.\n\nSource and licenses: %@\nBundles ntfs-3g / mkntfs (GPL-2.0) and FUSE-T’s go-nfsv4. go-nfsv4 is for personal use; distributing it as a product requires a FUSE-T license.\n\nWriting NTFS can damage data. Back up first.\n\n%@";
 
 "menu.checkForUpdates" = "Check for Updates…";
 
@@ -513,4 +513,4 @@ Return means you agree. Click “Quit” if you do not.";
 
 "settings.checkNow" = "Check for Updates…";
 
-"settings.autoCheckUpdatesNote" = "Off by default. The app does not use the network for updates until you turn this on. When on, it periodically asks GitHub for the Sparkle appcast (pre-release v1.2.0 asset, not GitHub Latest). Updates are one-click, not silent. This build is ad-hoc and not notarized; update trust is Sparkle EdDSA, not Developer ID.";
+"settings.autoCheckUpdatesNote" = "This build is not notarized. Download updates from GitHub Releases.";

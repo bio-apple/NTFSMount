@@ -24,7 +24,7 @@
 
 "onboarding.body" = "1. 以可写方式挂载或格式化 NTFS 可能损坏数据。请先备份。
 2. 捆绑的 FUSE-T go-nfsv4 不是 GPL，默认仅供个人使用。作为产品分发或销售前，须向 FUSE-T 取得书面许可（https://www.fuse-t.org/）。本安装包目前不是可公开再分发的产品。
-3. 默认不联网、不收集账户。若打开设置「自动检查更新」或点菜单「检查更新…」，应用会访问 GitHub 上的 Sparkle appcast（pre-release v1.2.0 资产，不是 GitHub Latest）。不会上传磁盘内容。日志只写在本机。卸载应用后日志文件仍会留在本机用户目录。
+3. 默认不联网、不收集账户。当前构建未公证。请到 GitHub Releases 手动下载。不会上传磁盘内容。日志只写在本机。卸载应用后日志文件仍会留在本机用户目录。
 4. 挂载助手以 root 守护进程运行，可挂载、卸载与格式化外置盘；安装时输入的管理员密码不会保存。
 
 第一次使用请在窗口点「安装…」安装挂载助手。未公证包会请求管理员密码；已公证包优先用系统服务授权。
@@ -253,7 +253,7 @@
 
 "settings.aboutPrivacy" = "关于与隐私";
 
-"settings.aboutLine" = "NTFS 读写（NTFSMount）· 直发，不上 Mac App Store。默认不联网；打开「自动检查更新」或「检查更新…」时会访问 GitHub。";
+"settings.aboutLine" = "NTFS 读写（NTFSMount）· 直发，不上 Mac App Store。当前构建未公证。请到 GitHub Releases 手动下载。";
 
 "settings.notarized" = "当前构建已公证。";
 
@@ -293,7 +293,7 @@
 
 "alert.uninstall" = "卸载助手";
 
-"about.body" = "直发应用，不上 Mac App Store。\n\n隐私：默认不联网、不收集账户或通讯录。打开「自动检查更新」或点「检查更新…」时会访问 GitHub（Sparkle appcast，不是 Latest）。日志只写在本机：\n%@\n卸载应用后该日志仍会留在本机。\n\n源码与许可证：%@\n捆绑 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 仅供个人使用；作为产品分发须向 FUSE-T 取得许可。\n\n写 NTFS 有损坏数据的风险，请先备份。\n\n%@";
+"about.body" = "直发应用，不上 Mac App Store。\n\n隐私：默认不联网、不收集账户或通讯录。当前构建未公证。请到 GitHub Releases 手动下载。日志只写在本机：\n%@\n卸载应用后该日志仍会留在本机。\n\n源码与许可证：%@\n捆绑 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 仅供个人使用；作为产品分发须向 FUSE-T 取得许可。\n\n写 NTFS 有损坏数据的风险，请先备份。\n\n%@";
 
 "about.openSource" = "打开源码页";
 
@@ -499,11 +499,11 @@
 
 "update.checkNow" = "检查更新…";
 
-"update.autoCheckNote" = "默认关闭。打开后会访问 GitHub 检查是否有新版本。";
+"update.autoCheckNote" = "当前构建未公证。请到 GitHub Releases 手动下载。";
 
-"update.settingsAboutLine" = "NTFS 读写（NTFSMount）· 直发，不上 Mac App Store。默认不联网；打开「自动检查更新」或「检查更新…」时会访问 GitHub。";
+"update.settingsAboutLine" = "NTFS 读写（NTFSMount）· 直发，不上 Mac App Store。当前构建未公证。请到 GitHub Releases 手动下载。";
 
-"update.aboutPrivacy" = "直发应用，不上 Mac App Store。\n\n隐私：默认不联网、不收集账户或通讯录。打开「自动检查更新」或点「检查更新…」时会访问 GitHub（Sparkle appcast，不是 Latest）。日志只写在本机：\n%@\n卸载应用后该日志仍会留在本机。\n\n源码与许可证：%@\n捆绑 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 仅供个人使用；作为产品分发须向 FUSE-T 取得许可。更新框架为 Sparkle（MIT）。\n\n写 NTFS 有损坏数据的风险，请先备份。\n\n%@";
+"update.aboutPrivacy" = "直发应用，不上 Mac App Store。\n\n隐私：默认不联网、不收集账户或通讯录。当前构建未公证。请到 GitHub Releases 手动下载。日志只写在本机：\n%@\n卸载应用后该日志仍会留在本机。\n\n源码与许可证：%@\n捆绑 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 仅供个人使用；作为产品分发须向 FUSE-T 取得许可。\n\n写 NTFS 有损坏数据的风险，请先备份。\n\n%@";
 
 "menu.checkForUpdates" = "检查更新…";
 
@@ -513,4 +513,4 @@
 
 "settings.checkNow" = "检查更新…";
 
-"settings.autoCheckUpdatesNote" = "默认关闭。打开前不会访问网络。打开后会定期向 GitHub 上的 Sparkle appcast 查询新版本（当前指向 pre-release v1.2.0 资产，不是 GitHub Latest）。发现更新后可一键安装，不会静默安装。当前构建为 ad-hoc、未公证；更新信任靠 Sparkle EdDSA 签名，不是 Developer ID。";
+"settings.autoCheckUpdatesNote" = "当前构建未公证。请到 GitHub Releases 手动下载。";

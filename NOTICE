@@ -62,10 +62,8 @@ NTFS 读写（NTFSMount）许可拆分
 3. 隐私与本地数据
    本应用**不上传**磁盘内容或挂载数据到开发者服务器；挂载与格式化在本地完成。
 
-   默认不联网。若用户打开设置「自动检查更新」，或点菜单「检查更新…」，应用会经 HTTPS 访问
-   **GitHub（美国）** 上的 Sparkle appcast（当前钉在 pre-release **v1.2.0** 资产 URL，**不是** GitHub Latest）
-   以下载版本信息与更新包。对方服务器可见 IP、User-Agent 与应用版本。开发者不运营更新服务器。
-   详见 [docs/SPARKLE.md](./docs/SPARKLE.md)。
+   默认不联网。当前构建未公证；请到 GitHub Releases 手动下载 DMG，应用内不检查更新。
+   开发者不运营更新服务器。详见 [docs/SPARKLE.md](./docs/SPARKLE.md)。
 
    - **偏好设置（UserDefaults / 本地 plist）**：例如条款同意、Gatekeeper 提示、可写风险确认、自动挂载开关、程序坞显示、助手 SHA、Sparkle 的 `SUEnableAutomaticChecks` 等，键名以 `com.bioapple.ntfsmount.*` 或 Sparkle 的 `SU*` 为前缀。卸载应用或运行 `uninstall.sh` 会移除应用本身；**部分 UserDefaults 项可能仍留在本机**。
    - **用户 Application Support**：`~/Library/Application Support/com.bioapple.ntfsmount/`（例如 `writable-accepted`）。卸载脚本**不保证**删除此目录。

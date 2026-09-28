@@ -1,13 +1,18 @@
 # Sparkle 自动更新
 
-本应用用 [Sparkle](https://sparkle-project.org/) 检查 GitHub Releases 上的 DMG。当前包是 **ad-hoc / 未公证** 的个人使用预发布；**不要**把更新描述成已公证或 Developer ID 可信。
+本仓库仍嵌入 [Sparkle](https://sparkle-project.org/)，供**以后已公证构建**使用。当前包是 **ad-hoc / 未公证** 的个人使用预发布：**不要**把应用内更新描述成产品功能，也**不要**描述成已公证或 Developer ID 可信。
 
 ## 用户侧
 
-- 菜单 **检查更新…**：随时可用，一点就会访问 feed。
-- 设置 **自动检查更新**：默认 **关闭**。打开前应用不会为更新去联网。
-- 打开自动检查后：定期向 GitHub 拉 Sparkle `appcast.xml`（HTTPS）。不会静默安装；发现新版本后可在 Sparkle 对话框里一键安装。
-- 更新档案用 **Sparkle EdDSA** 验签。Apple 代码签名目前是 ad-hoc，**不能**用 Developer ID / 公证来证明更新来源。
+未公证构建：
+
+- 菜单**没有**「检查更新…」。
+- 设置**没有**自动检查开关或「检查更新」按钮；写死为到 [GitHub Releases](https://github.com/bio-apple/NTFSMount/releases) 手动下载 DMG。
+- 进程启动时**不** start Sparkle；`checkForUpdates()` 为空操作，不会访问网络。
+
+`Info.plist`：`SUEnableAutomaticChecks=false`，`SUAutomaticallyUpdate=false`。`SUFeedURL` 仍保留给公证后启用。
+
+## 维护者：feed 钉死
 
 Feed（不是 GitHub Latest）：
 

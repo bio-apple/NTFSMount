@@ -4,7 +4,6 @@ import SwiftUI
 
 struct SettingsView: View {
   @ObservedObject var store: VolumeStore
-  @ObservedObject private var updater = SparkleUpdater.shared
   @State private var logText = AppLog.tail()
 
   var body: some View {
@@ -46,15 +45,10 @@ struct SettingsView: View {
 
         GroupBox(UpdateCopy.settingsGroup) {
           VStack(alignment: .leading, spacing: 10) {
-            Toggle(UpdateCopy.autoCheckToggle, isOn: Binding(
-              get: { updater.automaticallyChecksForUpdates },
-              set: { updater.automaticallyChecksForUpdates = $0 }
-            ))
             Text(UpdateCopy.autoCheckNote)
               .font(.caption)
               .foregroundStyle(.secondary)
               .fixedSize(horizontal: false, vertical: true)
-            Button(UpdateCopy.checkNow) { updater.checkForUpdates() }
           }
           .padding(8)
         }

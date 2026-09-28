@@ -1,31 +1,17 @@
-import AppKit
 import Sparkle
 
-/// Wires Sparkle. Automatic checks stay off until the user opts in (Info.plist default).
+/// Unnotarized personal-use builds do not start Sparkle.
+/// Users download a DMG from GitHub Releases. The framework stays linked for later notarized builds.
 @MainActor
 final class SparkleUpdater: ObservableObject {
   static let shared = SparkleUpdater()
 
-  private let controller: SPUStandardUpdaterController
+  /// Keeps Sparkle.framework linked without constructing or starting an updater.
+  private let sparkleControllerType: SPUStandardUpdaterController.Type = SPUStandardUpdaterController.self
 
   private init() {
-    controller = SPUStandardUpdaterController(
-      startingUpdater: true,
-      updaterDelegate: nil,
-      userDriverDelegate: nil
-    )
+    _ = sparkleControllerType
   }
 
-  var automaticallyChecksForUpdates: Bool {
-    get { controller.updater.automaticallyChecksForUpdates }
-    set {
-      controller.updater.automaticallyChecksForUpdates = newValue
-      objectWillChange.send()
-    }
-  }
-
-  func checkForUpdates() {
-    NSApp.activate(ignoringOtherApps: true)
-    controller.checkForUpdates(nil)
-  }
+  func checkForUpdates() {}
 }

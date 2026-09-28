@@ -24,7 +24,7 @@
 
 "onboarding.body" = "1. 以可寫方式掛載或格式化 NTFS 可能損壞資料。請先備份。
 2. 內附的 FUSE-T go-nfsv4 不是 GPL，預設僅供個人使用。作為產品散佈或銷售前，須向 FUSE-T 取得書面許可（https://www.fuse-t.org/）。本安裝包目前不是可公開再散佈的產品。
-3. 預設不連網、不收集帳號。若打開設定「自動檢查更新」或點選單「檢查更新…」，App 會連線 GitHub 上的 Sparkle appcast（pre-release v1.2.0 資產，不是 GitHub Latest）。不會上傳磁碟內容。紀錄只寫在本機。解除安裝後紀錄檔仍會留在本機使用者目錄。
+3. 預設不連網、不收集帳號。目前建置未公證。請到 GitHub Releases 手動下載。不會上傳磁碟內容。紀錄只寫在本機。解除安裝後紀錄檔仍會留在本機使用者目錄。
 4. 掛載助手以 root 守護程式執行，可掛載、卸載與格式化外接碟；安裝時輸入的管理員密碼不會儲存。
 
 第一次使用請在視窗點「安裝…」安裝掛載助手。未公證套件會要求管理員密碼；已公證套件優先用系統服務授權。
@@ -253,7 +253,7 @@ Return 即同意。不同意請點「結束」。";
 
 "settings.aboutPrivacy" = "關於與隱私權";
 
-"settings.aboutLine" = "NTFS 讀寫（NTFSMount）· 直發，不上 Mac App Store。預設不連網；打開「自動檢查更新」或「檢查更新…」時會連線 GitHub。";
+"settings.aboutLine" = "NTFS 讀寫（NTFSMount）· 直發，不上 Mac App Store。目前建置未公證。請到 GitHub Releases 手動下載。";
 
 "settings.notarized" = "目前建置已公證。";
 
@@ -293,7 +293,7 @@ Return 即同意。不同意請點「結束」。";
 
 "alert.uninstall" = "解除安裝助手";
 
-"about.body" = "直發 App，不上 Mac App Store。\n\n隱私權：預設不連網、不收集帳號或通訊錄。打開「自動檢查更新」或點「檢查更新…」時會連線 GitHub（Sparkle appcast，不是 Latest）。紀錄只寫在本機：\n%@\n解除安裝後該紀錄仍會留在本機。\n\n原始碼與授權：%@\n內附 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 僅供個人使用；作為產品散佈須向 FUSE-T 取得許可。\n\n寫入 NTFS 有損壞資料的風險，請先備份。\n\n%@";
+"about.body" = "直發 App，不上 Mac App Store。\n\n隱私權：預設不連網、不收集帳號或通訊錄。目前建置未公證。請到 GitHub Releases 手動下載。紀錄只寫在本機：\n%@\n解除安裝後該紀錄仍會留在本機。\n\n原始碼與授權：%@\n內附 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 僅供個人使用；作為產品散佈須向 FUSE-T 取得許可。\n\n寫入 NTFS 有損壞資料的風險，請先備份。\n\n%@";
 
 "about.openSource" = "打開原始碼頁";
 
@@ -499,11 +499,11 @@ Return 即同意。不同意請點「結束」。";
 
 "update.checkNow" = "檢查更新…";
 
-"update.autoCheckNote" = "預設關閉。打開後會連線 GitHub 檢查是否有新版本。";
+"update.autoCheckNote" = "目前建置未公證。請到 GitHub Releases 手動下載。";
 
-"update.settingsAboutLine" = "NTFS 讀寫（NTFSMount）· 直發，不上 Mac App Store。預設不連網；打開「自動檢查更新」或「檢查更新…」時會造訪 GitHub。";
+"update.settingsAboutLine" = "NTFS 讀寫（NTFSMount）· 直發，不上 Mac App Store。目前建置未公證。請到 GitHub Releases 手動下載。";
 
-"update.aboutPrivacy" = "直發 App，不上 Mac App Store。\n\n隱私權：預設不連網、不收集帳號或通訊錄。打開「自動檢查更新」或點「檢查更新…」時會造訪 GitHub（Sparkle appcast，不是 Latest）。紀錄只寫在本機：\n%@\n解除安裝後該紀錄仍會留在本機。\n\n原始碼與授權：%@\n內附 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 僅供個人使用；作為產品散佈須向 FUSE-T 取得許可。更新框架為 Sparkle（MIT）。\n\n寫入 NTFS 有損壞資料的風險，請先備份。\n\n%@";
+"update.aboutPrivacy" = "直發 App，不上 Mac App Store。\n\n隱私權：預設不連網、不收集帳號或通訊錄。目前建置未公證。請到 GitHub Releases 手動下載。紀錄只寫在本機：\n%@\n解除安裝後該紀錄仍會留在本機。\n\n原始碼與授權：%@\n內附 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 僅供個人使用；作為產品散佈須向 FUSE-T 取得許可。\n\n寫入 NTFS 有損壞資料的風險，請先備份。\n\n%@";
 
 "menu.checkForUpdates" = "檢查更新…";
 
@@ -513,4 +513,4 @@ Return 即同意。不同意請點「結束」。";
 
 "settings.checkNow" = "檢查更新…";
 
-"settings.autoCheckUpdatesNote" = "預設關閉。打開前不會連網。打開後會定期向 GitHub 上的 Sparkle appcast 查詢新版本（目前指向 pre-release v1.2.0 資產，不是 GitHub Latest）。發現更新後可一鍵安裝，不會靜默安裝。目前建置為 ad-hoc、未公證；更新信任靠 Sparkle EdDSA 簽名，不是 Developer ID。";
+"settings.autoCheckUpdatesNote" = "目前建置未公證。請到 GitHub Releases 手動下載。";

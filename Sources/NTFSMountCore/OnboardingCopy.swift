@@ -3,7 +3,7 @@ import Foundation
 /// 首次启动确认框文案。回车是「同意并继续」；不同意请点「退出」或按 Esc。
 /// `copyVersion` 变更时会再次弹出。Gatekeeper / xattr 不放进本框。
 public enum OnboardingCopy {
-  public static let copyVersion = 5
+  public static let copyVersion = 6
 
   public static var quitTitle: String { quitTitle(locale: nil) }
   public static var agreeTitle: String { agreeTitle(locale: nil) }

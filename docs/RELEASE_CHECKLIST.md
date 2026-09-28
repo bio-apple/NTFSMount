@@ -35,7 +35,8 @@
 ## Sparkle 与 Release
 
 - [ ] `appcast.xml` 覆盖上传到 **v1.2.0** 资产 URL（`SUFeedURL` 钉死此处），**不是** Latest
-- [ ] `SUEnableAutomaticChecks` 默认 false；私钥未进仓库
+- [ ] `SUEnableAutomaticChecks` / `SUAutomaticallyUpdate` 默认 false；未公证包不 start Sparkle、无「检查更新…」菜单
+- [ ] 私钥未进仓库
 - [ ] GitHub Release 在未公证或未授权时标为 pre-release
 - [ ] 禁止第三方镜像
 

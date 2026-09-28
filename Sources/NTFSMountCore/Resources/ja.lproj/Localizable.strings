@@ -24,7 +24,7 @@
 
 "onboarding.body" = "1. NTFS を書き込み可能でマウントしたりフォーマットしたりすると、データが破損する可能性があります。先にバックアップしてください。
 2. 同梱の FUSE-T go-nfsv4 は GPL ではなく、既定では個人利用向けです。製品として配布または販売する前に、FUSE-T（https://www.fuse-t.org/）から書面の許可を得てください。本パッケージは現時点で再配布可能な製品ではありません。
-3. 既定ではネットワークを使わず、アカウントも収集しません。設定の「更新を自動確認」または「更新を確認…」を使うと、GitHub 上の Sparkle appcast（pre-release v1.2.0、GitHub Latest ではない）に接続します。ディスク内容は送信しません。ログはこの Mac にだけ書き込まれます。アプリをアンインストールしてもログファイルはユーザフォルダに残ります。
+3. 既定ではネットワークを使わず、アカウントも収集しません。このビルドは未公証です。更新は GitHub Releases から手動でダウンロードしてください。ディスク内容は送信しません。ログはこの Mac にだけ書き込まれます。アプリをアンインストールしてもログファイルはユーザフォルダに残ります。
 4. マウントヘルパーは root デーモンとして動作し、外付けディスクのマウント、アンマウント、フォーマットができます。インストール時に入力した管理者パスワードは保存されません。
 
 初回はウィンドウで「インストール…」を押してマウントヘルパーを入れてください。未公証ビルドは管理者パスワードを求めます。公証済みビルドはシステムサービスの承認を優先します。
@@ -253,7 +253,7 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "settings.aboutPrivacy" = "情報とプライバシー";
 
-"settings.aboutLine" = "NTFS 読み書き（NTFSMount）· 直配布、Mac App Store 未掲載。既定ではネットワーク不使用。更新の自動確認や「更新を確認…」を使うと GitHub に接続します。";
+"settings.aboutLine" = "NTFS 読み書き（NTFSMount）· 直配布、Mac App Store 未掲載。このビルドは未公証です。更新は GitHub Releases から手動でダウンロードしてください。";
 
 "settings.notarized" = "このビルドは公証済みです。";
 
@@ -293,7 +293,7 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "alert.uninstall" = "ヘルパーをアンインストール";
 
-"about.body" = "直配布です。Mac App Store にはありません。\n\nプライバシー：既定ではネットワーク不使用。アカウントや連絡先は収集しません。「更新を自動確認」または「更新を確認…」を使うと GitHub（Sparkle appcast、Latest ではない）に接続します。ログはこの Mac にだけ書き込まれます：\n%@\nアプリをアンインストールしてもこのログは残ります。\n\nソースとライセンス：%@\nntfs-3g / mkntfs（GPL-2.0）と FUSE-T の go-nfsv4 を同梱しています。go-nfsv4 は個人利用向けです。製品として配布するには FUSE-T の許可が必要です。\n\nNTFS への書き込みはデータを破損するリスクがあります。先にバックアップしてください。\n\n%@";
+"about.body" = "直配布です。Mac App Store にはありません。\n\nプライバシー：既定ではネットワーク不使用。アカウントや連絡先は収集しません。このビルドは未公証です。更新は GitHub Releases から手動でダウンロードしてください。ログはこの Mac にだけ書き込まれます：\n%@\nアプリをアンインストールしてもこのログは残ります。\n\nソースとライセンス：%@\nntfs-3g / mkntfs（GPL-2.0）と FUSE-T の go-nfsv4 を同梱しています。go-nfsv4 は個人利用向けです。製品として配布するには FUSE-T の許可が必要です。\n\nNTFS への書き込みはデータを破損するリスクがあります。先にバックアップしてください。\n\n%@";
 
 "about.openSource" = "ソースページを開く";
 
@@ -499,11 +499,11 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "update.checkNow" = "更新を確認…";
 
-"update.autoCheckNote" = "既定はオフです。オンにすると GitHub に接続して更新を確認します。";
+"update.autoCheckNote" = "このビルドは未公証です。更新は GitHub Releases から手動でダウンロードしてください。";
 
-"update.settingsAboutLine" = "NTFS 読み書き（NTFSMount）· 直配布、Mac App Store 未掲載。既定はネットワーク不使用。「更新を自動で確認」または「更新を確認…」で GitHub にアクセスします。";
+"update.settingsAboutLine" = "NTFS 読み書き（NTFSMount）· 直配布、Mac App Store 未掲載。このビルドは未公証です。更新は GitHub Releases から手動でダウンロードしてください。";
 
-"update.aboutPrivacy" = "直配布です。Mac App Store にはありません。\n\nプライバシー：既定はネットワーク不使用。アカウントや連絡先は収集しません。「更新を自動で確認」または「更新を確認…」を開くと GitHub にアクセスします（Sparkle appcast。Latest ではありません）。ログはこの Mac にだけ書き込まれます：\n%@\nアプリをアンインストールしてもこのログは残ります。\n\nソースとライセンス：%@\nntfs-3g / mkntfs（GPL-2.0）と FUSE-T の go-nfsv4 を同梱しています。go-nfsv4 は個人利用向けです。製品として配布するには FUSE-T の許可が必要です。アップデータは Sparkle（MIT）です。\n\nNTFS への書き込みはデータを破損するリスクがあります。先にバックアップしてください。\n\n%@";
+"update.aboutPrivacy" = "直配布です。Mac App Store にはありません。\n\nプライバシー：既定はネットワーク不使用。アカウントや連絡先は収集しません。このビルドは未公証です。更新は GitHub Releases から手動でダウンロードしてください。ログはこの Mac にだけ書き込まれます：\n%@\nアプリをアンインストールしてもこのログは残ります。\n\nソースとライセンス：%@\nntfs-3g / mkntfs（GPL-2.0）と FUSE-T の go-nfsv4 を同梱しています。go-nfsv4 は個人利用向けです。製品として配布するには FUSE-T の許可が必要です。\n\nNTFS への書き込みはデータを破損するリスクがあります。先にバックアップしてください。\n\n%@";
 
 "menu.checkForUpdates" = "更新を確認…";
 
@@ -513,4 +513,4 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "settings.checkNow" = "更新を確認…";
 
-"settings.autoCheckUpdatesNote" = "既定はオフです。オンにするまで更新のためにネットワークを使いません。オンにすると GitHub の Sparkle appcast（pre-release v1.2.0、GitHub Latest ではない）を定期的に確認します。更新はワンクリックで、サイレントインストールしません。現在のビルドは ad-hoc で未公証です。更新の信頼は Sparkle EdDSA であり、Developer ID ではありません。";
+"settings.autoCheckUpdatesNote" = "このビルドは未公証です。更新は GitHub Releases から手動でダウンロードしてください。";

@@ -95,7 +95,7 @@ macFUSE / osxfuse 依赖内核扩展；macOS 11+ 与 Apple Silicon 常需降低 
 
 IPC：**v2** 长度前缀（单参最长 1024、最多 32 个参数），旧守护进程回「协议错误」时回退 v1。format / fix / ntfsfix 等待 **600 秒**并发送 NUL 心跳；其它命令 180 秒。本进程对 daemon 的调用串行化。读完 argv 后若客户端已断开则 **不 exec**。
 
-出口管制口径：仅使用系统 TLS（Sparkle HTTPS）与 Sparkle EdDSA 验签，不提供非豁免加密。`ITSAppUsesNonExemptEncryption=false`。若以后对卷内容做加密类功能，必须重评该键。
+出口管制口径：捆绑的 Sparkle 走系统 TLS 与 EdDSA 验签，不提供非豁免加密。未公证构建不启动 Sparkle、不在应用内检查更新。`ITSAppUsesNonExemptEncryption=false`。若以后对卷内容做加密类功能，必须重评该键。
 
 ## 4. GitHub Release 的 SHA256
 
@@ -114,12 +114,12 @@ CI 在 `release: published` 时若 Release 已有 `NTFSMount.dmg` 但没有 side
 
 ## 5. Sparkle 更新
 
-自动更新用 Sparkle EdDSA 签 DMG / appcast，**不是**用 GitHub Releases Atom，也**不要**把 feed 指到 GitHub Latest（FUSE-T 仍为个人使用预发布时）。
+未公证个人使用构建：**不要**把应用内更新当产品功能。用户到 GitHub Releases 手动下载 DMG。菜单不展示「检查更新…」；设置无自动检查开关。`SUEnableAutomaticChecks` / `SUAutomaticallyUpdate` 为 false；进程不 start Sparkle。
 
-已装用户读的 feed 仍钉在 **v1.2.0 资产 URL**（`Info.plist` `SUFeedURL`）。发 1.2.1 及以后版本时：把新 DMG 传到对应 tag，再生成 appcast，用 `--clobber` **覆盖 v1.2.0 上的 `appcast.xml`**。
+维护者：自动更新用 Sparkle EdDSA 签 DMG / appcast，**不是**用 GitHub Releases Atom，也**不要**把 feed 指到 GitHub Latest（FUSE-T 仍为个人使用预发布时）。
+
+`SUFeedURL` 仍钉在 **v1.2.0 资产 URL**。发 1.2.1 及以后版本时：把新 DMG 传到对应 tag，再生成 appcast，用 `--clobber` **覆盖 v1.2.0 上的 `appcast.xml`**。
 
 - Feed：`https://github.com/bio-apple/NTFSMount/releases/download/v1.2.0/appcast.xml`
-- 设置「自动检查更新」默认关闭；菜单「检查更新…」始终可用（会访问 GitHub）
-- 当前构建为 ad-hoc 时，更新信任只来自 Sparkle EdDSA
 - 密钥与 `generate_appcast` 步骤：[docs/SPARKLE.md](./SPARKLE.md)
 

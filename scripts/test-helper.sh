@@ -440,28 +440,16 @@ file "$TMPD/helperd" | /usr/bin/grep -q 'arm64' || { echo "helperd not arm64" >&
 /bin/rm -rf "$TMPD"
 
 # README 与界面不得再写「没有程序坞」或「点盘名即可挂载」
-if /usr/bin/grep -n '没有程序坞图标' "$ROOT/README.md" "$ROOT/README_ZH.md"; then
+if /usr/bin/grep -n '没有程序坞图标' "$ROOT/README.md"; then
   echo "README still says no Dock icon" >&2
   exit 1
 fi
-if /usr/bin/grep -n '点盘名即可' "$ROOT/README.md" "$ROOT/README_ZH.md"; then
+if /usr/bin/grep -n '点盘名即可' "$ROOT/README.md"; then
   echo "README still says click the disk name" >&2
-  exit 1
-fi
-if ! /usr/bin/grep -q 'README_ZH.md' "$ROOT/README.md"; then
-  echo "README.md must link to README_ZH.md" >&2
-  exit 1
-fi
-if ! /usr/bin/grep -q '](./README.md)' "$ROOT/README_ZH.md"; then
-  echo "README_ZH.md must link to English README.md" >&2
   exit 1
 fi
 if /usr/bin/grep -n '完整英文说明' "$ROOT/README.md"; then
   echo "English README.md must not be the Chinese document" >&2
-  exit 1
-fi
-if ! /usr/bin/grep -q 'README.md' "$ROOT/README_EN.md"; then
-  echo "README_EN.md must redirect to README.md" >&2
   exit 1
 fi
 [[ -f "$ROOT/Resources/NTFSMount.entitlements" ]]
@@ -565,11 +553,7 @@ if ! /usr/bin/grep -q 'check-fuse-deps.sh' "$ROOT/README.md"; then
   echo "README.md must document check-fuse-deps.sh" >&2
   exit 1
 fi
-if ! /usr/bin/grep -q 'check-fuse-deps.sh' "$ROOT/README_ZH.md"; then
-  echo "README_ZH.md must document check-fuse-deps.sh" >&2
-  exit 1
-fi
-if /usr/bin/grep -nE '请执行：.*brew install macfuse|推荐.*brew install macfuse' "$ROOT/README.md" "$ROOT/README_ZH.md"; then
+if /usr/bin/grep -nE '请执行：.*brew install macfuse|推荐.*brew install macfuse' "$ROOT/README.md"; then
   echo "README must not recommend brew install macfuse" >&2
   exit 1
 fi

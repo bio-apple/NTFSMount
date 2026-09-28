@@ -71,6 +71,6 @@
 ## 升级
 
 - [ ] 旧版 sudoers 机器打开新包 → 「更新挂载助手」→ 更新后 `check-helper-gone.sh` 里 sudoers 项消失，可写挂载成功
-- [ ] 设置「自动检查更新」默认为关；打开前抓包不应出现 GitHub appcast 请求
-- [ ] 菜单「检查更新…」可弹出 Sparkle 对话框（feed 未发布时允许报错，但不得静默联网成功安装）
-- [ ] 不要把更新成功理解成已公证；当前 ad-hoc 包的更新信任是 Sparkle EdDSA
+- [ ] 设置无自动检查开关；文案为到 GitHub Releases 手动下载；启动后抓包不应出现 GitHub appcast 请求
+- [ ] 菜单无「检查更新…」
+- [ ] 当前构建未公证；更新请到 GitHub Releases 手动下载 DMG

@@ -91,7 +91,6 @@ struct MenuRoot: View {
       .keyboardShortcut("r")
     Button(L10n.t("menu.diagnose")) { EnvironmentDiagnosePresenter.present(store: store) }
     Button(L10n.t("menu.settings")) { store.showSettings() }
-    Button(UpdateCopy.menuCheck) { SparkleUpdater.shared.checkForUpdates() }
     if !store.message.isEmpty {
       Text(store.message)
         .font(.caption)
