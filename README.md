@@ -1,26 +1,31 @@
 # NTFS 读写 · NTFSMount
 
-[下载](https://github.com/bio-apple/NTFSMount/releases) · [English](./README_EN.md)
+[English](./README_EN.md)
 
-**不要用 GitHub Latest，不要镜像。** 只从 [Releases](https://github.com/bio-apple/NTFSMount/releases) 下载标成 pre-release 的 `NTFSMount.dmg`，并用正文中的 SHA256 校验。
+在 Mac 上为**外置 NTFS 磁盘**提供可写访问，**不安装内核扩展（kext）**。面向 **Apple Silicon + macOS 13+**；不支持 Intel。
 
-**分发范围：仅个人使用，不是可公开再分发的产品。** 捆绑的 FUSE-T `go-nfsv4` 不是 GPL；在取得 [FUSE-T](https://www.fuse-t.org/) **书面许可** 并完成 Developer ID 公证之前，禁止当产品上架、销售或第三方镜像。源码（Swift / ntfs-3g）仍按 GPL-2.0-or-later 提供。见 [NOTICE](./NOTICE)。
+`Apple Silicon` · `macOS 13+` · `外置 NTFS` · `无 kext` · `个人使用预发布`
 
-**免责声明。** 以可写方式挂载或格式化 NTFS 可能损坏或丢失数据。操作前请自行备份重要文件。作者与本项目不对数据损失负责。
+界面语言跟随系统（English / 简体中文 / 繁體中文 / 日本語）。
 
-Mac 上给**外置 NTFS 盘**可写访问，不用内核扩展。仅 **Apple Silicon + macOS 13+**，不支持 Intel。
+![菜单栏](docs/screenshots/menubar.png)
+
+**[下载 NTFSMount v1.2.0（NTFSMount.dmg）](https://github.com/bio-apple/NTFSMount/releases/download/v1.2.0/NTFSMount.dmg)** · [Releases 页与 SHA256](https://github.com/bio-apple/NTFSMount/releases/tag/v1.2.0)（勿用 GitHub **Latest**、勿第三方镜像）
+
+- **先备份**：以可写方式挂载或格式化 NTFS 可能损坏或丢失数据；操作前请自行备份重要文件。作者与本项目不对数据损失负责。
+- **Gatekeeper**：本包为 ad-hoc 签名、**未公证**；若无法打开，请 Control-click → 打开，或「系统设置 → 隐私与安全性 → 仍要打开」（仍不行见 [故障排除](#故障排除)）。
+- **个人使用**：非可公开再分发的产品；捆绑的 FUSE-T `go-nfsv4` 不是 GPL。上架、销售或镜像前须取得 [FUSE-T](https://www.fuse-t.org/) 书面许可并完成 Developer ID 公证。源码（Swift / ntfs-3g）为 GPL-2.0-or-later，见 [NOTICE](./NOTICE)。
+
+> **v1.2.0 说明**：设置里可调自动挂载与助手，但 **可靠的全盘自动挂载不是本版卖点**（跟踪 [#1](https://github.com/bio-apple/NTFSMount/issues/1)）。插入外置 NTFS 后，请在菜单栏 **NTFS** 子菜单中手动「以可写方式挂载」。
 
 ## 使用
 
-1. 下载 DMG，校验：`shasum -a 256 NTFSMount.dmg`（须与 Release 正文一致）。
-2. 拖入「应用程序」。若拦截：Control-click → 打开，或「系统设置 → 隐私与安全性」→ 仍要打开。仍无法打开：
-   ```bash
-   xattr -d com.apple.quarantine /Applications/NTFSMount.app
-   ```
+1. 下载 DMG，校验：`shasum -a 256 NTFSMount.dmg`（须与 [Release v1.2.0](https://github.com/bio-apple/NTFSMount/releases/tag/v1.2.0) 正文一致）。
+2. 拖入「应用程序」。若被拦截：Control-click → 打开，或「系统设置 → 隐私与安全性」→ 仍要打开。
 3. 打开后回车是 **同意并继续**（Esc 为退出）；再在窗口点 **安装…**（要管理员密码）。
 4. 插入外置 NTFS，用访达读写。用完 **推出（可安全拔出）**（会先释放 FUSE/ntfs-3g 挂载，避免访达提示正被占用），盘消失后再拔线。
 
-菜单栏右边会出现 **NTFS**（见下图）。点子菜单即可挂载 / 卸载 / 推出，或 **打开窗口**。自动挂载和助手在 **设置**。内置盘不会自动挂。
+菜单栏右边会出现 **NTFS**。点子菜单即可挂载 / 卸载 / 推出，或 **打开窗口**。安装卡住可点 **诊断环境…**。自动挂载和助手在 **设置**。内置盘不会自动挂。
 
 ```text
 菜单栏「NTFS」
@@ -31,11 +36,9 @@ Mac 上给**外置 NTFS 盘**可写访问，不用内核扩展。仅 **Apple Sil
 │   ├ 卸载 / 推出（可安全拔出）
 │   └ 格式化为 NTFS…
 ├ 全部以可写方式挂载
-├ 刷新 / 设置…
+├ 刷新 / 诊断环境… / 设置… / 检查更新…
 └ 退出 NTFS 读写
 ```
-
-![菜单栏](docs/screenshots/menubar.png)
 
 ![主窗口](docs/screenshots/window.png)
 
@@ -59,11 +62,15 @@ open /Applications/NTFSMount.app
 
 **菜单栏没有 NTFS？** 确认在 Apple Silicon + macOS 13+；看程序坞 / 打开窗口里是否被退出。用 `xattr` 清隔离后再开一次。
 
+**安装环境不对？** 菜单栏「NTFS」→「诊断环境…」只读检查捆绑 ntfs-3g / FUSE-T 与助手（不挂载、不装助手；本应用不需要 macFUSE）。
+
 **一直只要管理员密码？** 未公证包无法稳定用 `SMAppService`，每次装助手都会要密码。这是预期。公证后才优先系统服务。
 
 **盘是只读？** 「系统 NTFS」可在子菜单改可写（卷须干净）。「休眠/未正常关机」：若仅为脏卷，可点「尝试修复脏卷」（可能丢失未写入的 Windows 缓存，请先备份；默认取消）。若 Windows 休眠/快速启动（有 hiberfil），请彻底关机后再试，不要强行可写。
 
 **找不到 Latest 资产？** 故意的。用 Releases 里的 pre-release DMG，不要用 Latest。
+
+**怎么更新？** 菜单「检查更新…」随时可用（会访问 GitHub 上的 Sparkle appcast）。设置「自动检查更新」**默认关闭**，打开前不会为更新联网。当前构建为 ad-hoc、未公证；更新靠 Sparkle EdDSA 验签，不是 Developer ID。详见 [docs/SPARKLE.md](./docs/SPARKLE.md)。
 
 **Intel Mac？** 不支持。脚本会直接退出，请不要安装。
 

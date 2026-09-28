@@ -1,12 +1,14 @@
 /*
  * Privileged helper daemon. Runs as root via LaunchDaemon.
- * Accepts a Unix socket, pins the caller by CDHash + bundle id + path,
- * then execs the sealed ntfs-rw-helper inside NTFSMount.app.
+ * Accepts a Unix socket, pins the caller by live code validity + stored CDHash,
+ * then execs the root-owned ntfs-rw-helper under /Library/Application Support/NTFSMount/.
  */
+#include <CommonCrypto/CommonDigest.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include <Security/Security.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <libproc.h>
 #include <signal.h>
 #include <stdio.h>
@@ -14,19 +16,25 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <sys/un.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
 #define SOCK_PATH "/var/run/com.bioapple.ntfsmount.sock"
-#define APP_PATH_FILE "/Library/Application Support/NTFSMount/app.path"
+#define SUPPORT_DIR "/Library/Application Support/NTFSMount"
+#define APP_PATH_FILE SUPPORT_DIR "/app.path"
+#define ALLOWED_CDHASH SUPPORT_DIR "/allowed.cdhash"
+#define HELPER_STAMP SUPPORT_DIR "/helper.stamp"
+#define HELPER_SEALED SUPPORT_DIR "/ntfs-rw-helper"
 #define BUNDLE_ID "com.bioapple.ntfsmount"
 #define MAX_ARGS 8
 #define MAX_ARG 512
 #define MAX_BODY (256 * 1024)
+#define WAIT_SEC 180
 
 static const char *kAllowed[] = {
-    "mount", "unmount", "eject", "format", "fix", "ntfsfix", "automount",
+    "mount", "unmount", "eject", "format", "fix", "ntfsfix", "probe", "automount",
     "enable-automount", "disable-automount", "version", "selftest",
     NULL};
 
@@ -46,6 +54,74 @@ static int hex_encode(const unsigned char *in, size_t n, char *out, size_t outn)
   return 0;
 }
 
+static int read_trim_file(const char *path, char *out, size_t n) {
+  FILE *f = fopen(path, "r");
+  if (!f) return -1;
+  if (!fgets(out, (int)n, f)) {
+    fclose(f);
+    return -1;
+  }
+  fclose(f);
+  size_t L = strlen(out);
+  while (L && (out[L - 1] == '\n' || out[L - 1] == '\r' || out[L - 1] == ' ')) out[--L] = 0;
+  return L ? 0 : -1;
+}
+
+static int write_trunc(const char *path, const char *text, mode_t mode) {
+  int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW, mode);
+  if (fd < 0) return -1;
+  size_t n = strlen(text);
+  ssize_t w = write(fd, text, n);
+  close(fd);
+  chmod(path, mode);
+  chown(path, 0, 0);
+  return w == (ssize_t)n ? 0 : -1;
+}
+
+static int sha256_file(const char *path, char *out, size_t outn) {
+  int fd = open(path, O_RDONLY);
+  if (fd < 0) return -1;
+  CC_SHA256_CTX ctx;
+  CC_SHA256_Init(&ctx);
+  unsigned char buf[8192];
+  ssize_t n;
+  while ((n = read(fd, buf, sizeof(buf))) > 0) {
+    CC_SHA256_Update(&ctx, buf, (CC_LONG)n);
+  }
+  close(fd);
+  if (n < 0) return -1;
+  unsigned char dig[CC_SHA256_DIGEST_LENGTH];
+  CC_SHA256_Final(dig, &ctx);
+  return hex_encode(dig, CC_SHA256_DIGEST_LENGTH, out, outn);
+}
+
+static int copy_file(const char *src, const char *dst) {
+  int in = open(src, O_RDONLY | O_NOFOLLOW);
+  if (in < 0) return -1;
+  int out = open(dst, O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW, 0755);
+  if (out < 0) {
+    close(in);
+    return -1;
+  }
+  char buf[8192];
+  ssize_t n;
+  int rc = 0;
+  while ((n = read(in, buf, sizeof(buf))) > 0) {
+    if (write(out, buf, (size_t)n) != n) {
+      rc = -1;
+      break;
+    }
+  }
+  if (n < 0) rc = -1;
+  close(in);
+  close(out);
+  if (rc == 0) {
+    chown(dst, 0, 0);
+    chmod(dst, 0755);
+  }
+  return rc;
+}
+
 static int cdhash_of_path(const char *path, char *out, size_t outn) {
   CFURLRef url = CFURLCreateFromFileSystemRepresentation(NULL, (const UInt8 *)path, (CFIndex)strlen(path), false);
   if (!url) return -1;
@@ -53,6 +129,10 @@ static int cdhash_of_path(const char *path, char *out, size_t outn) {
   OSStatus st = SecStaticCodeCreateWithPath(url, kSecCSDefaultFlags, &code);
   CFRelease(url);
   if (st != errSecSuccess || !code) return -1;
+  if (SecStaticCodeCheckValidity(code, kSecCSDefaultFlags, NULL) != errSecSuccess) {
+    CFRelease(code);
+    return -1;
+  }
   CFDictionaryRef info = NULL;
   st = SecCodeCopySigningInformation(code, kSecCSSigningInformation, &info);
   CFRelease(code);
@@ -84,18 +164,34 @@ static int identifier_of_path(const char *path, char *out, size_t outn) {
   return rc;
 }
 
-static int read_app_path(char *out, size_t n) {
-  FILE *f = fopen(APP_PATH_FILE, "r");
-  if (f) {
-    if (!fgets(out, (int)n, f)) {
-      fclose(f);
-      return -1;
-    }
-    fclose(f);
-    size_t L = strlen(out);
-    while (L && (out[L - 1] == '\n' || out[L - 1] == '\r')) out[--L] = 0;
-    if (L) return 0;
+static int cdhash_of_pid(pid_t pid, char *out, size_t outn, int *validity_ok) {
+  *validity_ok = 0;
+  CFNumberRef pidRef = CFNumberCreate(NULL, kCFNumberIntType, &pid);
+  if (!pidRef) return -1;
+  const void *keys[] = {kSecGuestAttributePid};
+  const void *vals[] = {pidRef};
+  CFDictionaryRef attrs = CFDictionaryCreate(NULL, keys, vals, 1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+  CFRelease(pidRef);
+  if (!attrs) return -1;
+  SecCodeRef code = NULL;
+  OSStatus st = SecCodeCopyGuestWithAttributes(NULL, attrs, kSecCSDefaultFlags, &code);
+  CFRelease(attrs);
+  if (st != errSecSuccess || !code) return -1;
+  if (SecCodeCheckValidity(code, kSecCSDefaultFlags, NULL) == errSecSuccess) *validity_ok = 1;
+  CFDictionaryRef info = NULL;
+  st = SecCodeCopySigningInformation(code, kSecCSSigningInformation, &info);
+  CFRelease(code);
+  if (st != errSecSuccess || !info) return -1;
+  CFDataRef unique = CFDictionaryGetValue(info, kSecCodeInfoUnique);
+  int rc = -1;
+  if (unique) {
+    rc = hex_encode(CFDataGetBytePtr(unique), (size_t)CFDataGetLength(unique), out, outn);
   }
+  CFRelease(info);
+  return rc;
+}
+
+static int app_from_self(char *out, size_t n) {
   char self[PROC_PIDPATHINFO_MAXSIZE];
   if (proc_pidpath(getpid(), self, sizeof(self)) <= 0) return -1;
   char *p = strstr(self, "/Contents/MacOS/");
@@ -106,10 +202,73 @@ static int read_app_path(char *out, size_t n) {
   return 0;
 }
 
+static int read_app_path(char *out, size_t n) {
+  /* SMAppService BundleProgram: pin the live .app, not a stale app.path. */
+  if (app_from_self(out, n) == 0) return 0;
+  return read_trim_file(APP_PATH_FILE, out, n);
+}
+
 static int same_app(const char *peer_exe, const char *app) {
   char prefix[4096];
   snprintf(prefix, sizeof(prefix), "%s/Contents/MacOS/NTFSMount", app);
   return strcmp(peer_exe, prefix) == 0;
+}
+
+static int helper_root_owned(const char *path) {
+  struct stat st;
+  if (lstat(path, &st) != 0) return 0;
+  if (!S_ISREG(st.st_mode)) return 0;
+  if (st.st_uid != 0 || st.st_gid != 0) return 0;
+  if (st.st_mode & (S_IWOTH | S_IWGRP)) return 0;
+  if (!(st.st_mode & S_IXUSR)) return 0;
+  return 1;
+}
+
+static int stamp_matches(const char *helper) {
+  char line[256];
+  if (read_trim_file(HELPER_STAMP, line, sizeof(line)) != 0) return 0;
+  char *sha = strrchr(line, ' ');
+  sha = sha ? sha + 1 : line;
+  char got[65];
+  if (sha256_file(helper, got, sizeof(got)) != 0) return 0;
+  return strcasecmp(sha, got) == 0;
+}
+
+static int sealed_ready(void) {
+  char buf[256];
+  if (!helper_root_owned(HELPER_SEALED)) return 0;
+  if (!stamp_matches(HELPER_SEALED)) return 0;
+  if (read_trim_file(ALLOWED_CDHASH, buf, sizeof(buf)) != 0) return 0;
+  if (read_trim_file(APP_PATH_FILE, buf, sizeof(buf)) != 0) return 0;
+  return 1;
+}
+
+static int ensure_sealed(const char *app) {
+  mkdir(SUPPORT_DIR, 0755);
+  chown(SUPPORT_DIR, 0, 0);
+  chmod(SUPPORT_DIR, 0755);
+
+  char nlapp[4100];
+  snprintf(nlapp, sizeof(nlapp), "%s\n", app);
+  if (write_trunc(APP_PATH_FILE, nlapp, 0644) != 0) return -1;
+
+  char hash[128];
+  if (cdhash_of_path(app, hash, sizeof(hash)) != 0) return -1;
+  char line[160];
+  snprintf(line, sizeof(line), "%s\n", hash);
+  if (write_trunc(ALLOWED_CDHASH, line, 0644) != 0) return -1;
+
+  char src[4096];
+  snprintf(src, sizeof(src), "%s/Contents/Resources/ntfs-rw-helper", app);
+  if (access(src, R_OK) != 0) return -1;
+  if (copy_file(src, HELPER_SEALED) != 0) return -1;
+
+  char sha[65];
+  if (sha256_file(HELPER_SEALED, sha, sizeof(sha)) != 0) return -1;
+  char stamp[96];
+  snprintf(stamp, sizeof(stamp), "0 %s\n", sha);
+  if (write_trunc(HELPER_STAMP, stamp, 0644) != 0) return -1;
+  return helper_root_owned(HELPER_SEALED) ? 0 : -1;
 }
 
 static int peer_ok(int fd, const char *app) {
@@ -122,10 +281,21 @@ static int peer_ok(int fd, const char *app) {
   char ident[256];
   if (identifier_of_path(exe, ident, sizeof(ident)) != 0) return 0;
   if (strcmp(ident, BUNDLE_ID) != 0) return 0;
-  char a[128], b[128];
-  if (cdhash_of_path(exe, a, sizeof(a)) != 0) return 0;
-  if (cdhash_of_path(app, b, sizeof(b)) != 0) return 0;
-  return strcasecmp(a, b) == 0;
+
+  int validity_ok = 0;
+  char peer_hash[128];
+  if (cdhash_of_pid(pid, peer_hash, sizeof(peer_hash), &validity_ok) != 0) {
+    /* Guest lookup failed; static path still requires SecStaticCodeCheckValidity. */
+    if (cdhash_of_path(exe, peer_hash, sizeof(peer_hash)) != 0) return 0;
+    validity_ok = 1;
+  }
+
+  char allowed[128];
+  if (read_trim_file(ALLOWED_CDHASH, allowed, sizeof(allowed)) != 0) return 0;
+  /* Stored install pin, not the live .app CDHash (that would follow a replaced bundle). */
+  if (strcasecmp(peer_hash, allowed) != 0) return 0;
+  if (!validity_ok) return 0;
+  return 1;
 }
 
 static int allowed_cmd(const char *c) {
@@ -158,7 +328,24 @@ static void write_all(int fd, const char *p, size_t n) {
   }
 }
 
+static int waitpid_timeout(pid_t pid, int *st, int sec) {
+  for (int i = 0; i < sec * 10; i++) {
+    pid_t r = waitpid(pid, st, WNOHANG);
+    if (r == pid) return 0;
+    if (r < 0) return -1;
+    usleep(100000);
+  }
+  kill(pid, SIGTERM);
+  usleep(400000);
+  kill(pid, SIGKILL);
+  waitpid(pid, st, 0);
+  return -2;
+}
+
 static void handle(int fd, const char *app) {
+  struct timeval tv = {.tv_sec = 30, .tv_usec = 0};
+  setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+
   if (!peer_ok(fd, app)) {
     const char *m = "ERR\n调用方未通过签名校验。\n";
     write_all(fd, m, strlen(m));
@@ -174,9 +361,13 @@ static void handle(int fd, const char *app) {
   }
   char args[MAX_ARGS][MAX_ARG];
   char *argv[MAX_ARGS + 2];
-  char helper[4096];
-  snprintf(helper, sizeof(helper), "%s/Contents/Resources/ntfs-rw-helper", app);
-  argv[0] = helper;
+  const char *helper = HELPER_SEALED;
+  if (!helper_root_owned(helper) || !stamp_matches(helper)) {
+    const char *m = "ERR\n挂载助手副本校验失败，请重新安装助手。\n";
+    write_all(fd, m, strlen(m));
+    return;
+  }
+  argv[0] = (char *)helper;
   for (int i = 0; i < argc; i++) {
     if (read_line(fd, args[i], MAX_ARG) != 0) return;
     if (i == 0 && !allowed_cmd(args[i])) {
@@ -188,7 +379,7 @@ static void handle(int fd, const char *app) {
   }
   argv[argc + 1] = NULL;
   if (access(helper, X_OK) != 0) {
-    const char *m = "ERR\n找不到挂载助手，请把应用装到「应用程序」。\n";
+    const char *m = "ERR\n找不到已钉扎的挂载助手，请重新安装助手。\n";
     write_all(fd, m, strlen(m));
     return;
   }
@@ -221,8 +412,14 @@ static void handle(int fd, const char *app) {
   body[n] = 0;
   close(pipefd[0]);
   int st = 0;
-  waitpid(pid, &st, 0);
-  int ok = WIFEXITED(st) && WEXITSTATUS(st) == 0;
+  int wr = waitpid_timeout(pid, &st, WAIT_SEC);
+  int ok = wr == 0 && WIFEXITED(st) && WEXITSTATUS(st) == 0;
+  if (wr == -2) {
+    const char *m = "ERR\n挂载助手执行超时。\n";
+    write_all(fd, m, strlen(m));
+    write_all(fd, body, n);
+    return;
+  }
   const char *head = ok ? "OK\n" : "ERR\n";
   write_all(fd, head, strlen(head));
   write_all(fd, body, n);
@@ -233,6 +430,11 @@ int main(void) {
   signal(SIGPIPE, SIG_IGN);
   char app[4096];
   if (read_app_path(app, sizeof(app)) != 0) die("no app.path");
+  /* First SMAppService start writes the install pins. Never recopy from a
+   * user-writable .app just because the live bundle CDHash changed. */
+  if (!sealed_ready()) {
+    if (ensure_sealed(app) != 0 || !sealed_ready()) die("seal helper");
+  }
 
   unlink(SOCK_PATH);
   int s = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -242,6 +444,7 @@ int main(void) {
   addr.sun_family = AF_UNIX;
   strncpy(addr.sun_path, SOCK_PATH, sizeof(addr.sun_path) - 1);
   if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0) die("bind");
+  /* 0666: unprivileged app connects; helperd authenticates by stored CDHash. */
   chmod(SOCK_PATH, 0666);
   if (listen(s, 8) < 0) die("listen");
 

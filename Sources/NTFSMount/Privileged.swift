@@ -7,6 +7,8 @@ import ServiceManagement
 /// osascript「do shell script … with administrator privileges」仅用于一次性安装/卸载。
 /// 不引入 AuthorizationServices 平行 API，也不写 sudoers NOPASSWD。
 enum Privileged {
+  private static let daemonTimeoutSec: Int32 = 60
+
   static var systemHelperInstalled: Bool {
     FileManager.default.fileExists(atPath: AppIdentity.helperDaemonPath)
       || FileManager.default.fileExists(atPath: AppIdentity.helperDaemonPlist)
@@ -45,6 +47,20 @@ enum Privileged {
     FileManager.default.fileExists(atPath: AppIdentity.helperSocket)
   }
 
+  /// SMAppService and osascript must both leave the same root-owned pins.
+  private static var sealedHelperMatchesBundle: Bool {
+    let fm = FileManager.default
+    guard fm.isReadableFile(atPath: AppIdentity.helperSupportPath),
+          fm.isReadableFile(atPath: AppIdentity.allowedCDHashPath),
+          fm.isReadableFile(atPath: AppIdentity.helperStampPath),
+          fm.isReadableFile(atPath: AppIdentity.appPathFile),
+          let bundled = Bundle.main.path(forResource: "ntfs-rw-helper", ofType: nil),
+          let sha = AppIdentity.sha256File(bundled),
+          let stamp = try? String(contentsOfFile: AppIdentity.helperStampPath, encoding: .utf8)
+    else { return false }
+    return stamp.contains(sha)
+  }
+
   struct Outcome {
     let ok: Bool
     let text: String
@@ -53,35 +69,43 @@ enum Privileged {
   static func installHelper() -> Outcome {
     guard let helper = Bundle.main.path(forResource: "ntfs-rw-helper", ofType: nil)
     else {
-      return Outcome(ok: false, text: "应用包内缺少挂载助手，请重新安装。")
+      return Outcome(ok: false, text: L10n.t("privileged.missingHelper"))
     }
     let helperd = Bundle.main.bundlePath + "/Contents/MacOS/ntfsmount-helperd"
     guard FileManager.default.isExecutableFile(atPath: helperd) else {
-      return Outcome(ok: false, text: "应用包内缺少特权守护进程，请重新安装。")
+      return Outcome(ok: false, text: L10n.t("privileged.missingDaemon"))
     }
 
+    var smOk = false
     if registerDaemonService() {
+      kickstartUntilSocket()
+      if daemonReady && sealedHelperMatchesBundle { smOk = true }
+    }
+
+    if !smOk {
+      guard let installer = Bundle.main.path(forResource: "install-helper", ofType: "sh") else {
+        return Outcome(ok: false, text: L10n.t("privileged.missingInstallScript"))
+      }
+      let fallback = copyToTempAndRun(
+        ["bash"],
+        files: [installer, helper, helperd],
+        extra: [NSUserName(), Bundle.main.bundlePath]
+      )
+      if !fallback.ok { return fallback }
+      kickstartUntilSocket()
       if hasLegacySudoers || FileManager.default.fileExists(atPath: AppIdentity.legacyHelperPath) {
         _ = removeLegacySudoers()
       }
-      return Outcome(ok: true, text: "已用系统服务注册挂载助手。")
-    }
-
-    guard let installer = Bundle.main.path(forResource: "install-helper", ofType: "sh") else {
-      return Outcome(ok: false, text: "应用包内缺少安装脚本，请重新安装。")
-    }
-    let fallback = copyToTempAndRun(
-      ["bash"],
-      files: [installer, helper, helperd],
-      extra: [NSUserName(), Bundle.main.bundlePath]
-    )
-    if fallback.ok {
       return Outcome(
         ok: true,
-        text: "已用管理员密码安装 LaunchDaemon（未公证包通常走这条路径）。\(fallback.text)"
+        text: L10n.format("privileged.installedPassword", fallback.text)
       )
     }
-    return fallback
+
+    if hasLegacySudoers || FileManager.default.fileExists(atPath: AppIdentity.legacyHelperPath) {
+      _ = removeLegacySudoers()
+    }
+    return Outcome(ok: true, text: L10n.t("privileged.installedSM"))
   }
 
   private static func registerDaemonService() -> Bool {
@@ -95,6 +119,22 @@ enum Privileged {
     return service.status == .enabled
   }
 
+  private static func kickstartUntilSocket(seconds: Double = 5) {
+    let path = AppIdentity.helperSocket
+    let deadline = Date().addingTimeInterval(seconds)
+    while Date() < deadline {
+      if FileManager.default.fileExists(atPath: path) { return }
+      let proc = Process()
+      proc.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+      proc.arguments = ["kickstart", "-k", "system/com.bioapple.ntfsmount.helper"]
+      proc.standardOutput = Pipe()
+      proc.standardError = Pipe()
+      try? proc.run()
+      proc.waitUntilExit()
+      Thread.sleep(forTimeInterval: 0.1)
+    }
+  }
+
   private static func removeLegacySudoers() -> Outcome {
     runAdmin(parts: [
       "/bin/rm", "-f",
@@ -105,7 +145,7 @@ enum Privileged {
 
   static func uninstallHelper() -> Outcome {
     guard let script = Bundle.main.path(forResource: "uninstall-helper", ofType: "sh") else {
-      return Outcome(ok: false, text: "应用包内缺少卸载脚本。")
+      return Outcome(ok: false, text: L10n.t("privileged.missingUninstallScript"))
     }
     try? SMAppService.daemon(plistName: "com.bioapple.ntfsmount.helper.plist").unregister()
     return copyToTempAndRun(["bash"], files: [script], extra: [])
@@ -142,18 +182,21 @@ enum Privileged {
 
   private static func runArgs(_ args: [String]) -> Outcome {
     if systemHelperInstalled && helperNeedsUpdate {
-      return Outcome(ok: false, text: "挂载助手与本应用不匹配，已拒绝运行。请先点「更新挂载助手」。")
+      return Outcome(ok: false, text: L10n.t("privileged.mismatch"))
     }
     if let via = runViaDaemon(args) {
       return via
     }
-    return Outcome(ok: false, text: "未找到挂载助手。请点「安装挂载助手」。")
+    return Outcome(ok: false, text: L10n.t("privileged.notFound"))
   }
 
   private static func runViaDaemon(_ args: [String]) -> Outcome? {
     let fd = socket(AF_UNIX, SOCK_STREAM, 0)
     guard fd >= 0 else { return nil }
     defer { close(fd) }
+    var timeout = timeval(tv_sec: Int(daemonTimeoutSec), tv_usec: 0)
+    _ = setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
+    _ = setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
     var addr = sockaddr_un()
     addr.sun_family = sa_family_t(AF_UNIX)
     let path = AppIdentity.helperSocket
@@ -174,13 +217,19 @@ enum Privileged {
     let sent = data.withUnsafeBytes { raw in
       send(fd, raw.baseAddress, raw.count, 0)
     }
-    guard sent == data.count else { return Outcome(ok: false, text: "与挂载助手通信失败。") }
+    guard sent == data.count else { return Outcome(ok: false, text: L10n.t("privileged.commFailed")) }
     shutdown(fd, SHUT_WR)
     var out = Data()
     var buf = [UInt8](repeating: 0, count: 4096)
     while true {
       let n = recv(fd, &buf, buf.count, 0)
-      if n <= 0 { break }
+      if n < 0 {
+        if errno == EAGAIN || errno == EWOULDBLOCK || errno == ETIMEDOUT {
+          return Outcome(ok: false, text: L10n.t("privileged.timeout"))
+        }
+        break
+      }
+      if n == 0 { break }
       out.append(buf, count: n)
       if out.count > 512 * 1024 { break }
     }
@@ -192,7 +241,7 @@ enum Privileged {
       return Outcome(ok: false, text: String(text.dropFirst(4)).trimmingCharacters(in: .whitespacesAndNewlines))
     }
     if text.isEmpty {
-      return Outcome(ok: false, text: "挂载助手没有响应。请先安装或更新助手。")
+      return Outcome(ok: false, text: L10n.t("privileged.noResponse"))
     }
     return Outcome(ok: false, text: text.trimmingCharacters(in: .whitespacesAndNewlines))
   }

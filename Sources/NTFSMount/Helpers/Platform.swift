@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import NTFSMountCore
 
 enum PlatformGate {
   static var isArm64: Bool {
@@ -17,15 +18,15 @@ enum PlatformGate {
   @MainActor
   static func enforceOrTerminate() {
     var reasons: [String] = []
-    if !isArm64 { reasons.append("不支持 Intel Mac（x86_64）。需要 Apple Silicon（M 芯片）") }
-    if !osOK { reasons.append("需要 macOS 13.0 或更高版本") }
+    if !isArm64 { reasons.append(L10n.t("platform.noIntel")) }
+    if !osOK { reasons.append(L10n.t("platform.needOS")) }
     guard !reasons.isEmpty else { return }
     NSApp.activate(ignoringOtherApps: true)
     let alert = NSAlert()
     alert.alertStyle = .critical
-    alert.messageText = "无法运行 \(AppIdentity.productName)"
+    alert.messageText = L10n.format("platform.cannotRun", AppIdentity.productName)
     alert.informativeText = reasons.joined(separator: "\n")
-    alert.addButton(withTitle: "退出")
+    alert.addButton(withTitle: L10n.t("quit"))
     alert.runModal()
     NSApp.terminate(nil)
   }
@@ -86,7 +87,7 @@ enum AppLog {
 
   static func tail(_ maxLines: Int = 80) -> String {
     guard let text = try? String(contentsOf: url, encoding: .utf8), !text.isEmpty else {
-      return "还没有日志。挂载或格式化之后会出现在 \(url.path)"
+      return L10n.format("log.empty", url.path)
     }
     let lines = text.split(whereSeparator: \.isNewline)
     return lines.suffix(maxLines).joined(separator: "\n")

@@ -5,6 +5,10 @@ import SwiftUI
 struct NTFSMountApp: App {
   @StateObject private var store = VolumeStore()
 
+  init() {
+    _ = SparkleUpdater.shared
+  }
+
   var body: some Scene {
     MenuBarExtra {
       MenuRoot(store: store)

@@ -1,0 +1,478 @@
+/* NTFSMount Localizable */
+
+"ok" = "好";
+
+"ok.gotIt" = "知道了";
+
+"cancel" = "取消";
+
+"quit" = "退出";
+
+"later" = "稍后";
+
+"retry" = "重试";
+
+"installing" = "正在安装…";
+
+"app.productName" = "NTFS 读写";
+
+"onboarding.title" = "使用前请确认";
+
+"onboarding.agree" = "同意并继续";
+
+"onboarding.quit" = "退出";
+
+"onboarding.body" = "1. 以可写方式挂载或格式化 NTFS 可能损坏数据。请先备份。
+2. 捆绑的 FUSE-T go-nfsv4 不是 GPL，默认仅供个人使用。作为产品分发或销售前，须向 FUSE-T 取得书面许可（https://www.fuse-t.org/）。本安装包目前不是可公开再分发的产品。
+3. 默认不联网、不收集账户。若打开设置「自动检查更新」或点菜单「检查更新…」，应用会访问 GitHub 上的 Sparkle appcast（pre-release v1.2.0 资产，不是 GitHub Latest）。不会上传磁盘内容。日志只写在本机。卸载应用后日志文件仍会留在本机用户目录。
+4. 挂载助手以 root 守护进程运行，可挂载、卸载与格式化外置盘；安装时输入的管理员密码不会保存。
+
+第一次使用请在窗口点「安装…」安装挂载助手。未公证包会请求管理员密码；已公证包优先用系统服务授权。
+
+回车即同意。不同意请点「退出」。";
+
+"onboarding.gatekeeperTitle" = "未公证构建";
+
+"onboarding.gatekeeperBody" = "当前构建未公证。系统可能提示无法验证开发者：按住 Control 点应用 → 打开；也可在「系统设置 → 隐私与安全性」点「仍要打开」。\n终端清除隔离属性的命令见 README「故障排除」，不要在不理解的情况下执行。";
+
+"writable.title" = "以可写方式挂载？";
+
+"writable.body" = "第三方驱动写 NTFS 可能损坏卷上的文件。请确认重要数据已备份。此提示只出现一次。";
+
+"writable.continue" = "已备份，继续";
+
+"menu.openWindow" = "打开窗口";
+
+"menu.installHelper" = "安装挂载助手…";
+
+"menu.updateHelper" = "更新挂载助手…";
+
+"menu.noNTFS" = "没有检测到 NTFS 硬盘";
+
+"menu.insertHint" = "插入 Windows 格式的移动盘后再点菜单";
+
+"menu.formatOtherHint" = "可用窗口里「格式化为 NTFS」把其他移动盘转成 NTFS";
+
+"menu.encryptedLine" = "%@：可能加密，勿写入/勿格式化";
+
+"menu.fixDirty" = "尝试修复脏卷…";
+
+"menu.mountWritable" = "以可写方式挂载";
+
+"menu.mountWritableInternal" = "以可写方式挂载（内置盘，需确认）";
+
+"menu.openFinder" = "在访达中打开";
+
+"menu.unmount" = "卸载";
+
+"menu.eject" = "推出（可安全拔出）";
+
+"menu.formatNTFS" = "格式化为 NTFS…";
+
+"menu.mountAll" = "全部以可写方式挂载";
+
+"menu.refresh" = "刷新";
+
+"menu.settings" = "设置…";
+
+"menu.quitApp" = "退出 NTFS 读写";
+
+"menu.mountAllHelp" = "挂载所有外置 NTFS";
+
+"menu.needHelper" = "请先安装挂载助手";
+
+"menu.eraseWholeDisk" = "将抹掉整盘";
+
+"menu.formatItem" = "%@  ·  %@  ·  %@";
+
+"help.unmount" = "卸载本应用的可写挂载；磁盘仍连接，需要拔线请用「推出」。";
+
+"help.eject" = "推出会先卸载再弹出，访达里消失后再拔线。";
+
+"window.devices" = "设备";
+
+"window.noNTFS" = "没有 NTFS 磁盘";
+
+"window.refresh" = "刷新";
+
+"window.refreshHelp" = "刷新磁盘列表";
+
+"window.viewLog" = "查看日志";
+
+"window.viewLogHelp" = "打开本机挂载日志";
+
+"window.about" = "关于";
+
+"window.settings" = "设置";
+
+"window.firstInstall" = "第一次使用需要安装挂载助手。";
+
+"window.helperUpdate" = "挂载助手需要更新后才能使用全部功能。";
+
+"window.update" = "更新…";
+
+"window.emptyTitle" = "没有检测到 NTFS 硬盘";
+
+"window.emptySubtitle" = "插入 Windows 格式的移动盘后会出现在左侧。";
+
+"window.encryptedLine" = "%@（%@）：%@";
+
+"window.otherDisks" = "其他移动盘可以格式化为 NTFS：";
+
+"window.formatNamed" = "格式化为 NTFS…  %@  ·  %@  ·  %@";
+
+"window.capacity" = "容量";
+
+"window.filesystem" = "文件系统";
+
+"window.used" = "已用 %@";
+
+"window.available" = "可用 %@";
+
+"status.busy" = "处理中";
+
+"status.writable" = "可写";
+
+"status.roSystem" = "只读 · 系统 NTFS";
+
+"status.roDirty" = "只读 · 休眠/未正常关机";
+
+"status.unmounted" = "未挂载";
+
+"status.detailWritable" = "已挂载（可读写）";
+
+"status.detailDirty" = "已挂载（只读）：Windows 休眠或卷不干净，请先在 Windows 彻底关机";
+
+"status.detailRoSystem" = "已挂载（只读）：系统 NTFS 驱动，可在下方改成可写（卷须干净）";
+
+"volume.stateWritable" = "可写";
+
+"volume.stateRoSystem" = "系统只读";
+
+"volume.stateUnmounted" = "未挂载";
+
+"format.cancel" = "取消";
+
+"format.action" = "抹掉并格式化";
+
+"format.confirmTitle" = "抹掉「%@」并格式化为 NTFS？";
+
+"format.confirmExtra" = "将删除盘上全部文件，且无法恢复。\n请在下方「输入当前名称」原样输入「%@」；「新卷名」为格式化后的名称。";
+
+"format.nameMismatch" = "名称不一致，未抹盘";
+
+"format.finalTitle" = "最后确认：抹掉这张盘？";
+
+"format.identitySize" = "容量：%@";
+
+"format.identityDevice" = "设备：%@";
+
+"format.identityMedia" = "介质：%@";
+
+"format.identitySerial" = "序列号：%@";
+
+"format.unknown" = "未知";
+
+"format.identityFS" = "当前格式：%@";
+
+"format.finalWarning" = "「%@」· %@ · %@\n序列号：%@\n将永久删除这张盘上的全部文件。";
+
+"format.currentName" = "输入当前名称：";
+
+"format.currentPlaceholder" = "须与说明中的当前卷名完全一致";
+
+"format.newName" = "新卷名：";
+
+"format.unformatted" = "未格式化";
+
+"encrypted.message" = "可能加密，勿写入/勿格式化。macOS 无法确认 BitLocker；未见线索不是阴性证明。";
+
+"settings.title" = "设置";
+
+"settings.mount" = "挂载";
+
+"settings.autoMount" = "插入时自动挂载外置 NTFS";
+
+"settings.autoMountNote" = "默认关闭，直到已安装助手、同意条款并确认过可写风险。内置盘与 Boot Camp 不会自动挂载。自动挂载仍非 v1.2.0 卖点（Issue #1）。";
+
+"settings.appearance" = "外观与启动";
+
+"settings.launchAtLogin" = "登录时打开";
+
+"settings.showDock" = "在程序坞显示";
+
+"settings.followsSystemLanguage" = "界面跟随系统语言";
+
+"settings.helper" = "挂载助手";
+
+"settings.install" = "安装…";
+
+"settings.update" = "更新…";
+
+"settings.uninstall" = "卸载助手…";
+
+"settings.compat" = "兼容性";
+
+"settings.log" = "日志";
+
+"settings.refreshLog" = "刷新日志";
+
+"settings.openConsole" = "在控制台打开";
+
+"settings.aboutPrivacy" = "关于与隐私";
+
+"settings.aboutLine" = "NTFS 读写（NTFSMount）· 直发，不上 Mac App Store。默认不联网；打开「自动检查更新」或「检查更新…」时会访问 GitHub。";
+
+"settings.notarized" = "当前构建已公证。";
+
+"settings.signedNotNotarized" = "已用 Developer ID 签名，尚未公证。按住 Control 点应用 → 打开；也可在「系统设置 → 隐私与安全性」点「仍要打开」。";
+
+"settings.adHoc" = "当前构建未公证（ad-hoc），Gatekeeper 可能拦截。按住 Control 点应用 → 打开；也可在「系统设置 → 隐私与安全性」点「仍要打开」。";
+
+"settings.aboutButton" = "关于与隐私…";
+
+"helper.statusMissing" = "尚未安装。第一次使用请点「安装…」。";
+
+"helper.statusNeedsUpdate" = "需要更新后才能使用全部功能。";
+
+"helper.statusLegacy" = "仍有旧版 sudo 规则，请更新助手以换成签名钉扎。";
+
+"helper.statusOK" = "已安装。特权调用经守护进程校验本应用签名。";
+
+"helper.hintNotarized" = "已公证：优先用系统服务授权；失败再输入管理员密码。";
+
+"helper.hintAdHoc" = "未公证包无法稳定使用系统服务，安装助手会请求管理员密码。";
+
+"helper.privilegeHint" = "挂载助手以 root 运行，可以挂载、卸载、格式化外置盘。管理员密码只用于一次性安装，不会保存。Unix socket 权限为 0666，便于本应用以普通用户连接；守护进程用安装时写入的 CDHash 校验调用方，并只执行 /Library/Application Support/NTFSMount/ 下 root 所有的助手副本。不写 sudoers。卸载：上面的「卸载助手」，或仓库 uninstall.sh。日志在 ~/Library/Logs/ntfsmount.log，卸载后仍会留在本机。";
+
+"alert.updateHelperTitle" = "更新挂载助手";
+
+"alert.updateHelperBody" = "需要更新才能使用格式化、插入时自动挂载等新功能。将请求一次管理员密码。";
+
+"alert.update" = "更新";
+
+"alert.mountFailed" = "挂载失败";
+
+"alert.kextBody" = "FSKit/内核扩展不可用是 macOS 13+ 的预期情况，可忽略。本应用不使用内核扩展，助手已优先使用 NFS/用户态 FUSE。请勿安装 kext。\n\n%@";
+
+"alert.uninstallTitle" = "卸载挂载助手？";
+
+"alert.uninstallBody" = "将删除特权守护进程和插入时自动挂载。应用仍留在「应用程序」里。";
+
+"alert.uninstall" = "卸载助手";
+
+"about.body" = "直发应用，不上 Mac App Store。\n\n隐私：默认不联网、不收集账户或通讯录。打开「自动检查更新」或点「检查更新…」时会访问 GitHub（Sparkle appcast，不是 Latest）。日志只写在本机：\n%@\n卸载应用后该日志仍会留在本机。\n\n源码与许可证：%@\n捆绑 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 仅供个人使用；作为产品分发须向 FUSE-T 取得许可。\n\n写 NTFS 有损坏数据的风险，请先备份。\n\n%@";
+
+"about.openSource" = "打开源码页";
+
+"about.notarized" = "当前构建已公证。";
+
+"about.unnotarized" = "当前构建未公证（Gatekeeper 可能拦截）。按住 Control 点应用 → 打开；也可在「系统设置 → 隐私与安全性」点「仍要打开」。";
+
+"dirty.title" = "尝试修复脏卷？";
+
+"dirty.body" = "「%@」未正常关机或处于快速启动，卷标记为不干净。\nntfsfix 只能做基本修复，可能丢失尚未写入磁盘的 Windows 缓存。请先备份。\n不会清除 Windows 休眠文件。若这是休眠盘，请在 Windows 彻底关机后再试。";
+
+"dirty.fix" = "尝试修复";
+
+"eject.refuseInternal" = "拒绝推出内置磁盘。";
+
+"internal.title" = "以可写方式挂载内置磁盘？";
+
+"internal.body" = "「%@」位于内置磁盘。可写挂载可能影响 Windows / Boot Camp 上的数据。";
+
+"internal.anyway" = "仍然挂载";
+
+"automount.enabled" = "已打开插入时自动挂载";
+
+"automount.disabled" = "已关闭插入时自动挂载";
+
+"login.failed" = "登录时打开失败：%@";
+
+"mount.needHelper" = "需要先安装挂载助手才能以可写方式挂载。";
+
+"mount.needUpdate" = "请先更新挂载助手。";
+
+"mount.writableHelp" = "以可写方式挂载。请先备份。";
+
+"error.empty" = "操作失败，请查看日志。";
+
+"error.canceled" = "已取消。";
+
+"error.helperInstallFailed" = "安装助手失败，请再试一次。详情已写入日志。";
+
+"error.helperMissing" = "未找到挂载助手。请点「安装挂载助手」。";
+
+"error.missingGoNfsv4" = "找不到捆绑的 go-nfsv4。请重新安装应用。详情已写入日志。";
+
+"error.missingBinary" = "找不到所需程序（可能缺少 ntfs-3g 或挂载组件）。请重新安装应用。详情已写入日志。";
+
+"error.adminDenied" = "未能取得管理员权限。若刚才点了取消，可再试。详情已写入日志。";
+
+"error.helperNeedsUpdate" = "挂载助手需要更新。请在窗口点「更新…」。";
+
+"error.diskBusy" = "磁盘正被占用：请关闭访达窗口/文件后点推出";
+
+"error.failedWithLog" = "操作失败。详情已写入 %@";
+
+"error.failedLog" = "操作失败。详情已写入日志。";
+
+"privileged.missingHelper" = "应用包内缺少挂载助手，请重新安装。";
+
+"privileged.missingDaemon" = "应用包内缺少特权守护进程，请重新安装。";
+
+"privileged.missingInstallScript" = "应用包内缺少安装脚本，请重新安装。";
+
+"privileged.installedPassword" = "已用管理员密码安装 LaunchDaemon（未公证包通常走这条路径）。%@";
+
+"privileged.installedSM" = "已用系统服务注册挂载助手。";
+
+"privileged.missingUninstallScript" = "应用包内缺少卸载脚本。";
+
+"privileged.mismatch" = "挂载助手与本应用不匹配，已拒绝运行。请先点「更新挂载助手」。";
+
+"privileged.notFound" = "未找到挂载助手。请点「安装挂载助手」。";
+
+"privileged.commFailed" = "与挂载助手通信失败。";
+
+"privileged.timeout" = "挂载助手超时。请查看日志后重试。";
+
+"privileged.noResponse" = "挂载助手没有响应。请先安装或更新助手。";
+
+"platform.cannotRun" = "无法运行 %@";
+
+"platform.noIntel" = "不支持 Intel Mac（x86_64）。需要 Apple Silicon（M 芯片）";
+
+"platform.needOS" = "需要 macOS 13.0 或更高版本";
+
+"compat.belowMin" = "本应用仅支持 Apple Silicon（M 芯片）与 macOS 13.0+，不支持 Intel Mac（x86_64）。当前系统低于 macOS 13，未测试，挂载可能失败。";
+
+"compat.ok" = "仅支持 Apple Silicon（M 芯片）与 macOS 13.0+，不支持 Intel Mac（x86_64）。本应用不使用内核扩展。macOS 13 Ventura 起对 kext 限制更严，因此使用用户态 FUSE（ntfs-3g + FUSE-T）。若提示 FSKit/模块未启用，可忽略——助手已优先使用 NFS/用户态路径，请勿安装内核扩展。";
+
+"log.empty" = "还没有日志。挂载或格式化之后会出现在 %@";
+/* diagnose / premount / ntfs3g */
+
+"menu.diagnose" = "诊断环境…";
+
+"diagnose.alertTitle" = "环境诊断";
+
+"diagnose.copy" = "复制结果";
+
+"diagnose.openLog" = "打开日志";
+
+"diagnose.header" = "NTFS 读写 · 环境诊断（只读，不挂载、不装助手）";
+
+"diagnose.fuseTNote" = "本应用使用捆绑 FUSE-T go-nfsv4 + ntfs-3g，不需要安装 macFUSE。";
+
+"diagnose.notAppleSilicon" = "非 Apple Silicon（%@）；本应用不支持 Intel";
+
+"diagnose.needMacOS" = "%@（需要 macOS %d+）";
+
+"diagnose.appleSiliconOK" = "Apple Silicon · %@";
+
+"diagnose.runtimeOK" = "捆绑 ntfs-3g / ntfsfix / go-nfsv4 齐全";
+
+"diagnose.runtimeMissing" = "缺少捆绑 %@（请重新安装应用；不必装 Homebrew ntfs-3g-mac）";
+
+"diagnose.fuseOK" = "捆绑 go-nfsv4（钉死 FUSE-T %@）";
+
+"diagnose.fusePath" = "：%@";
+
+"diagnose.fuseSysUnused" = "；系统 FUSE-T %@ 未被使用";
+
+"diagnose.fuseMissing" = "捆绑 go-nfsv4 缺失（钉死 FUSE-T %@；不必安装 macFUSE）";
+
+"diagnose.helperMissing" = "助手未安装（socket 不存在；本诊断不会去安装）";
+
+"diagnose.helperAliveRejected" = "助手 socket 在，守护进程活着（签名校验拒绝属预期）";
+
+"diagnose.helperAlive" = "助手 socket 可连通（%@）";
+
+"diagnose.helperConnectFailed" = "助手 socket 在但无法连通（%@；本诊断不会去安装）";
+
+"diagnose.helperPing" = "助手 socket 在，ping: %@";
+
+"diagnose.sysext" = "系统扩展";
+
+"diagnose.conflict" = "检测到 %@（可能干扰 FUSE-T；本应用不需要 macFUSE）";
+
+"diagnose.noMacFuseBrew" = "未检测到 macFUSE kext（无 Homebrew 属正常；本应用不需要 macFUSE）";
+
+"diagnose.noMacFuse" = "未检测到 macFUSE（本应用不需要安装 macFUSE）";
+
+"diagnose.quarantine" = "应用带隔离属性（Gatekeeper 可能拦截；Control-click 打开）";
+
+"diagnose.spctlNotarized" = "已公证";
+
+"diagnose.spctlAccepted" = "已允许运行";
+
+"diagnose.spctlRejected" = "评估未通过";
+
+"diagnose.spctlUnchecked" = "未检查公证";
+
+"diagnose.noQuarantine" = "无隔离属性 · %@";
+
+"diagnose.gatekeeper" = "Gatekeeper：%@";
+
+"settings.diagnoseHint" = "只读检查捆绑组件与助手，不挂载、不装助手；本应用不需要 macFUSE。";
+
+"premount.dirtyTitle" = "NTFS 卷可能已损坏/未正常卸载";
+
+"premount.hiberTitle" = "检测到 Windows 休眠";
+
+"premount.readOnly" = "以只读挂载";
+
+"premount.fixThenWritable" = "尝试修复后可写";
+
+"premount.probing" = "正在检查磁盘健康…";
+
+"premount.dirtyBody" = "「%@」未正常卸载，或 NTFS 元数据可能已损坏。\n继续可写可能加重损坏。建议先只读打开。\n「尝试修复后可写」会再确认后运行 ntfsfix，可能丢失尚未写入磁盘的 Windows 缓存。请先备份。\n不会清除休眠文件，也不会自动修复或格式化。";
+
+"premount.hiberBody" = "「%@」仍处于 Windows 休眠或快速启动。\n将只读挂载，以免破坏休眠数据。请在 Windows 彻底关机（不要休眠/快速启动）后再以可写方式挂载。\n不会运行 ntfsfix，也不会清除休眠文件。";
+
+"ntfs3g.diagnoseMissing" = "未找到捆绑 ntfs-3g，无法校验驱动版本（未查 PATH）";
+
+"ntfs3g.mountWarningTitle" = "未经测试的 ntfs-3g 版本";
+
+"ntfs3g.continue" = "仍然继续";
+
+"ntfs3g.settingsChecking" = "正在读取捆绑 ntfs-3g 版本…";
+
+"ntfs3g.allowListCaption" = "仅 2026.7.7 与 2026.8.x 经过测试。未知版本提醒风险，不会阻止挂载。";
+
+"ntfs3g.settingsGroup" = "驱动版本";
+
+"ntfs3g.diagnoseAllowed" = "驱动 ntfs-3g %@（已测试；允许 %@）";
+
+"ntfs3g.diagnoseUntested" = "驱动 ntfs-3g %@ 未经测试（允许 %@）；未知版本有风险，仍可继续挂载";
+
+"ntfs3g.settingsAllowed" = "捆绑 ntfs-3g %@（已测试：%@）";
+
+"ntfs3g.settingsUntested" = "捆绑 ntfs-3g %@ 未经测试（允许：%@）。未知版本有写入风险，可继续挂载。";
+
+"ntfs3g.mountWarningBody" = "当前捆绑驱动是 ntfs-3g %@。仅 %@ 经过测试。未知版本有写入风险，可继续挂载。";
+/* sparkle updates */
+
+"update.menuCheck" = "检查更新…";
+
+"update.settingsGroup" = "更新";
+
+"update.autoCheck" = "自动检查更新";
+
+"update.checkNow" = "检查更新…";
+
+"update.autoCheckNote" = "默认关闭。打开前不会访问网络。打开后会定期向 GitHub 上的 Sparkle appcast 查询新版本（当前指向 pre-release v1.2.0 资产，不是 GitHub Latest）。发现更新后可一键安装，不会静默安装。当前构建为 ad-hoc、未公证；更新信任靠 Sparkle EdDSA 签名，不是 Developer ID。";
+
+"update.settingsAboutLine" = "NTFS 读写（NTFSMount）· 直发，不上 Mac App Store。默认不联网；打开「自动检查更新」或「检查更新…」时会访问 GitHub。";
+
+"update.aboutPrivacy" = "直发应用，不上 Mac App Store。\n\n隐私：默认不联网、不收集账户或通讯录。打开「自动检查更新」或点「检查更新…」时会访问 GitHub（Sparkle appcast，不是 Latest）。日志只写在本机：\n%@\n卸载应用后该日志仍会留在本机。\n\n源码与许可证：%@\n捆绑 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 仅供个人使用；作为产品分发须向 FUSE-T 取得许可。更新框架为 Sparkle（MIT）。\n\n写 NTFS 有损坏数据的风险，请先备份。\n\n%@";
+
+"menu.checkForUpdates" = "检查更新…";
+
+"settings.updates" = "更新";
+
+"settings.autoCheckUpdates" = "自动检查更新";
+
+"settings.checkNow" = "检查更新…";
+
+"settings.autoCheckUpdatesNote" = "默认关闭。打开前不会访问网络。打开后会定期向 GitHub 上的 Sparkle appcast 查询新版本（当前指向 pre-release v1.2.0 资产，不是 GitHub Latest）。发现更新后可一键安装，不会静默安装。当前构建为 ad-hoc、未公证；更新信任靠 Sparkle EdDSA 签名，不是 Developer ID。";

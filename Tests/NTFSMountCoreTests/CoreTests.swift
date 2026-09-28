@@ -14,6 +14,45 @@ final class MockCatalog: DiskCatalog {
   func fileSystemUsage(at path: String) -> (total: Int64, free: Int64)? { usage[path] }
 }
 
+final class FuseMountLineTests: XCTestCase {
+  func testFuseMountPointsRecognizesFuseTGoNfsv4Line() {
+    let mount = """
+    localhost:/ on /Volumes/WIN_DATA (nfs, nodev, nosuid, mounted by alice)
+    """
+    XCTAssertTrue(FuseMountLine.isOurFuseMount(mount))
+    XCTAssertEqual(FuseMountLine.mountPoint(from: mount), "/Volumes/WIN_DATA")
+    XCTAssertEqual(FuseMountLine.fuseMountPoints(fromMountOutput: mount), ["/Volumes/WIN_DATA"])
+  }
+
+  func testFuseMountPointsRecognizesClassicFuseBackends() {
+    let mount = """
+    /dev/disk4s1 on /Volumes/NTFS_A (ntfs-3g, local, nosuid)
+    /dev/disk5s1 on /Volumes/NTFS_B (macfuse, local, nosuid)
+    /dev/disk6s1 on /Volumes/NTFS_C (fuse-t, local, nosuid)
+    /dev/disk7s1 on /Volumes/NTFS_D (osxfuse, local, nosuid)
+    /dev/disk8s1 on /Volumes/NTFS_E (local, fuse, nosuid)
+    """
+    let points = FuseMountLine.fuseMountPoints(fromMountOutput: mount)
+    XCTAssertEqual(points.count, 5)
+    XCTAssertTrue(points.isSuperset(of: [
+      "/Volumes/NTFS_A",
+      "/Volumes/NTFS_B",
+      "/Volumes/NTFS_C",
+      "/Volumes/NTFS_D",
+      "/Volumes/NTFS_E",
+    ]))
+  }
+
+  func testFuseMountPointsSkipsUnrelatedMountLines() {
+    let mount = """
+    map auto_home on /System/Volumes/Data/home (autofs, automounted, nobrowse)
+    /dev/disk1s1 on / (apfs, local, journaled)
+    localhost:/ on /Volumes/FUSE_VOL (nfs, nodev, nosuid)
+    """
+    XCTAssertEqual(FuseMountLine.fuseMountPoints(fromMountOutput: mount), ["/Volumes/FUSE_VOL"])
+  }
+}
+
 final class NTFSVolumeScanTests: XCTestCase {
   func testScanKeepsWritableFuseNTFSAndSkipsExFAT() {
     let catalog = MockCatalog()
@@ -78,6 +117,37 @@ final class NTFSVolumeScanTests: XCTestCase {
     XCTAssertTrue(vols[0].isInternal)
     XCTAssertTrue(vols[0].isReadOnlyMounted)
     XCTAssertFalse(vols[0].isWritableFuse)
+  }
+
+  func testScanKeepsUnmountedExternalNTFSForAutoMount() {
+    let catalog = MockCatalog()
+    catalog.list = [
+      "AllDisksAndPartitions": [[
+        "DeviceIdentifier": "disk6",
+        "Partitions": [["DeviceIdentifier": "disk6s1"]],
+      ]],
+    ]
+    catalog.info["disk6s1"] = [
+      "FilesystemName": "NTFS",
+      "VolumeName": "WIN_DATA",
+      "TotalSize": NSNumber(value: 16_000_000_000),
+      "Internal": false,
+      "BusProtocol": "USB",
+    ]
+
+    let vols = NTFSVolume.scan(using: catalog)
+    XCTAssertEqual(vols.map(\.id), ["disk6s1"])
+    XCTAssertEqual(vols[0].mountPoint, "")
+    XCTAssertFalse(vols[0].isWritableFuse)
+    XCTAssertFalse(vols[0].isInternal)
+    XCTAssertTrue(
+      AutoMountPolicy.isEligible(
+        isInternal: vols[0].isInternal,
+        isWritableFuse: vols[0].isWritableFuse,
+        userSkippedUnmount: false,
+        alreadyAttempted: false
+      )
+    )
   }
 
   func testFormatScanSkipsInternalAndSystemDisk() {
@@ -234,8 +304,54 @@ final class VolumeHealthTests: XCTestCase {
     XCTAssertFalse(VolumeHealth.canOfferDirtyFix("Windows is hibernated"))
     XCTAssertFalse(VolumeHealth.canOfferDirtyFix("Volume is dirty. Windows is hibernated."))
     XCTAssertTrue(VolumeHealth.canOfferDirtyFix("classify: volume is dirty"))
+    XCTAssertTrue(VolumeHealth.canOfferDirtyFix("classify: volume may be corrupted"))
+    XCTAssertTrue(VolumeHealth.canOfferDirtyFix("NTFS volume may be corrupted"))
     XCTAssertFalse(VolumeHealth.canOfferDirtyFix("classify: Windows is hibernated"))
     XCTAssertFalse(VolumeHealth.canOfferDirtyFix("classify: dirty/hibernation"))
+  }
+
+  func testPreMountProbeClassificationAndCopy() {
+    XCTAssertEqual(VolumeHealth.probeKind(from: "classify: volume is clean"), .healthy)
+    XCTAssertEqual(VolumeHealth.probeKind(from: "NTFS partition processed successfully."), .healthy)
+    XCTAssertEqual(VolumeHealth.probeKind(from: "classify: volume is dirty"), .dirty)
+    XCTAssertEqual(VolumeHealth.probeKind(from: "The disk contains an unclean file system"), .dirty)
+    XCTAssertEqual(VolumeHealth.probeKind(from: "classify: Windows is hibernated"), .hibernated)
+    XCTAssertEqual(VolumeHealth.probeKind(from: "classify: volume may be corrupted"), .corrupt)
+    XCTAssertEqual(VolumeHealth.probeKind(from: "NTFS volume may be corrupted"), .corrupt)
+    XCTAssertEqual(VolumeHealth.probeKind(from: "classify: unknown"), .unknown)
+    XCTAssertEqual(VolumeHealth.probeKind(from: "Mounted successfully"), .unknown)
+    XCTAssertEqual(
+      VolumeHealth.probeKind(from: "unclean file system. NTFS partition was processed successfully."),
+      .dirty
+    )
+    XCTAssertEqual(
+      VolumeHealth.probeKind(from: "Volume is dirty. Windows is hibernated."),
+      .hibernated
+    )
+
+    XCTAssertNil(VolumeHealth.preMountDialog(for: .healthy))
+    XCTAssertNil(VolumeHealth.preMountDialog(for: .unknown))
+    XCTAssertEqual(VolumeHealth.preMountDialog(for: .dirty), .dirtyOrCorrupt)
+    XCTAssertEqual(VolumeHealth.preMountDialog(for: .corrupt), .dirtyOrCorrupt)
+    XCTAssertEqual(VolumeHealth.preMountDialog(for: .hibernated), .hibernated)
+
+    let zh = Locale(identifier: "zh-Hans")
+    XCTAssertEqual(VolumeHealth.PreMountCopy.dirtyTitle(locale: zh), "NTFS 卷可能已损坏/未正常卸载")
+    XCTAssertEqual(VolumeHealth.PreMountCopy.readOnlyTitle(locale: zh), "以只读挂载")
+    XCTAssertEqual(VolumeHealth.PreMountCopy.fixThenWritableTitle(locale: zh), "尝试修复后可写")
+    XCTAssertEqual(VolumeHealth.PreMountCopy.cancelTitle(locale: zh), "取消")
+    XCTAssertEqual(VolumeHealth.PreMountCopy.hiberTitle(locale: zh), "检测到 Windows 休眠")
+    let dirtyBody = VolumeHealth.PreMountCopy.dirtyBody(volumeName: "BANDISK", locale: zh)
+    XCTAssertTrue(dirtyBody.contains("BANDISK"))
+    XCTAssertTrue(dirtyBody.contains("未正常卸载") || dirtyBody.contains("损坏"))
+    XCTAssertTrue(dirtyBody.contains("ntfsfix"))
+    XCTAssertFalse(dirtyBody.contains("repairVolume"))
+    let hiberBody = VolumeHealth.PreMountCopy.hiberBody(volumeName: "WIN", locale: zh)
+    XCTAssertTrue(hiberBody.contains("WIN"))
+    XCTAssertTrue(hiberBody.contains("彻底关机"))
+    XCTAssertTrue(hiberBody.contains("只读"))
+    XCTAssertTrue(hiberBody.contains("不会运行 ntfsfix"))
+    XCTAssertFalse(hiberBody.contains("尝试修复后可写"))
   }
 
   func testKextBlockIsClassified() {
@@ -245,32 +361,131 @@ final class VolumeHealthTests: XCTestCase {
   }
 
   func testReadOnlyStatusExplainsCause() {
+    let zh = Locale(identifier: "zh-Hans")
     XCTAssertEqual(
-      VolumeHealth.shortStatus(busy: false, isWritableFuse: false, isReadOnlyMounted: true, lastAdvice: nil),
+      VolumeHealth.shortStatus(
+        busy: false, isWritableFuse: false, isReadOnlyMounted: true, lastAdvice: nil, locale: zh
+      ),
       "只读 · 系统 NTFS"
     )
     XCTAssertEqual(
-      VolumeHealth.shortStatus(busy: false, isWritableFuse: false, isReadOnlyMounted: true, lastAdvice: .readOnlyDirty),
+      VolumeHealth.shortStatus(
+        busy: false, isWritableFuse: false, isReadOnlyMounted: true, lastAdvice: .readOnlyDirty, locale: zh
+      ),
       "只读 · 休眠/未正常关机"
     )
     XCTAssertTrue(
-      VolumeHealth.detailStatus(isWritableFuse: false, isReadOnlyMounted: true, lastAdvice: .readOnlyDirty)
-        .contains("彻底关机")
+      VolumeHealth.detailStatus(
+        isWritableFuse: false, isReadOnlyMounted: true, lastAdvice: .readOnlyDirty, locale: zh
+      )
+      .contains("彻底关机")
     )
+  }
+}
+
+final class AutoMountPolicyTests: XCTestCase {
+  func testUnmountedExternalIsEligiblePerVolumeNotOnlyFirst() {
+    XCTAssertTrue(
+      AutoMountPolicy.isEligible(
+        isInternal: false, isWritableFuse: false, userSkippedUnmount: false, alreadyAttempted: false
+      )
+    )
+    XCTAssertTrue(
+      AutoMountPolicy.isEligible(
+        isInternal: false, isWritableFuse: false, userSkippedUnmount: false, alreadyAttempted: false
+      ),
+      "second unmounted volume stays eligible independently of volumes.first"
+    )
+    XCTAssertFalse(
+      AutoMountPolicy.isEligible(
+        isInternal: true, isWritableFuse: false, userSkippedUnmount: false, alreadyAttempted: false
+      )
+    )
+    XCTAssertFalse(
+      AutoMountPolicy.isEligible(
+        isInternal: false, isWritableFuse: true, userSkippedUnmount: false, alreadyAttempted: false
+      )
+    )
+    XCTAssertFalse(
+      AutoMountPolicy.isEligible(
+        isInternal: false, isWritableFuse: false, userSkippedUnmount: true, alreadyAttempted: false
+      )
+    )
+    XCTAssertFalse(
+      AutoMountPolicy.isEligible(
+        isInternal: false, isWritableFuse: false, userSkippedUnmount: false, alreadyAttempted: true
+      )
+    )
+  }
+
+  func testHelperMountsUnmountedExternalWithoutRequiringStillMounted() {
+    XCTAssertTrue(
+      AutoMountPolicy.helperShouldMount(isInternal: false, isOurFuse: false, isWritable: false),
+      "unmounted external NTFS must auto-mount; do not require volume_still_mounted"
+    )
+    XCTAssertFalse(AutoMountPolicy.helperShouldMount(isInternal: true, isOurFuse: false, isWritable: false))
+    XCTAssertFalse(AutoMountPolicy.helperShouldMount(isInternal: false, isOurFuse: true, isWritable: false))
+    XCTAssertFalse(AutoMountPolicy.helperShouldMount(isInternal: false, isOurFuse: false, isWritable: true))
+  }
+
+  func testRecordAttemptOnlyAfterRefuseOrHelperReturn() {
+    XCTAssertFalse(AutoMountPolicy.shouldRecordAttempt(userRefused: false, helperReturned: false))
+    XCTAssertTrue(AutoMountPolicy.shouldRecordAttempt(userRefused: true, helperReturned: false))
+    XCTAssertTrue(AutoMountPolicy.shouldRecordAttempt(userRefused: false, helperReturned: true))
+  }
+
+  func testToggleStaysOffUntilHelperLegalAndWritableStamp() {
+    XCTAssertFalse(
+      AutoMountPolicy.shouldAutoEnable(
+        helperInstalled: false, legalAccepted: true, writableStampPresent: true, userOptedOff: false
+      )
+    )
+    XCTAssertFalse(
+      AutoMountPolicy.shouldAutoEnable(
+        helperInstalled: true, legalAccepted: false, writableStampPresent: true, userOptedOff: false
+      )
+    )
+    XCTAssertFalse(
+      AutoMountPolicy.shouldAutoEnable(
+        helperInstalled: true, legalAccepted: true, writableStampPresent: false, userOptedOff: false
+      )
+    )
+    XCTAssertFalse(
+      AutoMountPolicy.shouldAutoEnable(
+        helperInstalled: true, legalAccepted: true, writableStampPresent: true, userOptedOff: true
+      )
+    )
+    XCTAssertTrue(
+      AutoMountPolicy.shouldAutoEnable(
+        helperInstalled: true, legalAccepted: true, writableStampPresent: true, userOptedOff: false
+      )
+    )
+  }
+
+  func testWritableAutoMountSkippedWhenDirtyCorruptOrHiber() {
+    XCTAssertTrue(AutoMountPolicy.allowsWritableAttempt(.healthy))
+    XCTAssertTrue(AutoMountPolicy.allowsWritableAttempt(.unknown))
+    XCTAssertFalse(AutoMountPolicy.allowsWritableAttempt(.dirty))
+    XCTAssertFalse(AutoMountPolicy.allowsWritableAttempt(.corrupt))
+    XCTAssertFalse(AutoMountPolicy.allowsWritableAttempt(.hibernated))
   }
 }
 
 final class OnboardingCopyTests: XCTestCase {
   func testAgreeIsPrimaryAndBodyMentionsHelper() {
-    XCTAssertEqual(OnboardingCopy.quitTitle, "退出")
-    XCTAssertEqual(OnboardingCopy.agreeTitle, "同意并继续")
-    let body = OnboardingCopy.body(notarized: false)
-    XCTAssertTrue(body.contains("仍要打开"))
-    XCTAssertTrue(body.contains("xattr -d com.apple.quarantine"))
+    let zh = Locale(identifier: "zh-Hans")
+    XCTAssertEqual(OnboardingCopy.quitTitle(locale: zh), "退出")
+    XCTAssertEqual(OnboardingCopy.agreeTitle(locale: zh), "同意并继续")
+    let body = OnboardingCopy.body(notarized: false, locale: zh)
     XCTAssertTrue(body.contains("管理员密码"))
     XCTAssertTrue(body.contains("go-nfsv4"))
     XCTAssertTrue(body.contains("回车即同意"))
-    XCTAssertFalse(OnboardingCopy.body(notarized: true).contains("当前构建未公证"))
+    XCTAssertTrue(body.contains("安装"))
+    XCTAssertEqual(OnboardingCopy.copyVersion, 5)
+    XCTAssertFalse(UpdateCopy.feedURL.lowercased().contains("latest"))
+    XCTAssertTrue(UpdateCopy.feedURL.contains("v1.2.0/appcast.xml"))
+    XCTAssertFalse(OnboardingCopy.body(notarized: true, locale: zh).contains("当前构建未公证"))
+    XCTAssertTrue(OnboardingCopy.gatekeeperBody(locale: zh).contains("仍要打开"))
   }
 }
 
@@ -290,12 +505,14 @@ final class FormatPolicyTests: XCTestCase {
   }
 
   func testIdentityShowsSerialAndSizeAndCancelIsDefault() {
+    let zh = Locale(identifier: "zh-Hans")
     let lines = FormatPolicy.identityLines(
       sizeLabel: "8 GB",
       deviceId: "disk4",
       serial: "ABCD-1234",
       fsHint: "ExFAT",
-      mediaName: "SanDisk"
+      mediaName: "SanDisk",
+      locale: zh
     )
     XCTAssertTrue(lines.contains("容量：8 GB"))
     XCTAssertTrue(lines.contains("设备：disk4"))
@@ -305,29 +522,64 @@ final class FormatPolicyTests: XCTestCase {
       name: "BANDISK",
       sizeLabel: "8 GB",
       deviceId: "disk4",
-      serial: "ABCD-1234"
+      serial: "ABCD-1234",
+      locale: zh
     )
     XCTAssertTrue(warning.contains("BANDISK"))
     XCTAssertTrue(warning.contains("ABCD-1234"))
-    XCTAssertEqual(FormatPolicy.cancelTitle, "取消")
+    XCTAssertEqual(FormatPolicy.cancelTitle(locale: zh), "取消")
   }
 }
 
 final class UserFacingErrorTests: XCTestCase {
   func testMapsOsascriptAndCancel() {
-    XCTAssertEqual(UserFacingError.message(from: "0:205: execution error"), "未能取得管理员权限。若刚才点了取消，可再试。详情已写入日志。")
-    XCTAssertEqual(UserFacingError.message(from: "User canceled. (-128)"), "已取消。")
-    XCTAssertEqual(UserFacingError.message(from: "bash: foo: No such file or directory (127)"), "安装助手失败，请再试一次。详情已写入日志。")
+    let zh = Locale(identifier: "zh-Hans")
+    XCTAssertEqual(
+      UserFacingError.message(from: "0:205: execution error", locale: zh),
+      "未能取得管理员权限。若刚才点了取消，可再试。详情已写入日志。"
+    )
+    XCTAssertEqual(UserFacingError.message(from: "User canceled. (-128)", locale: zh), "已取消。")
+    XCTAssertEqual(
+      UserFacingError.message(from: "bash: foo: No such file or directory (127)", locale: zh),
+      "找不到所需程序（可能缺少 ntfs-3g 或挂载组件）。请重新安装应用。详情已写入日志。"
+    )
   }
 
   func testMapsBusyEject() {
+    let zh = Locale(identifier: "zh-Hans")
     XCTAssertEqual(
-      UserFacingError.message(from: "error: 磁盘正被占用：Finder。请关闭访达窗口/文件后点推出"),
+      UserFacingError.message(from: "error: 磁盘正被占用：Finder。请关闭访达窗口/文件后点推出", locale: zh),
       "磁盘正被占用：Finder。请关闭访达窗口/文件后点推出"
     )
     XCTAssertEqual(
-      UserFacingError.message(from: "Unmount failed: Resource busy"),
+      UserFacingError.message(from: "Unmount failed: Resource busy", locale: zh),
       "磁盘正被占用：请关闭访达窗口/文件后点推出"
     )
+  }
+}
+
+final class L10nTests: XCTestCase {
+  func testLanguageMatchingAndFallback() {
+    XCTAssertEqual(L10n.languageCode(for: Locale(identifier: "en")), "en")
+    XCTAssertEqual(L10n.languageCode(for: Locale(identifier: "en_US")), "en")
+    XCTAssertEqual(L10n.languageCode(for: Locale(identifier: "en-GB")), "en")
+    XCTAssertEqual(L10n.languageCode(for: Locale(identifier: "zh-Hans")), "zh-Hans")
+    XCTAssertEqual(L10n.languageCode(for: Locale(identifier: "zh-CN")), "zh-Hans")
+    XCTAssertEqual(L10n.languageCode(for: Locale(identifier: "zh-Hant")), "zh-Hant")
+    XCTAssertEqual(L10n.languageCode(for: Locale(identifier: "zh-TW")), "zh-Hant")
+    XCTAssertEqual(L10n.languageCode(for: Locale(identifier: "zh-HK")), "zh-Hant")
+    XCTAssertEqual(L10n.languageCode(for: Locale(identifier: "ja")), "ja")
+    XCTAssertEqual(L10n.languageCode(for: Locale(identifier: "fr")), "zh-Hans")
+  }
+
+  func testEnglishAndChineseCatalogs() {
+    let en = Locale(identifier: "en")
+    let zh = Locale(identifier: "zh-Hans")
+    XCTAssertEqual(OnboardingCopy.agreeTitle(locale: en), "Agree and Continue")
+    XCTAssertEqual(OnboardingCopy.agreeTitle(locale: zh), "同意并继续")
+    XCTAssertEqual(L10n.t("menu.diagnose", locale: en), "Diagnose Environment…")
+    XCTAssertEqual(L10n.t("menu.diagnose", locale: zh), "诊断环境…")
+    XCTAssertTrue(OnboardingCopy.body(notarized: false, locale: en).contains("Return means you agree"))
+    XCTAssertTrue(OnboardingCopy.body(notarized: false, locale: zh).contains("回车即同意"))
   }
 }

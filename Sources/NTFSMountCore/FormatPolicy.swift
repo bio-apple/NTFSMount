@@ -1,8 +1,12 @@
 import Foundation
 
 public enum FormatPolicy {
-  public static let cancelTitle = "取消"
-  public static let formatTitle = "抹掉并格式化"
+  public static var cancelTitle: String { L10n.t("format.cancel") }
+  public static var formatTitle: String { L10n.t("format.action") }
+
+  public static func cancelTitle(locale: Locale?) -> String {
+    L10n.t("format.cancel", locale: locale)
+  }
 
   public static func confirms(typed: String, currentName: String) -> Bool {
     typed == currentName
@@ -13,12 +17,21 @@ public enum FormatPolicy {
     deviceId: String,
     serial: String,
     fsHint: String,
-    mediaName: String
+    mediaName: String,
+    locale: Locale? = nil
   ) -> String {
-    var lines = ["容量：\(sizeLabel)", "设备：\(deviceId)"]
-    if !mediaName.isEmpty { lines.append("介质：\(mediaName)") }
-    lines.append("序列号：\(serial.isEmpty ? "未知" : serial)")
-    if !fsHint.isEmpty { lines.append("当前格式：\(fsHint)") }
+    var lines = [
+      L10n.format("format.identitySize", sizeLabel, locale: locale),
+      L10n.format("format.identityDevice", deviceId, locale: locale),
+    ]
+    if !mediaName.isEmpty {
+      lines.append(L10n.format("format.identityMedia", mediaName, locale: locale))
+    }
+    let serialLine = serial.isEmpty ? L10n.t("format.unknown", locale: locale) : serial
+    lines.append(L10n.format("format.identitySerial", serialLine, locale: locale))
+    if !fsHint.isEmpty {
+      lines.append(L10n.format("format.identityFS", fsHint, locale: locale))
+    }
     return lines.joined(separator: "\n")
   }
 
@@ -26,10 +39,11 @@ public enum FormatPolicy {
     name: String,
     sizeLabel: String,
     deviceId: String,
-    serial: String
+    serial: String,
+    locale: Locale? = nil
   ) -> String {
-    let serialLine = serial.isEmpty ? "未知" : serial
-    return "「\(name)」· \(sizeLabel) · \(deviceId)\n序列号：\(serialLine)\n将永久删除这张盘上的全部文件。"
+    let serialLine = serial.isEmpty ? L10n.t("format.unknown", locale: locale) : serial
+    return L10n.format("format.finalWarning", name, sizeLabel, deviceId, serialLine, locale: locale)
   }
 
   public static func wholeDiskId(_ id: String) -> String {

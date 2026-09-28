@@ -6,42 +6,61 @@ struct MenuRoot: View {
   @ObservedObject var store: VolumeStore
 
   var body: some View {
-    Button("打开窗口") { store.showMainWindow() }
+    Button(L10n.t("menu.openWindow")) { store.showMainWindow() }
       .keyboardShortcut("o")
+    if !store.helperInstalled {
+      Button(store.helperInstallBusy ? L10n.t("installing") : L10n.t("menu.installHelper")) {
+        store.installHelper()
+      }
+      .disabled(store.helperInstallBusy)
+    } else if Privileged.helperNeedsUpdate {
+      Button(store.helperInstallBusy ? L10n.t("installing") : L10n.t("menu.updateHelper")) {
+        store.installHelper()
+      }
+      .disabled(store.helperInstallBusy)
+    }
     Divider()
     if store.volumes.isEmpty {
-      Text("没有检测到 NTFS 硬盘")
+      Text(L10n.t("menu.noNTFS"))
       Text(store.formatDisks.isEmpty
-        ? "插入 Windows 格式的移动盘后再点菜单"
-        : "可用窗口里「格式化为 NTFS」把其他移动盘转成 NTFS")
+        ? L10n.t("menu.insertHint")
+        : L10n.t("menu.formatOtherHint"))
         .foregroundStyle(.secondary)
+      ForEach(store.encryptedDisks) { disk in
+        Text(L10n.format("menu.encryptedLine", disk.name))
+          .foregroundStyle(.secondary)
+      }
     } else {
       ForEach(store.volumes) { vol in
         Menu {
-          if !vol.isWritableFuse {
-            Button(vol.isInternal ? "以可写方式挂载（内置盘，需确认）" : "以可写方式挂载") {
-              store.mount(vol)
-            }
-            .disabled(store.busyId != nil)
-          }
           if store.canOfferDirtyFix(vol) {
-            Button("尝试修复脏卷…") {
+            Button(L10n.t("menu.fixDirty")) {
               store.confirmDirtyFix(vol)
             }
             .disabled(store.busyId != nil)
           }
-          Button("在访达中打开") {
+          if !vol.isWritableFuse {
+            Button(vol.isInternal ? L10n.t("menu.mountWritableInternal") : L10n.t("menu.mountWritable")) {
+              store.mount(vol)
+            }
+            .disabled(store.busyId != nil || !store.canMountWritable(vol))
+            .help(store.helperInstalled ? store.writableMountHelp(vol) : L10n.t("menu.needHelper"))
+          }
+          Button(L10n.t("menu.openFinder")) {
             NSWorkspace.shared.open(URL(fileURLWithPath: vol.expectedMountPoint))
           }
           .disabled(vol.mountPoint.isEmpty)
           Divider()
-          Button("卸载") { store.unmount(vol) }
+          Button(L10n.t("menu.unmount")) { store.unmount(vol) }
             .disabled(vol.mountPoint.isEmpty || store.busyId != nil)
-          Button("推出（可安全拔出）") { store.eject(vol) }
-            .disabled(store.busyId != nil || vol.isInternal)
-            .help(vol.isInternal ? "内置磁盘不能推出" : "先释放 ntfs-3g 再弹出")
+            .help(VolumeActionCopy.unmountHelp)
+          if !vol.isInternal {
+            Button(L10n.t("menu.eject")) { store.eject(vol) }
+              .disabled(store.busyId != nil)
+              .help(VolumeActionCopy.ejectHelp)
+          }
           Divider()
-          Button("格式化为 NTFS…") {
+          Button(L10n.t("menu.formatNTFS")) {
             if let disk = store.formatDisks.first(where: { $0.id == wholeDiskId(vol.id) }) {
               store.confirmFormat(disk)
             }
@@ -52,25 +71,33 @@ struct MenuRoot: View {
         }
       }
       Divider()
-      Button("全部以可写方式挂载") { store.mountAll() }
+      Button(L10n.t("menu.mountAll")) { store.mountAll() }
         .keyboardShortcut("m")
-        .disabled(store.volumes.filter({ !$0.isInternal }).allSatisfy(\.isWritableFuse) || store.busyId != nil)
+        .disabled(
+          !store.helperInstalled
+            || store.volumes.filter({ !$0.isInternal }).allSatisfy(\.isWritableFuse)
+            || store.busyId != nil
+        )
+        .help(store.helperInstalled ? L10n.t("menu.mountAllHelp") : L10n.t("menu.needHelper"))
     }
     if !store.formatDisks.isEmpty {
       Divider()
-      Menu("格式化为 NTFS…") {
+      Menu(L10n.t("menu.formatNTFS")) {
         ForEach(store.formatDisks) { disk in
-          Button("\(disk.name)  ·  \(disk.fsHint)  ·  \(disk.sizeLabel)") {
+          Button(L10n.format("menu.formatItem", disk.name, disk.fsHint, disk.sizeLabel)) {
             store.confirmFormat(disk)
           }
           .disabled(store.busyId != nil)
+          .help(disk.encryptionWarning ?? L10n.t("menu.eraseWholeDisk"))
         }
       }
     }
     Divider()
-    Button("刷新") { store.refresh() }
+    Button(L10n.t("menu.refresh")) { store.refresh() }
       .keyboardShortcut("r")
-    Button("设置…") { store.showSettings() }
+    Button(L10n.t("menu.diagnose")) { EnvironmentDiagnosePresenter.present() }
+    Button(L10n.t("menu.settings")) { store.showSettings() }
+    Button(UpdateCopy.menuCheck) { SparkleUpdater.shared.checkForUpdates() }
     if !store.message.isEmpty {
       Text(store.message)
         .font(.caption)
@@ -78,7 +105,7 @@ struct MenuRoot: View {
         .lineLimit(2)
     }
     Divider()
-    Button("退出 NTFS 读写") { NSApp.terminate(nil) }
+    Button(L10n.t("menu.quitApp")) { NSApp.terminate(nil) }
       .keyboardShortcut("q")
   }
 }

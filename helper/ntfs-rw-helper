@@ -1,11 +1,11 @@
 #!/bin/bash
 # Privileged helper: ntfs-3g over bundled FUSE-T userspace.
 # 本仓库源码（bash），不是第三方预编译二进制。构建时 codesign + SHA-256。
-# 命令: mount|unmount|eject|format|fix|automount|enable-automount|disable-automount
+# 命令: mount|unmount|eject|format|fix|probe|automount|enable-automount|disable-automount
 # 全局旗标: --verbose（可在子命令前或后）
 set -euo pipefail
 
-HELPER_VERSION=6
+HELPER_VERSION=8
 
 DISKUTIL="/usr/sbin/diskutil"
 MOUNT="/sbin/mount"
@@ -162,7 +162,7 @@ log_ts() {
 init_log_file() {
   local user home
   user="$(/usr/bin/stat -f '%Su' /dev/console 2>/dev/null || /usr/bin/id -un)"
-  home="$(/usr/bin/dscl . -read "/Users/${user}" NFSHomeDirectory 2>/dev/null | /usr/bin/awk '{print $2}')"
+  home="$(/usr/bin/dscl . -read "/Users/${user}" NFSHomeDirectory 2>/dev/null | /usr/bin/awk '{print $2}' || true)"
   if [[ -z "$home" || "$home" == "/" ]]; then
     home="${HOME:-}"
   fi
@@ -196,7 +196,7 @@ log_event() {
   local line
   line="$(log_ts) ${ident} ${cmd} ${rc} ${dur}"
   if [[ -n "$LOG_FILE" ]]; then
-    printf '%s\n' "$line" >>"$LOG_FILE" 2>/dev/null || true
+    { printf '%s\n' "$line" >>"$LOG_FILE"; } 2>/dev/null || true
   fi
   if [[ "$VERBOSE" -eq 1 ]]; then
     printf '%s\n' "$line" >&2
@@ -207,7 +207,7 @@ vlog() {
   [[ "$VERBOSE" -eq 1 ]] || return 0
   printf '+ %s\n' "$*" >&2
   if [[ -n "$LOG_FILE" ]]; then
-    printf '%s\n' "$(log_ts) ${CURRENT_IDENT:--} $* - -" >>"$LOG_FILE" 2>/dev/null || true
+    { printf '%s\n' "$(log_ts) ${CURRENT_IDENT:--} $* - -" >>"$LOG_FILE"; } 2>/dev/null || true
   fi
 }
 
@@ -237,22 +237,67 @@ looks_like_dirty() {
   echo "$1" | /usr/bin/grep -qiE 'unclean|not cleanly|unsafe state|windows cache|fast restart|volume is dirty'
 }
 
-looks_like_dirty_or_hiber() {
-  looks_like_hiber "$1" || looks_like_dirty "$1"
+looks_like_corrupt() {
+  echo "$1" | /usr/bin/grep -qiE 'may be corrupt|volume is corrupt|ntfs volume is corrupt|failed to load \$mft'
 }
 
-# hiber 优先：确认休眠文件时不得当脏卷修。
+looks_like_clean() {
+  echo "$1" | /usr/bin/grep -qiE 'classify: volume is clean|processed successfully|mounting volume\.\.\. ok'
+}
+
+looks_like_dirty_or_hiber() {
+  looks_like_hiber "$1" || looks_like_dirty "$1" || looks_like_corrupt "$1"
+}
+
+# hiber 优先：确认休眠文件时不得当脏卷修。不跑 diskutil verifyVolume / repairVolume。
 volume_state_from_text() {
   if looks_like_hiber "$1"; then
     printf '%s' hiber
+  elif looks_like_corrupt "$1"; then
+    printf '%s' corrupt
   elif looks_like_dirty "$1"; then
     printf '%s' dirty
+  elif looks_like_clean "$1"; then
+    printf '%s' clean
   else
     printf '%s' unknown
   fi
 }
 
-# 只读探测，不写盘。已确认休眠则跳过。
+classify_line_for_state() {
+  case "$1" in
+    hiber) printf '%s' "classify: Windows is hibernated" ;;
+    dirty) printf '%s' "classify: volume is dirty" ;;
+    corrupt) printf '%s' "classify: volume may be corrupted" ;;
+    clean) printf '%s' "classify: volume is clean" ;;
+    *) printf '%s' "classify: unknown" ;;
+  esac
+}
+
+# 只读探测：ntfsfix -n，不写盘、不 repairVolume、不清 hiberfile。
+do_probe() {
+  local ident="$1"
+  CURRENT_IDENT="$ident"
+  valid_id "$ident" || die "非法设备: $ident"
+  [[ -e "/dev/$ident" ]] || die "设备不存在: /dev/$ident"
+  require_ntfs "$ident"
+  [[ -n "$NTFSFIX" && -x "$NTFSFIX" ]] || die "找不到捆绑的 ntfsfix。请把 NTFSMount.app 重新装到 /Applications"
+
+  export PATH="${NTFS3G_DIR:-}:/usr/bin:/bin:/usr/sbin:/sbin"
+  ensure_unmounted "$ident"
+
+  local probe="" state
+  set +e
+  vlog "$NTFSFIX" -n "/dev/$ident"
+  probe="$("$NTFSFIX" -n "/dev/$ident" 2>&1)"
+  set -e
+  [[ -n "$probe" ]] && printf '%s\n' "$probe"
+  state="$(volume_state_from_text "$probe")"
+  echo "$(classify_line_for_state "$state")"
+  echo "ok probe $ident $state"
+}
+
+# 只读探测，不写盘。已确认休眠则跳过 ntfsfix。
 probe_volume_state() {
   local ident="$1" text="$2" probe="" state
   state="$(volume_state_from_text "$text")"
@@ -412,20 +457,39 @@ dev_mount_points() {
     }'
 }
 
+# pkill -f is a regex; trailing space / exact diskNsM so disk4 does not match disk40 or disk4s1.
+ntfs3g_pkill_needle() {
+  printf 'ntfs-3g /dev/%s ' "$1"
+}
+
 # 只杀这一卷的 ntfs-3g / go-nfsv4（quoted -f，带 /dev/diskNsM 或卷名）。禁止 pkill 全部 ntfs-3g。
 kill_ntfs3g() {
   local ident="$1"
   local sig="${2:-TERM}"
-  local name qname
+  local name qname needle
   name="$(volume_name "$ident")"
   qname="$(regex_escape "$name")"
-  "$PKILL" -"$sig" -f -- "/ntfs-3g /dev/${ident} " >/dev/null 2>&1 || true
-  "$PKILL" -"$sig" -f -- "ntfs-3g /dev/${ident} " >/dev/null 2>&1 || true
+  needle="$(ntfs3g_pkill_needle "$ident")"
+  "$PKILL" -"$sig" -f -- "/${needle}" >/dev/null 2>&1 || true
+  "$PKILL" -"$sig" -f -- "$needle" >/dev/null 2>&1 || true
   "$PKILL" -"$sig" -f -- "go-nfsv4 --volname ${qname} " >/dev/null 2>&1 || true
   if [[ -n "$qname" ]]; then
     "$PKILL" -"$sig" -f -- "go-nfsv4 .* /Volumes/${qname}" >/dev/null 2>&1 || true
   fi
   sleep 0.2
+}
+
+# 整盘格式化前：按分区精确杀 ntfs-3g，不用「/dev/disk4」这种会匹配 disk40 的前缀。
+kill_ntfs3g_whole() {
+  local ident="$1"
+  local part
+  "$PKILL" -f -- "$(ntfs3g_pkill_needle "$ident")" >/dev/null 2>&1 || true
+  while IFS= read -r part; do
+    [[ -n "$part" ]] || continue
+    valid_id "$part" || continue
+    [[ "$part" == "${ident}s"* ]] || continue
+    kill_ntfs3g "$part"
+  done < <("$DISKUTIL" list "$ident" 2>/dev/null | /usr/bin/awk '$NF ~ /^disk[0-9]+s[0-9]+$/ { print $NF }')
 }
 
 occupiers_for_mp() {
@@ -644,42 +708,54 @@ do_mount() {
     "ro,backend=nfs"
     "ro,backend=smb"
   )
-  local err="" opts rc=1 errfile extra dirty=0
+  local err="" opts rc=1 errfile extra dirty=0 pre_state=""
 
   ensure_unmounted "$ident"
   /bin/mkdir -p "$mp"
 
-  for extra in "${rw_attempts[@]}"; do
-    opts="${base},${extra}"
-    ensure_unmounted "$ident"
-    /bin/mkdir -p "$mp"
-    errfile="$(/usr/bin/mktemp /tmp/ntfs-rw-err.XXXXXX)"
-    set +e
-    try_mount "$ident" "$mp" "$opts" rw >"$errfile"
-    rc=$?
-    set -e
-    err="$(/bin/cat "$errfile" 2>/dev/null || true)"
-    /bin/rm -f "$errfile"
-    if [[ $rc -eq 0 ]]; then
-      echo "ok rw $ident -> $mp (${extra})"
-      notify "NTFS 磁盘已成功挂载为可读写模式"
-      return 0
-    fi
-    if looks_like_dirty_or_hiber "$err"; then
-      dirty=1
-      break
-    fi
-  done
+  # 可写前只读探测（ntfsfix -n）。脏/休眠/损坏跳过 RW，避免加重损坏。
+  pre_state="$(probe_volume_state "$ident" "")"
+  if [[ "$pre_state" == "hiber" || "$pre_state" == "dirty" || "$pre_state" == "corrupt" ]]; then
+    dirty=1
+    err="pre-mount probe classified ${pre_state}"
+  else
+    for extra in "${rw_attempts[@]}"; do
+      opts="${base},${extra}"
+      ensure_unmounted "$ident"
+      /bin/mkdir -p "$mp"
+      errfile="$(/usr/bin/mktemp /tmp/ntfs-rw-err.XXXXXX)"
+      set +e
+      try_mount "$ident" "$mp" "$opts" rw >"$errfile"
+      rc=$?
+      set -e
+      err="$(/bin/cat "$errfile" 2>/dev/null || true)"
+      /bin/rm -f "$errfile"
+      if [[ $rc -eq 0 ]]; then
+        echo "ok rw $ident -> $mp (${extra})"
+        notify "NTFS 磁盘已成功挂载为可读写模式"
+        return 0
+      fi
+      if looks_like_dirty_or_hiber "$err"; then
+        dirty=1
+        break
+      fi
+    done
+  fi
 
   if [[ "$dirty" -eq 1 ]]; then
     local ro_msg state classify_line
-    state="$(probe_volume_state "$ident" "$err")"
+    if [[ "$pre_state" == "hiber" || "$pre_state" == "dirty" || "$pre_state" == "corrupt" ]]; then
+      state="$pre_state"
+    else
+      state="$(probe_volume_state "$ident" "$err")"
+    fi
+    classify_line="$(classify_line_for_state "$state")"
     if [[ "$state" == "hiber" ]]; then
-      classify_line="classify: Windows is hibernated"
       ro_msg="该 NTFS 磁盘仍处于 Windows 休眠，已只读挂载。请在 Windows 中彻底关机（不要休眠/快速启动）后再以可写方式挂载。不会清除休眠文件。"
     elif [[ "$state" == "dirty" ]]; then
-      classify_line="classify: volume is dirty"
       ro_msg="该 NTFS 磁盘未正常关机或处于快速启动，已只读挂载。可在应用中选择「尝试修复脏卷」，或在 Windows 彻底关机后重试。不会清除休眠文件。"
+    elif [[ "$state" == "corrupt" ]]; then
+      ro_msg="该 NTFS 磁盘可能已损坏或未正常卸载，已只读挂载。可写挂载可能加重损坏。可在应用中选择「尝试修复脏卷」，或在 Windows 运行 chkdsk。不会清除休眠文件。"
     else
       classify_line="classify: dirty/hibernation"
       ro_msg="该 NTFS 磁盘未正常关机或仍处于 Windows 休眠，已只读挂载。请在 Windows 中彻底关机（不要休眠/快速启动）后再以可写方式挂载。"
@@ -932,7 +1008,7 @@ do_format() {
   label="$(sanitize_label "${2:-NTFS}")"
 
   export PATH="${NTFS3G_DIR}:/usr/bin:/bin:/usr/sbin:/sbin"
-  "$PKILL" -f -- "ntfs-3g /dev/${ident}" >/dev/null 2>&1 || true
+  kill_ntfs3g_whole "$ident"
   vlog "$DISKUTIL" unmountDisk force "$ident"
   "$DISKUTIL" unmountDisk force "$ident" >/dev/null 2>&1 || true
 
@@ -1019,22 +1095,35 @@ is_ntfs() {
 }
 
 # 系统只读刚插入：先卸掉 /Volumes/Name（及同盘 leftover Name 1），再可写重挂；dirty/休眠则只读。
-# 用户主动卸载的不自动再挂。已是本助手 fuse 挂载则只清重复卷。
+# 未挂载的外置 NTFS 同样自动挂（Issue #1）。用户主动卸载的不自动再挂。已是本助手 fuse 则只清重复卷。
+# 不自动 ntfsfix、不清除 hiberfile、不格式化、不碰内置盘。
+helper_automount_should_run() {
+  local internal="$1" our_fuse="$2" writable="$3"
+  [[ "$internal" == 1 ]] && return 1
+  [[ "$our_fuse" == 1 || "$writable" == 1 ]] && return 1
+  return 0
+}
+
 do_automount() {
-  local ident name mp
+  local ident name mp our=0 wr=0 internal=0
   vlog "$DISKUTIL" list
   while IFS= read -r ident; do
     [[ -n "$ident" ]] || continue
     valid_id "$ident" || continue
     is_ntfs "$ident" || continue
-    is_auto_safe_target "$ident" || continue
+    internal=0
+    is_auto_safe_target "$ident" || internal=1
     name="$(volume_name "$ident")"
     mp="$(volume_mount_point "$name")"
-    if is_our_fuse_mount "$mp" || is_writable_mount "$mp"; then
-      unmount_numbered_leftovers "$ident" "$name"
-      continue
-    fi
-    if ! volume_still_mounted "$ident"; then
+    our=0
+    wr=0
+    is_our_fuse_mount "$mp" && our=1
+    is_writable_mount "$mp" && wr=1
+    # 未挂载外置 NTFS（our=0, wr=0）也走 do_mount；不要用 volume_still_mounted 当唯一入口。
+    if ! helper_automount_should_run "$internal" "$our" "$wr"; then
+      if [[ "$internal" -eq 0 ]]; then
+        unmount_numbered_leftovers "$ident" "$name"
+      fi
       continue
     fi
     if ! writable_accepted; then
@@ -1048,22 +1137,18 @@ do_automount() {
 }
 
 installed_helper_path() {
-  local app helper
-  app="$(/bin/cat "/Library/Application Support/NTFSMount/app.path" 2>/dev/null || true)"
-  helper="${app}/Contents/Resources/ntfs-rw-helper"
-  if [[ -n "$app" && -x "$helper" ]]; then
-    printf '%s' "$helper"
+  local sealed="/Library/Application Support/NTFSMount/ntfs-rw-helper"
+  if [[ -x "$sealed" ]]; then
+    printf '%s' "$sealed"
     return 0
   fi
-  helper="$(helper_realpath)"
-  [[ -x "$helper" ]] || return 1
-  printf '%s' "$helper"
+  return 1
 }
 
 writable_accepted() {
   local user home stamp
   user="$(/usr/bin/stat -f '%Su' /dev/console 2>/dev/null || /usr/bin/id -un)"
-  home="$(/usr/bin/dscl . -read "/Users/${user}" NFSHomeDirectory 2>/dev/null | /usr/bin/awk '{print $2}')"
+  home="$(/usr/bin/dscl . -read "/Users/${user}" NFSHomeDirectory 2>/dev/null | /usr/bin/awk '{print $2}' || true)"
   stamp="${home}/Library/Application Support/com.bioapple.ntfsmount/writable-accepted"
   [[ -f "$stamp" ]]
 }
@@ -1131,14 +1216,45 @@ do_selftest() {
   mp="$(volume_mount_point "$name" 1)"
   [[ "$mp" == "/Volumes/My Passport 1" ]] || die "selftest: leftover 挂载点应保留空格"
   [[ "$(regex_escape 'Data (1)')" == 'Data \(1\)' ]] || die "selftest: pkill 卷名应转义正则"
+  local needle sample
+  needle="$(ntfs3g_pkill_needle disk4)"
+  [[ "$needle" == "ntfs-3g /dev/disk4 " ]] || die "selftest: pkill needle 须带尾随空格"
+  sample="ntfs-3g /dev/disk4 /Volumes/X"
+  printf '%s' "$sample" | /usr/bin/grep -qE -- "$needle" || die "selftest: disk4 应匹配自身"
+  sample="ntfs-3g /dev/disk40 /Volumes/Y"
+  if printf '%s' "$sample" | /usr/bin/grep -qE -- "$needle"; then
+    die "selftest: disk4 不得匹配 disk40"
+  fi
+  sample="ntfs-3g /dev/disk4s1 /Volumes/Z"
+  if printf '%s' "$sample" | /usr/bin/grep -qE -- "$needle"; then
+    die "selftest: disk4 不得匹配 disk4s1"
+  fi
+  helper_automount_should_run 0 0 0 || die "selftest: 未挂载外置应自动挂"
+  if helper_automount_should_run 0 1 0; then
+    die "selftest: 已是本助手 fuse 应跳过"
+  fi
+  if helper_automount_should_run 0 0 1; then
+    die "selftest: 已可写应跳过"
+  fi
+  if helper_automount_should_run 1 0 0; then
+    die "selftest: 内置盘不得自动挂"
+  fi
+  [[ "$(volume_state_from_text 'Volume is dirty. Please run chkdsk.')" == dirty ]] || die "selftest: dirty 分类"
+  [[ "$(volume_state_from_text 'Windows is hibernated, refused to mount.')" == hiber ]] || die "selftest: hiber 分类"
+  [[ "$(volume_state_from_text 'NTFS volume may be corrupted')" == corrupt ]] || die "selftest: corrupt 分类"
+  [[ "$(volume_state_from_text 'NTFS partition /dev/disk4s1 was processed successfully.')" == clean ]] || die "selftest: clean 分类"
+  [[ "$(volume_state_from_text 'Volume is dirty. Windows is hibernated.')" == hiber ]] || die "selftest: hiber 优先于 dirty"
+  [[ "$(classify_line_for_state dirty)" == "classify: volume is dirty" ]] || die "selftest: dirty classify 行"
+  [[ "$(classify_line_for_state corrupt)" == "classify: volume may be corrupted" ]] || die "selftest: corrupt classify 行"
   echo "ok selftest HELPER_VERSION=${HELPER_VERSION}"
 }
 
 usage() {
   cat <<'EOF'
-用法: ntfs-rw-helper [--verbose] <mount|unmount|eject|format|fix|automount|enable-automount|disable-automount|version|selftest> [diskNsM|diskN] [label]
+用法: ntfs-rw-helper [--verbose] <mount|unmount|eject|format|fix|probe|automount|enable-automount|disable-automount|version|selftest> [diskNsM|diskN] [label]
 示例: ntfs-rw-helper mount disk5s1
       ntfs-rw-helper --verbose mount disk5s1
+      ntfs-rw-helper probe disk5s1
       ntfs-rw-helper fix disk5s1
       ntfs-rw-helper format disk4 DATA
       ntfs-rw-helper enable-automount
@@ -1170,6 +1286,7 @@ case "$cmd" in
   eject) do_eject "$id" ;;
   format) do_format "$id" "${POS[2]:-NTFS}" ;;
   fix|ntfsfix) do_fix "$id" ;;
+  probe) do_probe "$id" ;;
   automount) do_automount ;;
   enable-automount) do_enable_automount ;;
   disable-automount) do_disable_automount ;;

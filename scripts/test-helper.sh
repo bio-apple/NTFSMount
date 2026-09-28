@@ -37,6 +37,171 @@ if /usr/bin/grep -n 'ln -sf' "$ROOT/helper/install-helper.sh"; then
   exit 1
 fi
 
+HELPERD_C="$ROOT/helper/ntfsmount-helperd.c"
+if ! /usr/bin/grep -q '/Library/Application Support/NTFSMount' "$HELPERD_C"; then
+  echo "helperd must pin files under Application Support" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'HELPER_SEALED' "$HELPERD_C"; then
+  echo "helperd must exec the root-owned sealed helper" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'SecCodeCheckValidity' "$HELPERD_C"; then
+  echo "helperd must call SecCodeCheckValidity on the peer" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'SecStaticCodeCheckValidity' "$HELPERD_C"; then
+  echo "helperd must call SecStaticCodeCheckValidity on the peer" >&2
+  exit 1
+fi
+if /usr/bin/grep -qF '(void)validity_ok' "$HELPERD_C"; then
+  echo "helperd must require SecCodeCheckValidity, not ignore validity_ok" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'if (!validity_ok)' "$HELPERD_C"; then
+  echo "helperd must reject peers that fail CheckValidity" >&2
+  exit 1
+fi
+if /usr/bin/grep -nE 'snprintf\(helper,.*Contents/Resources/ntfs-rw-helper' "$HELPERD_C"; then
+  echo "helperd must not exec the user-writable .app helper" >&2
+  exit 1
+fi
+if /usr/bin/awk '
+  $0 ~ /static void handle\(/ { inh=1 }
+  inh && $0 ~ /^int main\(/ { inh=0 }
+  inh && /ensure_sealed/ { found=1 }
+  END { exit found ? 0 : 1 }
+' "$HELPERD_C"; then
+  echo "handle must not recopy the helper from a user-writable .app" >&2
+  exit 1
+fi
+if /usr/bin/grep -q 'stored_cdhash_matches_app' "$HELPERD_C"; then
+  echo "helperd must not re-pin from the live .app CDHash" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'allowed.cdhash' "$HELPERD_C"; then
+  echo "helperd must compare stored allowed.cdhash" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'sealedHelperMatchesBundle' "$ROOT/Sources/NTFSMount/Privileged.swift"; then
+  echo "SMAppService install must confirm sealed helper pins" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'kickstartUntilSocket' "$ROOT/Sources/NTFSMount/Privileged.swift"; then
+  echo "installHelper must kickstart until the socket exists" >&2
+  exit 1
+fi
+for key in 'app.path' 'allowed.cdhash' 'helper.stamp' 'ntfs-rw-helper'; do
+  /usr/bin/grep -q "$key" "$ROOT/helper/install-helper.sh" || {
+    echo "install-helper must write $key" >&2
+    exit 1
+  }
+done
+if ! /usr/bin/grep -q '无法读取应用 CDHash' "$ROOT/helper/install-helper.sh"; then
+  echo "install-helper must refuse an empty CDHash" >&2
+  exit 1
+fi
+if /usr/bin/grep -nF 'ntfs-3g /dev/${ident}"' "$HELPER"; then
+  echo "do_format must not pkill a diskN prefix that matches disk40" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'kill_ntfs3g_whole' "$HELPER"; then
+  echo "do_format must reuse kill_ntfs3g so disk4 does not match disk40" >&2
+  exit 1
+fi
+if /usr/bin/awk '
+  $0 ~ /^installed_helper_path\(\)/ { inh=1 }
+  inh && $0 ~ /^[a-z_]+\(\)/ && $0 !~ /^installed_helper_path\(\)/ { inh=0 }
+  inh && /Contents\/Resources\/ntfs-rw-helper/ { found=1 }
+  END { exit found ? 0 : 1 }
+' "$HELPER"; then
+  echo "automount must not exec the user-writable .app helper" >&2
+  exit 1
+fi
+to="$(/usr/bin/awk '/daemonTimeoutSec/{ gsub(/[^0-9]/,"",$NF); print $NF; exit }' "$ROOT/Sources/NTFSMount/Privileged.swift")"
+if [[ -z "$to" || "$to" -lt 30 || "$to" -gt 60 ]]; then
+  echo "Privileged.runViaDaemon timeout must be 30-60s, got: ${to:-missing}" >&2
+  exit 1
+fi
+
+# Issue #1: do_automount 不得用 volume_still_mounted 作为唯一入口（未挂载外置 NTFS 也要挂）。
+if /usr/bin/awk '
+  $0 ~ /^do_automount\(\)/ { inh=1 }
+  inh && $0 ~ /^[a-z_]+\(\)/ && $0 !~ /^do_automount\(\)/ { inh=0 }
+  inh && $0 !~ /^[[:space:]]*#/ && /volume_still_mounted/ { found=1 }
+  END { exit found ? 0 : 1 }
+' "$HELPER"; then
+  echo "do_automount must not skip unmounted volumes via volume_still_mounted" >&2
+  exit 1
+fi
+if /usr/bin/awk '
+  $0 ~ /^do_automount\(\)/ { inh=1 }
+  inh && $0 ~ /^[a-z_]+\(\)/ && $0 !~ /^do_automount\(\)/ { inh=0 }
+  inh && $0 !~ /^[[:space:]]*#/ && /ntfsfix|remove_hiberfile|do_fix|do_format/ { found=1 }
+  END { exit found ? 0 : 1 }
+' "$HELPER"; then
+  echo "do_automount must not auto-ntfsfix, clear hiberfile, or format" >&2
+  exit 1
+fi
+if /usr/bin/grep -nE 'DISKUTIL" repairVolume|DISKUTIL repairVolume' "$HELPER"; then
+  echo "helper must not run diskutil repairVolume" >&2
+  exit 1
+fi
+if /usr/bin/awk '
+  $0 ~ /^do_probe\(\)/ { inh=1 }
+  inh && $0 ~ /^[a-z_]+\(\)/ && $0 !~ /^do_probe\(\)/ { inh=0 }
+  inh && $0 !~ /^[[:space:]]*#/ && /ntfsfix -d|repairVolume|remove_hiberfile|verifyVolume/ { found=1 }
+  END { exit found ? 0 : 1 }
+' "$HELPER"; then
+  echo "do_probe must only run ntfsfix -n; no repair, verifyVolume, or hiberfile clear" >&2
+  exit 1
+fi
+if ! /usr/bin/awk '
+  $0 ~ /^do_probe\(\)/ { inh=1 }
+  inh && $0 ~ /^[a-z_]+\(\)/ && $0 !~ /^do_probe\(\)/ { inh=0 }
+  inh && /NTFSFIX" -n/ { found=1 }
+  END { exit found ? 0 : 1 }
+' "$HELPER"; then
+  echo "do_probe must run ntfsfix -n" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'helper_automount_should_run 0 0 0' "$HELPER"; then
+  echo "selftest must cover unmounted automount eligibility" >&2
+  exit 1
+fi
+STORE="$ROOT/Sources/NTFSMount/VolumeStore.swift"
+if ! /usr/bin/grep -q 'Privileged.run("probe"' "$STORE"; then
+  echo "VolumeStore must probe volume health before writable mount" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q '"probe"' "$HELPERD_C"; then
+  echo "helperd must allow probe" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -A30 'func mountDefaultWritableIfNeeded' "$STORE" | /usr/bin/grep -q 'for vol in volumes'; then
+  echo "mountDefaultWritableIfNeeded must iterate every volume, not only volumes.first" >&2
+  exit 1
+fi
+if /usr/bin/awk '
+  $0 ~ /func mountDefaultWritableIfNeeded\(/ { inh=1 }
+  $0 ~ /func pumpAutoMount\(/ { inh=1 }
+  $0 ~ /func markAutoMountFinished\(/ { inh=0 }
+  $0 ~ /func toggleAutoMount\(/ { inh=0 }
+  inh && /autoMountAttempted.insert/ { found=1 }
+  END { exit found ? 0 : 1 }
+' "$STORE"; then
+  echo "autoMountAttempted must not be stamped before confirmWritable/Privileged.run" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'shouldRecordAttempt' "$STORE"; then
+  echo "VolumeStore must stamp autoMountAttempted via shouldRecordAttempt" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'shouldAutoEnable' "$STORE"; then
+  echo "enableAutoMountDefault must stay off until helper+legal+writable stamp" >&2
+  exit 1
+fi
+
 # 命令位不得出现未加引号的 /Volumes/$name（"My Passport" 会切成两个 argv）
 if /usr/bin/grep -nE '(^|[^"=$])/Volumes/\$name' "$HELPER"; then
   echo "helper contains unquoted /Volumes/\$name" >&2
@@ -47,7 +212,7 @@ out="$("$HELPER" selftest)"
 echo "$out"
 [[ "$out" == ok\ selftest* ]] || { echo "selftest failed" >&2; exit 1; }
 ver="$("$HELPER" version)"
-[[ "$ver" == HELPER_VERSION=6 ]] || { echo "version mismatch: $ver" >&2; exit 1; }
+[[ "$ver" == HELPER_VERSION=8 ]] || { echo "version mismatch: $ver" >&2; exit 1; }
 
 # shellcheck disable=SC2016 # literal $(whoami) payload the helper must reject
 for bad in 'disk12s1;whoami' 'disk 12s1' '../disk1s1' 'disk5s1$(whoami)' 'disk4;id' 'mount'; do
@@ -65,6 +230,10 @@ for bad in 'disk12s1;whoami' 'disk 12s1' '../disk1s1' 'disk5s1$(whoami)' 'disk4;
   fi
   if "$HELPER" ntfsfix "$bad" >/dev/null 2>&1; then
     echo "ntfsfix should reject: $bad" >&2
+    exit 1
+  fi
+  if "$HELPER" probe "$bad" >/dev/null 2>&1; then
+    echo "probe should reject: $bad" >&2
     exit 1
   fi
   if "$HELPER" eject "$bad" >/dev/null 2>&1; then
@@ -194,8 +363,29 @@ fi
 [[ -f "$ROOT/docs/MANUAL_TEST.md" ]]
 [[ -f "$ROOT/runtime/SHA256SUMS" ]]
 [[ -f "$ROOT/runtime/versions.txt" ]]
-if /usr/bin/git -C "$ROOT" ls-files --error-unmatch runtime/go-nfsv4 >/dev/null 2>&1; then
-  echo "runtime/go-nfsv4 must not be tracked in git" >&2
+if ! /usr/bin/grep -q 'ntfs-3g-allow' "$ROOT/runtime/versions.txt"; then
+  echo "runtime/versions.txt must document ntfs-3g allow-list" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q '2026.8.x' "$ROOT/Sources/NTFSMountCore/Ntfs3gVersion.swift"; then
+  echo "Ntfs3gVersion.swift must keep 2026.8.x allow-list" >&2
+  exit 1
+fi
+# shellcheck source=ntfs3g-version.sh
+. "$ROOT/scripts/ntfs3g-version.sh"
+[[ "$(ntfs3g_parse_version 'ntfs-3g 2026.7.7 external FUSE 29')" == "2026.7.7" ]] || { echo "parse 2026.7.7 failed" >&2; exit 1; }
+[[ "$(ntfs3g_parse_version 'ntfs-3g 2026.8.1 integrated FUSE 29')" == "2026.8.1" ]] || { echo "parse 2026.8.1 failed" >&2; exit 1; }
+ntfs3g_version_allowed 2026.7.7 || { echo "allow 2026.7.7" >&2; exit 1; }
+ntfs3g_version_allowed 2026.8.1 || { echo "allow 2026.8.1" >&2; exit 1; }
+if ntfs3g_version_allowed 2024.2.1; then echo "2024.x must warn" >&2; exit 1; fi
+if ntfs3g_version_allowed 2026.9.0; then echo "2026.9 must warn" >&2; exit 1; fi
+if ntfs3g_version_allowed garbage; then echo "garbage must warn" >&2; exit 1; fi
+if /usr/bin/grep -nE 'brew install macfuse|请安装 macFUSE|must install macFUSE' "$ROOT/scripts/ntfsmount-diagnose.sh"; then
+  echo "diagnose must not require macFUSE" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'ntfsmount-diagnose.sh' "$ROOT/scripts/build.sh"; then
+  echo "build.sh must copy ntfsmount-diagnose.sh into the app" >&2
   exit 1
 fi
 

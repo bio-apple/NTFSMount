@@ -80,7 +80,7 @@ cat <<'EOF'
 - 插入后自动可写、菜单栏「可写」、访达拷贝
 - 「推出（可安全拔出）」后访达消失再拔线
 - 系统 NTFS 只读 → 子菜单改可写
-- 脏盘 / 休眠只读、尝试修复脏卷（默认取消）；不要静默清 hiberfile
+- 脏盘 / 休眠只读、挂载前健康检查（脏/损坏对话框默认只读；ntfsfix 须再确认；休眠无 ntfsfix）；不要静默清 hiberfile / repairVolume
 - 内置 / Boot Camp 不自动挂；格式化对话框（会抹盘，CI 不跑）
 - 设置 → 卸载助手后 bash scripts/check-helper-gone.sh
 - 升级旧 sudoers 机器

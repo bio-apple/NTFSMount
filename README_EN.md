@@ -1,28 +1,31 @@
 # NTFSMount
 
-[Download](https://github.com/bio-apple/NTFSMount/releases) · [简体中文](./README.md)
+[简体中文](./README.md)
 
-**Do not use GitHub Latest. Do not mirror.** Download the pre-release `NTFSMount.dmg` from [Releases](https://github.com/bio-apple/NTFSMount/releases) and check the SHA256 in the notes.
+Writable **external NTFS** on Mac **without kernel extensions (kext)**. **Apple Silicon + macOS 13+** only; Intel (x86_64) is not supported.
 
-**Distribution scope: personal use only — not a redistributable product.** Bundled FUSE-T `go-nfsv4` is not GPL. Until you have a **written** [FUSE-T](https://www.fuse-t.org/) license **and** Developer ID notarization, do not ship this as a product, list it in a store, sell it, or mirror the DMG. Source (Swift / ntfs-3g) remains GPL-2.0-or-later. See [NOTICE](./NOTICE).
+`Apple Silicon` · `macOS 13+` · `External NTFS` · `No kext` · `Personal-use pre-release`
 
-**Disclaimer.** Mounting NTFS writable or formatting it can corrupt or destroy data. Back up important files yourself before you read, write, or format. The authors and this project are not responsible for data loss.
+![Menu bar](docs/screenshots/menubar.png)
 
-Writable **external NTFS** on Mac, without kernel extensions. **Apple Silicon + macOS 13+ only.** Intel Macs (x86_64) are not supported.
+**[Download NTFSMount v1.2.0 (NTFSMount.dmg)](https://github.com/bio-apple/NTFSMount/releases/download/v1.2.0/NTFSMount.dmg)** · [Releases & SHA256](https://github.com/bio-apple/NTFSMount/releases/tag/v1.2.0) (do not use GitHub **Latest** or third-party mirrors)
 
-The in-app UI is Simplified Chinese. Button labels below match what you see on screen.
+- **Back up first:** Mounting NTFS writable or formatting it can corrupt or destroy data. Back up important files yourself before you read, write, or format. The authors and this project are not responsible for data loss.
+- **Gatekeeper:** This build is **ad-hoc signed and not notarized**. If macOS blocks it, Control-click → Open, or **System Settings → Privacy & Security → Open Anyway** (still stuck? see [Troubleshooting](#troubleshooting)).
+- **Personal use:** Not a redistributable product. Bundled FUSE-T `go-nfsv4` is not GPL. Do not ship, sell, or mirror until you have a **written** [FUSE-T](https://www.fuse-t.org/) license and Developer ID notarization. Source (Swift / ntfs-3g) is GPL-2.0-or-later; see [NOTICE](./NOTICE).
+
+> **v1.2.0 note:** Auto-mount and the helper live under **设置** (Settings), but **reliable always-on auto-mount is not a selling point for this release** (tracked in [#1](https://github.com/bio-apple/NTFSMount/issues/1)). After plugging in an external NTFS disk, use the menu bar **NTFS** submenu to **以可写方式挂载** (mount writable) manually.
+
+The in-app UI follows the system language (English / 简体中文 / 繁體中文 / 日本語).
 
 ## Use
 
-1. Download the DMG and check `shasum -a 256 NTFSMount.dmg` against the Release notes.
-2. Drag it to Applications. If Gatekeeper blocks it: Control-click → Open, or **System Settings → Privacy & Security → Open Anyway**. If it is still quarantined:
-   ```bash
-   xattr -d com.apple.quarantine /Applications/NTFSMount.app
-   ```
+1. Download the DMG and verify: `shasum -a 256 NTFSMount.dmg` (must match [Release v1.2.0](https://github.com/bio-apple/NTFSMount/releases/tag/v1.2.0) notes).
+2. Drag to Applications. If Gatekeeper blocks it: Control-click → Open, or **System Settings → Privacy & Security → Open Anyway**.
 3. On first launch, Return is **同意并继续** (Agree and continue); Esc is **退出** (Quit). Then click **安装…** in the window (admin password).
 4. Plug in an external NTFS disk and use it in Finder. When finished, click **推出（可安全拔出）** (it releases the FUSE mount first so Finder will not say the disk is in use) and wait until the volume disappears before unplugging.
 
-The menu bar extra **NTFS** appears on the right (screenshot below). Submenus cover mount / unmount / eject, or **打开窗口**. Auto-mount and the helper are in **设置**. Internal disks are never auto-mounted.
+The menu bar extra **NTFS** appears on the right. Submenus cover mount / unmount / eject, or **打开窗口**. Auto-mount and the helper are in **设置**. Internal disks are never auto-mounted.
 
 ```text
 Menu bar "NTFS"
@@ -33,11 +36,9 @@ Menu bar "NTFS"
 │   ├ 卸载 / 推出（可安全拔出）
 │   └ 格式化为 NTFS…
 ├ 全部以可写方式挂载
-├ 刷新 / 设置…
+├ 刷新 / 诊断环境… / 设置… / 检查更新…
 └ 退出 NTFS 读写
 ```
-
-![Menu bar](docs/screenshots/menubar.png)
 
 ![Main window](docs/screenshots/window.png)
 
@@ -61,11 +62,15 @@ open /Applications/NTFSMount.app
 
 **No NTFS extra in the menu bar?** Apple Silicon + macOS 13+ only. Check that you did not quit from the Dock or the window. Clear quarantine with `xattr` and open again.
 
+**Install looks wrong?** Menu bar **NTFS** → **诊断环境…** is a read-only check of bundled ntfs-3g / FUSE-T and the helper (no mount, no helper install; this app does not need macFUSE).
+
 **Always asked for an admin password?** Expected on un-notarized builds (`SMAppService` is unstable). Notarized builds prefer the system service.
 
 **Volume is read-only?** 「系统 NTFS」can be switched to writable from the submenu if the volume is clean. 「休眠/未正常关机」: dirty volumes can use **尝试修复脏卷** (may drop unsynced Windows cache — back up first; Cancel is the default). If Windows is hibernated / Fast Startup (hiberfil), fully shut down Windows and retry; do not force writable.
 
 **No Latest asset?** Intentional. Use the pre-release DMG on the Releases page, not Latest.
+
+**How do updates work?** Menu **检查更新…** (Check for Updates…) is always available and contacts GitHub for the Sparkle appcast. Settings **自动检查更新** (Check for Updates Automatically) is **off by default**; the app does not phone home for updates until you turn it on. This build is ad-hoc and not notarized; update trust is Sparkle EdDSA, not Developer ID. See [docs/SPARKLE.md](./docs/SPARKLE.md).
 
 **Intel Mac?** Unsupported. Build scripts exit immediately. Do not install.
 

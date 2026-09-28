@@ -60,7 +60,9 @@ jobs:
             scripts/notarize.sh \
             scripts/ci-import-signing.sh \
             scripts/ntfsmount \
-            scripts/ntfsmount-diagnose.sh
+            scripts/ntfsmount-diagnose.sh \
+            scripts/sparkle-generate-keys.sh \
+            scripts/sparkle-generate-appcast.sh
       - name: Privilege and secret greps
         run: |
           set -euo pipefail

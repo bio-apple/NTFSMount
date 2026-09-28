@@ -1,0 +1,478 @@
+/* NTFSMount Localizable */
+
+"ok" = "OK";
+
+"ok.gotIt" = "OK";
+
+"cancel" = "Cancel";
+
+"quit" = "Quit";
+
+"later" = "Later";
+
+"retry" = "Retry";
+
+"installing" = "Installing…";
+
+"app.productName" = "NTFS Read-Write";
+
+"onboarding.title" = "Please confirm before use";
+
+"onboarding.agree" = "Agree and Continue";
+
+"onboarding.quit" = "Quit";
+
+"onboarding.body" = "1. Mounting NTFS writable or formatting it can damage data. Back up first.
+2. Bundled FUSE-T go-nfsv4 is not GPL and is for personal use by default. Before distributing or selling this as a product, you must obtain written permission from FUSE-T (https://www.fuse-t.org/). This package is not currently a redistributable product.
+3. By default this app does not use the network or collect accounts. If you enable “Check for Updates Automatically” or choose “Check for Updates…”, the app contacts GitHub for the Sparkle appcast (pre-release v1.2.0 asset, not GitHub Latest). Disk contents are not uploaded. Logs stay on this Mac. After you uninstall the app, log files remain in your user folder.
+4. The mount helper runs as a root daemon and can mount, unmount, and format external disks. The administrator password entered at install time is not saved.
+
+On first use, click “Install…” in the window to install the mount helper. Un-notarized builds ask for an administrator password; notarized builds prefer system service authorization.
+
+Return means you agree. Click “Quit” if you do not.";
+
+"onboarding.gatekeeperTitle" = "Un-notarized build";
+
+"onboarding.gatekeeperBody" = "This build is not notarized. macOS may say the developer cannot be verified: Control-click the app → Open; or click “Open Anyway” in System Settings → Privacy & Security.\nThe terminal command to clear quarantine is in the README troubleshooting section. Do not run it unless you understand it.";
+
+"writable.title" = "Mount writable?";
+
+"writable.body" = "A third-party driver writing NTFS can damage files on the volume. Confirm important data is backed up. This prompt appears only once.";
+
+"writable.continue" = "Backed up, Continue";
+
+"menu.openWindow" = "Open Window";
+
+"menu.installHelper" = "Install Mount Helper…";
+
+"menu.updateHelper" = "Update Mount Helper…";
+
+"menu.noNTFS" = "No NTFS disks detected";
+
+"menu.insertHint" = "Plug in a Windows-formatted external disk, then open the menu again";
+
+"menu.formatOtherHint" = "Use “Format as NTFS” in the window to convert other external disks to NTFS";
+
+"menu.encryptedLine" = "%@: possibly encrypted — do not write or format";
+
+"menu.fixDirty" = "Try to Repair Dirty Volume…";
+
+"menu.mountWritable" = "Mount Writable";
+
+"menu.mountWritableInternal" = "Mount Writable (internal disk, confirmation required)";
+
+"menu.openFinder" = "Open in Finder";
+
+"menu.unmount" = "Unmount";
+
+"menu.eject" = "Eject (Safe to Unplug)";
+
+"menu.formatNTFS" = "Format as NTFS…";
+
+"menu.mountAll" = "Mount All Writable";
+
+"menu.refresh" = "Refresh";
+
+"menu.settings" = "Settings…";
+
+"menu.quitApp" = "Quit NTFS Read-Write";
+
+"menu.mountAllHelp" = "Mount all external NTFS volumes";
+
+"menu.needHelper" = "Install the mount helper first";
+
+"menu.eraseWholeDisk" = "This erases the whole disk";
+
+"menu.formatItem" = "%@  ·  %@  ·  %@";
+
+"help.unmount" = "Unmounts this app’s writable mount; the disk stays connected. Use Eject before unplugging.";
+
+"help.eject" = "Eject unmounts first, then pops the disk out. Unplug after it disappears from Finder.";
+
+"window.devices" = "Devices";
+
+"window.noNTFS" = "No NTFS disks";
+
+"window.refresh" = "Refresh";
+
+"window.refreshHelp" = "Refresh the disk list";
+
+"window.viewLog" = "View Log";
+
+"window.viewLogHelp" = "Open the local mount log";
+
+"window.about" = "About";
+
+"window.settings" = "Settings";
+
+"window.firstInstall" = "The first use requires installing the mount helper.";
+
+"window.helperUpdate" = "Update the mount helper to use every feature.";
+
+"window.update" = "Update…";
+
+"window.emptyTitle" = "No NTFS disks detected";
+
+"window.emptySubtitle" = "Plug in a Windows-formatted external disk and it will appear on the left.";
+
+"window.encryptedLine" = "%@ (%@): %@";
+
+"window.otherDisks" = "Other external disks can be formatted as NTFS:";
+
+"window.formatNamed" = "Format as NTFS…  %@  ·  %@  ·  %@";
+
+"window.capacity" = "Capacity";
+
+"window.filesystem" = "File System";
+
+"window.used" = "Used %@";
+
+"window.available" = "Available %@";
+
+"status.busy" = "Working";
+
+"status.writable" = "Writable";
+
+"status.roSystem" = "Read-only · system NTFS";
+
+"status.roDirty" = "Read-only · hibernate / unclean shutdown";
+
+"status.unmounted" = "Not mounted";
+
+"status.detailWritable" = "Mounted (read/write)";
+
+"status.detailDirty" = "Mounted (read-only): Windows hibernation or a dirty volume. Shut down Windows fully first";
+
+"status.detailRoSystem" = "Mounted (read-only): system NTFS driver. You can switch to writable below if the volume is clean";
+
+"volume.stateWritable" = "Writable";
+
+"volume.stateRoSystem" = "System read-only";
+
+"volume.stateUnmounted" = "Not mounted";
+
+"format.cancel" = "Cancel";
+
+"format.action" = "Erase and Format";
+
+"format.confirmTitle" = "Erase “%@” and format as NTFS?";
+
+"format.confirmExtra" = "This deletes every file on the disk and cannot be undone.\nIn “Type the current name” below, enter “%@” exactly. “New volume name” is the name after formatting.";
+
+"format.nameMismatch" = "Names do not match; disk was not erased";
+
+"format.finalTitle" = "Last chance: erase this disk?";
+
+"format.identitySize" = "Capacity: %@";
+
+"format.identityDevice" = "Device: %@";
+
+"format.identityMedia" = "Media: %@";
+
+"format.identitySerial" = "Serial: %@";
+
+"format.unknown" = "Unknown";
+
+"format.identityFS" = "Current format: %@";
+
+"format.finalWarning" = "“%@” · %@ · %@\nSerial: %@\nEvery file on this disk will be permanently deleted.";
+
+"format.currentName" = "Type the current name:";
+
+"format.currentPlaceholder" = "Must match the current volume name in the description exactly";
+
+"format.newName" = "New volume name:";
+
+"format.unformatted" = "Unformatted";
+
+"encrypted.message" = "Possibly encrypted — do not write or format. macOS cannot confirm BitLocker; missing clues are not a negative result.";
+
+"settings.title" = "Settings";
+
+"settings.mount" = "Mount";
+
+"settings.autoMount" = "Auto-mount external NTFS when inserted";
+
+"settings.autoMountNote" = "Off by default until the helper is installed, terms are accepted, and writable risk is confirmed. Internal disks and Boot Camp are never auto-mounted. Auto-mount is still not a v1.2.0 selling point (Issue #1).";
+
+"settings.appearance" = "Appearance & Startup";
+
+"settings.launchAtLogin" = "Open at login";
+
+"settings.showDock" = "Show in Dock";
+
+"settings.followsSystemLanguage" = "Interface follows the system language";
+
+"settings.helper" = "Mount Helper";
+
+"settings.install" = "Install…";
+
+"settings.update" = "Update…";
+
+"settings.uninstall" = "Uninstall Helper…";
+
+"settings.compat" = "Compatibility";
+
+"settings.log" = "Log";
+
+"settings.refreshLog" = "Refresh Log";
+
+"settings.openConsole" = "Open in Console";
+
+"settings.aboutPrivacy" = "About & Privacy";
+
+"settings.aboutLine" = "NTFS Read-Write (NTFSMount) · direct distribution, not on the Mac App Store. No network by default; enabling “Check for Updates Automatically” or “Check for Updates…” contacts GitHub.";
+
+"settings.notarized" = "This build is notarized.";
+
+"settings.signedNotNotarized" = "Signed with Developer ID, not yet notarized. Control-click the app → Open; or click “Open Anyway” in System Settings → Privacy & Security.";
+
+"settings.adHoc" = "This build is not notarized (ad-hoc). Gatekeeper may block it. Control-click the app → Open; or click “Open Anyway” in System Settings → Privacy & Security.";
+
+"settings.aboutButton" = "About & Privacy…";
+
+"helper.statusMissing" = "Not installed. Click “Install…” the first time you use the app.";
+
+"helper.statusNeedsUpdate" = "Update required before every feature is available.";
+
+"helper.statusLegacy" = "Legacy sudo rules are still present. Update the helper to switch to signature pinning.";
+
+"helper.statusOK" = "Installed. Privileged calls go through the daemon, which verifies this app’s signature.";
+
+"helper.hintNotarized" = "Notarized: prefers system service authorization; falls back to an administrator password.";
+
+"helper.hintAdHoc" = "Un-notarized builds cannot use system services reliably, so installing the helper asks for an administrator password.";
+
+"helper.privilegeHint" = "The mount helper runs as root and can mount, unmount, and format external disks. The administrator password is used only for one-time install and is not saved. The Unix socket is mode 0666 so this app can connect as a normal user; the daemon checks the caller against the CDHash written at install time and only runs the root-owned helper copy under /Library/Application Support/NTFSMount/. It does not write sudoers. Uninstall: “Uninstall Helper” above, or uninstall.sh in the repo. Logs are at ~/Library/Logs/ntfsmount.log and remain on this Mac after uninstall.";
+
+"alert.updateHelperTitle" = "Update Mount Helper";
+
+"alert.updateHelperBody" = "An update is required for formatting, auto-mount on insert, and other new features. macOS will ask for an administrator password once.";
+
+"alert.update" = "Update";
+
+"alert.mountFailed" = "Mount Failed";
+
+"alert.kextBody" = "FSKit/kernel extensions being unavailable is expected on macOS 13+. You can ignore it. This app does not use kernel extensions; the helper prefers NFS/userspace FUSE. Do not install a kext.\n\n%@";
+
+"alert.uninstallTitle" = "Uninstall the mount helper?";
+
+"alert.uninstallBody" = "This removes the privileged daemon and auto-mount on insert. The app stays in Applications.";
+
+"alert.uninstall" = "Uninstall Helper";
+
+"about.body" = "Direct distribution. Not on the Mac App Store.\n\nPrivacy: no network by default; no accounts or contacts collected. Enabling “Check for Updates Automatically” or “Check for Updates…” contacts GitHub (Sparkle appcast, not Latest). Logs stay on this Mac:\n%@\nThe log remains on this Mac after you uninstall the app.\n\nSource and licenses: %@\nBundles ntfs-3g / mkntfs (GPL-2.0) and FUSE-T’s go-nfsv4. go-nfsv4 is for personal use; distributing it as a product requires a FUSE-T license.\n\nWriting NTFS can damage data. Back up first.\n\n%@";
+
+"about.openSource" = "Open Source Page";
+
+"about.notarized" = "This build is notarized.";
+
+"about.unnotarized" = "This build is not notarized (Gatekeeper may block it). Control-click the app → Open; or click “Open Anyway” in System Settings → Privacy & Security.";
+
+"dirty.title" = "Try to repair the dirty volume?";
+
+"dirty.body" = "“%@” was not shut down cleanly or used Fast Startup, so the volume is marked dirty.\nntfsfix can only do a basic repair and may drop Windows cache that was not written to disk. Back up first.\nThis will not clear the Windows hibernation file. If this disk is hibernated, fully shut down Windows and try again.";
+
+"dirty.fix" = "Try Repair";
+
+"eject.refuseInternal" = "Refusing to eject an internal disk.";
+
+"internal.title" = "Mount the internal disk writable?";
+
+"internal.body" = "“%@” is on an internal disk. A writable mount may affect data on Windows / Boot Camp.";
+
+"internal.anyway" = "Mount Anyway";
+
+"automount.enabled" = "Auto-mount on insert is on";
+
+"automount.disabled" = "Auto-mount on insert is off";
+
+"login.failed" = "Could not set open at login: %@";
+
+"mount.needHelper" = "Install the mount helper before mounting writable.";
+
+"mount.needUpdate" = "Update the mount helper first.";
+
+"mount.writableHelp" = "Mount writable. Back up first.";
+
+"error.empty" = "The operation failed. Check the log.";
+
+"error.canceled" = "Canceled.";
+
+"error.helperInstallFailed" = "Helper install failed. Try again. Details were written to the log.";
+
+"error.helperMissing" = "Mount helper not found. Click “Install Mount Helper”.";
+
+"error.missingGoNfsv4" = "Bundled go-nfsv4 is missing. Reinstall the app. Details were written to the log.";
+
+"error.missingBinary" = "A required program is missing (ntfs-3g or a mount component). Reinstall the app. Details were written to the log.";
+
+"error.adminDenied" = "Could not get administrator access. If you clicked Cancel, try again. Details were written to the log.";
+
+"error.helperNeedsUpdate" = "The mount helper needs an update. Click “Update…” in the window.";
+
+"error.diskBusy" = "The disk is in use: close Finder windows/files, then click Eject";
+
+"error.failedWithLog" = "The operation failed. Details were written to %@";
+
+"error.failedLog" = "The operation failed. Details were written to the log.";
+
+"privileged.missingHelper" = "The app package is missing the mount helper. Please reinstall.";
+
+"privileged.missingDaemon" = "The app package is missing the privileged daemon. Please reinstall.";
+
+"privileged.missingInstallScript" = "The app package is missing the install script. Please reinstall.";
+
+"privileged.installedPassword" = "Installed the LaunchDaemon with an administrator password (typical for un-notarized builds). %@";
+
+"privileged.installedSM" = "Registered the mount helper with the system service.";
+
+"privileged.missingUninstallScript" = "The app package is missing the uninstall script.";
+
+"privileged.mismatch" = "The mount helper does not match this app and was not run. Click “Update Mount Helper” first.";
+
+"privileged.notFound" = "Mount helper not found. Click “Install Mount Helper”.";
+
+"privileged.commFailed" = "Could not talk to the mount helper.";
+
+"privileged.timeout" = "The mount helper timed out. Check the log and try again.";
+
+"privileged.noResponse" = "The mount helper did not respond. Install or update the helper first.";
+
+"platform.cannotRun" = "Cannot run %@";
+
+"platform.noIntel" = "Intel Macs (x86_64) are not supported. Apple Silicon (M-series) is required.";
+
+"platform.needOS" = "macOS 13.0 or later is required";
+
+"compat.belowMin" = "This app supports only Apple Silicon (M-series) and macOS 13.0+. Intel Macs (x86_64) are not supported. This system is below macOS 13, untested; mounting may fail.";
+
+"compat.ok" = "Apple Silicon (M-series) and macOS 13.0+ only. Intel Macs (x86_64) are not supported. This app does not use kernel extensions. From macOS 13 Ventura, kexts are more restricted, so it uses userspace FUSE (ntfs-3g + FUSE-T). If you see FSKit/module not enabled, ignore it — the helper already prefers NFS/userspace. Do not install a kernel extension.";
+
+"log.empty" = "No log yet. It appears here after a mount or format: %@";
+/* diagnose / premount / ntfs3g */
+
+"menu.diagnose" = "Diagnose Environment…";
+
+"diagnose.alertTitle" = "Environment Diagnose";
+
+"diagnose.copy" = "Copy Results";
+
+"diagnose.openLog" = "Open Log";
+
+"diagnose.header" = "NTFS Read-Write · environment diagnose (read-only; does not mount or install the helper)";
+
+"diagnose.fuseTNote" = "This app uses bundled FUSE-T go-nfsv4 + ntfs-3g and does not need macFUSE installed.";
+
+"diagnose.notAppleSilicon" = "Not Apple Silicon (%@); this app does not support Intel";
+
+"diagnose.needMacOS" = "%@ (macOS %d+ required)";
+
+"diagnose.appleSiliconOK" = "Apple Silicon · %@";
+
+"diagnose.runtimeOK" = "Bundled ntfs-3g / ntfsfix / go-nfsv4 are all present";
+
+"diagnose.runtimeMissing" = "Missing bundled %@ (reinstall the app; no need for Homebrew ntfs-3g-mac)";
+
+"diagnose.fuseOK" = "Bundled go-nfsv4 (pinned FUSE-T %@)";
+
+"diagnose.fusePath" = ": %@";
+
+"diagnose.fuseSysUnused" = "; system FUSE-T %@ is not used";
+
+"diagnose.fuseMissing" = "Bundled go-nfsv4 is missing (pinned FUSE-T %@; no need to install macFUSE)";
+
+"diagnose.helperMissing" = "Helper not installed (socket missing; this diagnose will not install it)";
+
+"diagnose.helperAliveRejected" = "Helper socket is present; daemon is alive (signature rejection is expected)";
+
+"diagnose.helperAlive" = "Helper socket reachable (%@)";
+
+"diagnose.helperConnectFailed" = "Helper socket exists but cannot connect (%@; this diagnose will not install it)";
+
+"diagnose.helperPing" = "Helper socket present, ping: %@";
+
+"diagnose.sysext" = "system extension";
+
+"diagnose.conflict" = "Detected %@ (may interfere with FUSE-T; this app does not need macFUSE)";
+
+"diagnose.noMacFuseBrew" = "No macFUSE kext detected (missing Homebrew is normal; this app does not need macFUSE)";
+
+"diagnose.noMacFuse" = "No macFUSE detected (this app does not need macFUSE installed)";
+
+"diagnose.quarantine" = "App is quarantined (Gatekeeper may block it; Control-click to Open)";
+
+"diagnose.spctlNotarized" = "notarized";
+
+"diagnose.spctlAccepted" = "allowed to run";
+
+"diagnose.spctlRejected" = "assessment failed";
+
+"diagnose.spctlUnchecked" = "notarization not checked";
+
+"diagnose.noQuarantine" = "Not quarantined · %@";
+
+"diagnose.gatekeeper" = "Gatekeeper: %@";
+
+"settings.diagnoseHint" = "Read-only check of bundled components and the helper. Does not mount or install the helper. This app does not need macFUSE.";
+
+"premount.dirtyTitle" = "NTFS volume may be damaged or was not unmounted cleanly";
+
+"premount.hiberTitle" = "Windows hibernation detected";
+
+"premount.readOnly" = "Mount Read-Only";
+
+"premount.fixThenWritable" = "Repair then mount writable";
+
+"premount.probing" = "Checking disk health…";
+
+"premount.dirtyBody" = "“%@” was not unmounted cleanly, or NTFS metadata may be damaged.\nContinuing writable may make the damage worse. Opening read-only is recommended.\n“Repair then mount writable” runs ntfsfix after another confirmation and may drop Windows cache that was not written to disk. Back up first.\nThis will not clear the hibernation file, and will not auto-repair or format.";
+
+"premount.hiberBody" = "“%@” is still in Windows hibernation or Fast Startup.\nIt will be mounted read-only so hibernation data is not damaged. Fully shut down Windows (no hibernate / Fast Startup) before mounting writable.\nThis will not run ntfsfix and will not clear the hibernation file.";
+
+"ntfs3g.diagnoseMissing" = "Bundled ntfs-3g not found; cannot check the driver version (PATH was not searched)";
+
+"ntfs3g.mountWarningTitle" = "Untested ntfs-3g version";
+
+"ntfs3g.continue" = "Continue Anyway";
+
+"ntfs3g.settingsChecking" = "Reading bundled ntfs-3g version…";
+
+"ntfs3g.allowListCaption" = "Only 2026.7.7 and 2026.8.x are tested. Unknown versions warn about risk and do not block mounting.";
+
+"ntfs3g.settingsGroup" = "Driver Version";
+
+"ntfs3g.diagnoseAllowed" = "Driver ntfs-3g %@ (tested; allowed %@)";
+
+"ntfs3g.diagnoseUntested" = "Driver ntfs-3g %@ is untested (allowed %@); unknown versions are risky but you can still mount";
+
+"ntfs3g.settingsAllowed" = "Bundled ntfs-3g %@ (tested: %@)";
+
+"ntfs3g.settingsUntested" = "Bundled ntfs-3g %@ is untested (allowed: %@). Unknown versions have write risk; you can still mount.";
+
+"ntfs3g.mountWarningBody" = "The bundled driver is ntfs-3g %@. Only %@ has been tested. Unknown versions have write risk; you can still mount.";
+/* sparkle updates */
+
+"update.menuCheck" = "Check for Updates…";
+
+"update.settingsGroup" = "Updates";
+
+"update.autoCheck" = "Check for Updates Automatically";
+
+"update.checkNow" = "Check for Updates…";
+
+"update.autoCheckNote" = "Off by default. No network until you turn it on. When on, it periodically queries the Sparkle appcast on GitHub for a new version (currently the pre-release v1.2.0 asset, not GitHub Latest). If an update is found you can install it in one click; it never installs silently. This build is ad-hoc and not notarized; update trust is Sparkle EdDSA, not Developer ID.";
+
+"update.settingsAboutLine" = "NTFS Read-Write (NTFSMount) · direct distribution, not on the Mac App Store. No network by default; “Check for Updates Automatically” or “Check for Updates…” contacts GitHub.";
+
+"update.aboutPrivacy" = "Direct distribution. Not on the Mac App Store.\n\nPrivacy: no network by default, no accounts or contacts collected. Opening “Check for Updates Automatically” or “Check for Updates…” contacts GitHub (Sparkle appcast, not Latest). Logs stay on this Mac:\n%@\nThe log remains on this Mac after you uninstall the app.\n\nSource and licenses: %@\nBundles ntfs-3g / mkntfs (GPL-2.0) and FUSE-T’s go-nfsv4. go-nfsv4 is for personal use; distributing it as a product requires a FUSE-T license. The updater is Sparkle (MIT).\n\nWriting NTFS can damage data. Back up first.\n\n%@";
+
+"menu.checkForUpdates" = "Check for Updates…";
+
+"settings.updates" = "Updates";
+
+"settings.autoCheckUpdates" = "Check for Updates Automatically";
+
+"settings.checkNow" = "Check for Updates…";
+
+"settings.autoCheckUpdatesNote" = "Off by default. The app does not use the network for updates until you turn this on. When on, it periodically asks GitHub for the Sparkle appcast (pre-release v1.2.0 asset, not GitHub Latest). Updates are one-click, not silent. This build is ad-hoc and not notarized; update trust is Sparkle EdDSA, not Developer ID.";

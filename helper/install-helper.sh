@@ -40,14 +40,17 @@ APP="$(/usr/bin/realpath "$APP")"
 /bin/chmod 755 "$HELPERD_DST"
 
 printf '%s\n' "$APP" >"$SUPPORT/app.path"
-/bin/chmod 644 "$SUPPORT/app.path"
 CDHASH="$(/usr/bin/codesign -dv --verbose=4 "$APP" 2>&1 | /usr/bin/sed -n 's/^CDHash=//p' | /usr/bin/head -1 || true)"
+if [[ -z "$CDHASH" ]]; then
+  echo "无法读取应用 CDHash，请确认应用已签名后再安装助手。" >&2
+  exit 1
+fi
 printf '%s\n' "$CDHASH" >"$SUPPORT/allowed.cdhash"
-/bin/chmod 644 "$SUPPORT/allowed.cdhash"
 BUNDLE_VER="$(/usr/bin/defaults read "$APP/Contents/Info" CFBundleVersion 2>/dev/null || echo 0)"
 HELPER_SHA="$(/usr/bin/shasum -a 256 "$HELPER_SRC" | /usr/bin/awk '{print $1}')"
 printf '%s %s\n' "$BUNDLE_VER" "$HELPER_SHA" >"$SUPPORT/helper.stamp"
-/bin/chmod 644 "$SUPPORT/helper.stamp"
+/usr/sbin/chown root:wheel "$SUPPORT/app.path" "$SUPPORT/allowed.cdhash" "$SUPPORT/helper.stamp"
+/bin/chmod 644 "$SUPPORT/app.path" "$SUPPORT/allowed.cdhash" "$SUPPORT/helper.stamp"
 
 /usr/bin/launchctl bootout system/com.bioapple.ntfsmount.helper >/dev/null 2>&1 || true
 cat > "$PLIST" <<EOF
@@ -71,7 +74,14 @@ EOF
 /usr/sbin/chown root:wheel "$PLIST"
 /bin/chmod 644 "$PLIST"
 /usr/bin/launchctl bootstrap system "$PLIST" || true
-/usr/bin/launchctl kickstart -k system/com.bioapple.ntfsmount.helper >/dev/null 2>&1 || true
+SOCK="/var/run/com.bioapple.ntfsmount.sock"
+for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
+  /usr/bin/launchctl kickstart -k system/com.bioapple.ntfsmount.helper >/dev/null 2>&1 || true
+  if [[ -S "$SOCK" || -e "$SOCK" ]]; then
+    break
+  fi
+  /bin/sleep 0.1
+done
 
 # 只清理旧版 sudoers / 符号链接，绝不写入 /etc/sudoers.d
 /bin/rm -f "$SUDOERS" "$LEGACY_HELPER"

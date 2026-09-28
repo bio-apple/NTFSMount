@@ -1,0 +1,6792 @@
+{
+  "sourceLanguage": "zh-Hans",
+  "version": "1.0",
+  "strings": {
+    "ok": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "好"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "好"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "ok.gotIt": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "知道了"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "知道了"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "cancel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キャンセル"
+          }
+        }
+      }
+    },
+    "quit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quit"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "退出"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "結束"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "終了"
+          }
+        }
+      }
+    },
+    "later": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "稍后"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "稍後"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "後で"
+          }
+        }
+      }
+    },
+    "retry": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重试"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重試"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "再試行"
+          }
+        }
+      }
+    },
+    "installing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installing…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在安装…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在安裝…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "インストール中…"
+          }
+        }
+      }
+    },
+    "app.productName": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS Read-Write"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS 读写"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS 讀寫"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS 読み書き"
+          }
+        }
+      }
+    },
+    "onboarding.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please confirm before use"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用前请确认"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用前請確認"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ご使用の前に確認してください"
+          }
+        }
+      }
+    },
+    "onboarding.agree": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agree and Continue"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同意并继续"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同意並繼續"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同意して続ける"
+          }
+        }
+      }
+    },
+    "onboarding.quit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quit"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "退出"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "結束"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "終了"
+          }
+        }
+      }
+    },
+    "onboarding.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. Mounting NTFS writable or formatting it can damage data. Back up first.\n2. Bundled FUSE-T go-nfsv4 is not GPL and is for personal use by default. Before distributing or selling this as a product, you must obtain written permission from FUSE-T (https://www.fuse-t.org/). This package is not currently a redistributable product.\n3. By default this app does not use the network or collect accounts. If you enable “Check for Updates Automatically” or choose “Check for Updates…”, the app contacts GitHub for the Sparkle appcast (pre-release v1.2.0 asset, not GitHub Latest). Disk contents are not uploaded. Logs stay on this Mac. After you uninstall the app, log files remain in your user folder.\n4. The mount helper runs as a root daemon and can mount, unmount, and format external disks. The administrator password entered at install time is not saved.\n\nOn first use, click “Install…” in the window to install the mount helper. Un-notarized builds ask for an administrator password; notarized builds prefer system service authorization.\n\nReturn means you agree. Click “Quit” if you do not."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. 以可写方式挂载或格式化 NTFS 可能损坏数据。请先备份。\n2. 捆绑的 FUSE-T go-nfsv4 不是 GPL，默认仅供个人使用。作为产品分发或销售前，须向 FUSE-T 取得书面许可（https://www.fuse-t.org/）。本安装包目前不是可公开再分发的产品。\n3. 默认不联网、不收集账户。若打开设置「自动检查更新」或点菜单「检查更新…」，应用会访问 GitHub 上的 Sparkle appcast（pre-release v1.2.0 资产，不是 GitHub Latest）。不会上传磁盘内容。日志只写在本机。卸载应用后日志文件仍会留在本机用户目录。\n4. 挂载助手以 root 守护进程运行，可挂载、卸载与格式化外置盘；安装时输入的管理员密码不会保存。\n\n第一次使用请在窗口点「安装…」安装挂载助手。未公证包会请求管理员密码；已公证包优先用系统服务授权。\n\n回车即同意。不同意请点「退出」。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. 以可寫方式掛載或格式化 NTFS 可能損壞資料。請先備份。\n2. 內附的 FUSE-T go-nfsv4 不是 GPL，預設僅供個人使用。作為產品散佈或銷售前，須向 FUSE-T 取得書面許可（https://www.fuse-t.org/）。本安裝包目前不是可公開再散佈的產品。\n3. 預設不連網、不收集帳號。若打開設定「自動檢查更新」或點選單「檢查更新…」，App 會連線 GitHub 上的 Sparkle appcast（pre-release v1.2.0 資產，不是 GitHub Latest）。不會上傳磁碟內容。紀錄只寫在本機。解除安裝後紀錄檔仍會留在本機使用者目錄。\n4. 掛載助手以 root 守護程式執行，可掛載、卸載與格式化外接碟；安裝時輸入的管理員密碼不會儲存。\n\n第一次使用請在視窗點「安裝…」安裝掛載助手。未公證套件會要求管理員密碼；已公證套件優先用系統服務授權。\n\nReturn 即同意。不同意請點「結束」。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. NTFS を書き込み可能でマウントしたりフォーマットしたりすると、データが破損する可能性があります。先にバックアップしてください。\n2. 同梱の FUSE-T go-nfsv4 は GPL ではなく、既定では個人利用向けです。製品として配布または販売する前に、FUSE-T（https://www.fuse-t.org/）から書面の許可を得てください。本パッケージは現時点で再配布可能な製品ではありません。\n3. 既定ではネットワークを使わず、アカウントも収集しません。設定の「更新を自動確認」または「更新を確認…」を使うと、GitHub 上の Sparkle appcast（pre-release v1.2.0、GitHub Latest ではない）に接続します。ディスク内容は送信しません。ログはこの Mac にだけ書き込まれます。アプリをアンインストールしてもログファイルはユーザフォルダに残ります。\n4. マウントヘルパーは root デーモンとして動作し、外付けディスクのマウント、アンマウント、フォーマットができます。インストール時に入力した管理者パスワードは保存されません。\n\n初回はウィンドウで「インストール…」を押してマウントヘルパーを入れてください。未公証ビルドは管理者パスワードを求めます。公証済みビルドはシステムサービスの承認を優先します。\n\nReturn で同意します。同意しない場合は「終了」を押してください。"
+          }
+        }
+      }
+    },
+    "onboarding.gatekeeperTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un-notarized build"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未公证构建"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未公證建置"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未公証ビルド"
+          }
+        }
+      }
+    },
+    "onboarding.gatekeeperBody": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This build is not notarized. macOS may say the developer cannot be verified: Control-click the app → Open; or click “Open Anyway” in System Settings → Privacy & Security.\nThe terminal command to clear quarantine is in the README troubleshooting section. Do not run it unless you understand it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前构建未公证。系统可能提示无法验证开发者：按住 Control 点应用 → 打开；也可在「系统设置 → 隐私与安全性」点「仍要打开」。\n终端清除隔离属性的命令见 README「故障排除」，不要在不理解的情况下执行。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目前建置未公證。系統可能提示無法驗證開發者：按住 Control 點 App → 打開；也可在「系統設定 → 隱私權與安全性」點「仍要打開」。\n終端機清除隔離屬性的指令見 README「故障排除」，不要在不理解的情況下執行。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このビルドは公証されていません。開発元を確認できないと表示されることがあります。Control キーを押しながらアプリをクリックして「開く」。または「システム設定 → プライバシーとセキュリティ」で「このまま開く」を選んでください。\n隔離属性を外すターミナルコマンドは README のトラブルシューティングにあります。内容を理解せずに実行しないでください。"
+          }
+        }
+      }
+    },
+    "writable.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mount writable?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以可写方式挂载？"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以可寫方式掛載？"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "書き込み可能でマウントしますか？"
+          }
+        }
+      }
+    },
+    "writable.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A third-party driver writing NTFS can damage files on the volume. Confirm important data is backed up. This prompt appears only once."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "第三方驱动写 NTFS 可能损坏卷上的文件。请确认重要数据已备份。此提示只出现一次。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "第三方驅動程式寫入 NTFS 可能損壞卷上的檔案。請確認重要資料已備份。此提示只出現一次。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サードパーティのドライバで NTFS に書き込むと、ボリューム上のファイルが破損する可能性があります。重要なデータをバックアップ済みか確認してください。この確認は一度だけ表示されます。"
+          }
+        }
+      }
+    },
+    "writable.continue": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backed up, Continue"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已备份，继续"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已備份，繼續"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "バックアップ済み、続ける"
+          }
+        }
+      }
+    },
+    "menu.openWindow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Window"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开窗口"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打開視窗"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ウィンドウを開く"
+          }
+        }
+      }
+    },
+    "menu.installHelper": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Install Mount Helper…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "安装挂载助手…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "安裝掛載助手…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マウントヘルパーをインストール…"
+          }
+        }
+      }
+    },
+    "menu.updateHelper": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update Mount Helper…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新挂载助手…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新掛載助手…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マウントヘルパーを更新…"
+          }
+        }
+      }
+    },
+    "menu.noNTFS": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No NTFS disks detected"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有检测到 NTFS 硬盘"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "沒有偵測到 NTFS 硬碟"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS ディスクが見つかりません"
+          }
+        }
+      }
+    },
+    "menu.insertHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plug in a Windows-formatted external disk, then open the menu again"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "插入 Windows 格式的移动盘后再点菜单"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "插入 Windows 格式的行動碟後再點選單"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Windows 形式の外付けディスクを接続してからメニューを開いてください"
+          }
+        }
+      }
+    },
+    "menu.formatOtherHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use “Format as NTFS” in the window to convert other external disks to NTFS"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可用窗口里「格式化为 NTFS」把其他移动盘转成 NTFS"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可用視窗裡「格式化為 NTFS」把其他行動碟轉成 NTFS"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ウィンドウの「NTFS にフォーマット」で他の外付けディスクを NTFS にできます"
+          }
+        }
+      }
+    },
+    "menu.encryptedLine": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: possibly encrypted — do not write or format"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@：可能加密，勿写入/勿格式化"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@：可能加密，勿寫入／勿格式化"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@：暗号化の可能性あり。書き込み／フォーマットしないでください"
+          }
+        }
+      }
+    },
+    "menu.fixDirty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try to Repair Dirty Volume…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尝试修复脏卷…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "嘗試修復髒卷…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ダーティボリュームの修復を試す…"
+          }
+        }
+      }
+    },
+    "menu.mountWritable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mount Writable"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以可写方式挂载"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以可寫方式掛載"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "書き込み可能でマウント"
+          }
+        }
+      }
+    },
+    "menu.mountWritableInternal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mount Writable (internal disk, confirmation required)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以可写方式挂载（内置盘，需确认）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以可寫方式掛載（內建碟，需確認）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "書き込み可能でマウント（内蔵ディスク、確認が必要）"
+          }
+        }
+      }
+    },
+    "menu.openFinder": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open in Finder"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在访达中打开"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 Finder 中打開"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finder で開く"
+          }
+        }
+      }
+    },
+    "menu.unmount": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unmount"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "卸载"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "卸載"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アンマウント"
+          }
+        }
+      }
+    },
+    "menu.eject": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eject (Safe to Unplug)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推出（可安全拔出）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推出（可安全拔除）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取り出す（抜いても安全）"
+          }
+        }
+      }
+    },
+    "menu.formatNTFS": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Format as NTFS…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "格式化为 NTFS…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "格式化為 NTFS…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS にフォーマット…"
+          }
+        }
+      }
+    },
+    "menu.mountAll": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mount All Writable"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全部以可写方式挂载"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全部以可寫方式掛載"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべて書き込み可能でマウント"
+          }
+        }
+      }
+    },
+    "menu.refresh": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刷新"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新整理"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新"
+          }
+        }
+      }
+    },
+    "menu.settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定…"
+          }
+        }
+      }
+    },
+    "menu.quitApp": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quit NTFS Read-Write"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "退出 NTFS 读写"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "結束 NTFS 讀寫"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS 読み書きを終了"
+          }
+        }
+      }
+    },
+    "menu.mountAllHelp": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mount all external NTFS volumes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "挂载所有外置 NTFS"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "掛載所有外接 NTFS"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべての外付け NTFS をマウント"
+          }
+        }
+      }
+    },
+    "menu.needHelper": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Install the mount helper first"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先安装挂载助手"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請先安裝掛載助手"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "先にマウントヘルパーをインストールしてください"
+          }
+        }
+      }
+    },
+    "menu.eraseWholeDisk": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This erases the whole disk"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将抹掉整盘"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "將抹掉整顆碟"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ディスク全体を消去します"
+          }
+        }
+      }
+    },
+    "menu.formatItem": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@  ·  %@  ·  %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@  ·  %@  ·  %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@  ·  %@  ·  %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@  ·  %@  ·  %@"
+          }
+        }
+      }
+    },
+    "help.unmount": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unmounts this app’s writable mount; the disk stays connected. Use Eject before unplugging."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "卸载本应用的可写挂载；磁盘仍连接，需要拔线请用「推出」。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "卸載本 App 的可寫掛載；磁碟仍連接，需要拔線請用「推出」。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このアプリの書き込み可能マウントを解除します。ディスクは接続されたままです。抜く前は「取り出す」を使ってください。"
+          }
+        }
+      }
+    },
+    "help.eject": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eject unmounts first, then pops the disk out. Unplug after it disappears from Finder."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推出会先卸载再弹出，访达里消失后再拔线。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推出會先卸載再彈出，Finder 裡消失後再拔線。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取り出すと先にアンマウントしてからディスクを排出します。Finder から消えてから抜いてください。"
+          }
+        }
+      }
+    },
+    "window.devices": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Devices"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "裝置"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "デバイス"
+          }
+        }
+      }
+    },
+    "window.noNTFS": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No NTFS disks"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有 NTFS 磁盘"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "沒有 NTFS 磁碟"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS ディスクなし"
+          }
+        }
+      }
+    },
+    "window.refresh": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刷新"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新整理"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新"
+          }
+        }
+      }
+    },
+    "window.refreshHelp": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh the disk list"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刷新磁盘列表"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新整理磁碟列表"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ディスク一覧を更新"
+          }
+        }
+      }
+    },
+    "window.viewLog": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View Log"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查看日志"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "檢視紀錄"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ログを表示"
+          }
+        }
+      }
+    },
+    "window.viewLogHelp": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open the local mount log"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开本机挂载日志"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打開本機掛載紀錄"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この Mac のマウントログを開く"
+          }
+        }
+      }
+    },
+    "window.about": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关于"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "關於"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このアプリについて"
+          }
+        }
+      }
+    },
+    "window.settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定"
+          }
+        }
+      }
+    },
+    "window.firstInstall": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The first use requires installing the mount helper."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "第一次使用需要安装挂载助手。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "第一次使用需要安裝掛載助手。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "初回はマウントヘルパーのインストールが必要です。"
+          }
+        }
+      }
+    },
+    "window.helperUpdate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update the mount helper to use every feature."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "挂载助手需要更新后才能使用全部功能。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "掛載助手需要更新後才能使用全部功能。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべての機能を使うにはマウントヘルパーの更新が必要です。"
+          }
+        }
+      }
+    },
+    "window.update": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新…"
+          }
+        }
+      }
+    },
+    "window.emptyTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No NTFS disks detected"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有检测到 NTFS 硬盘"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "沒有偵測到 NTFS 硬碟"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS ディスクが見つかりません"
+          }
+        }
+      }
+    },
+    "window.emptySubtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plug in a Windows-formatted external disk and it will appear on the left."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "插入 Windows 格式的移动盘后会出现在左侧。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "插入 Windows 格式的行動碟後會出現在左側。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Windows 形式の外付けディスクを接続すると左側に表示されます。"
+          }
+        }
+      }
+    },
+    "window.encryptedLine": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (%@): %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@（%@）：%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@（%@）：%@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@（%@）：%@"
+          }
+        }
+      }
+    },
+    "window.otherDisks": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other external disks can be formatted as NTFS:"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "其他移动盘可以格式化为 NTFS："
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "其他行動碟可以格式化為 NTFS："
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "他の外付けディスクを NTFS にフォーマットできます："
+          }
+        }
+      }
+    },
+    "window.formatNamed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Format as NTFS…  %@  ·  %@  ·  %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "格式化为 NTFS…  %@  ·  %@  ·  %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "格式化為 NTFS…  %@  ·  %@  ·  %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS にフォーマット…  %@  ·  %@  ·  %@"
+          }
+        }
+      }
+    },
+    "window.capacity": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capacity"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "容量"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "容量"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "容量"
+          }
+        }
+      }
+    },
+    "window.filesystem": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File System"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件系统"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "檔案系統"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ファイルシステム"
+          }
+        }
+      }
+    },
+    "window.used": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已用 %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已用 %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用済み %@"
+          }
+        }
+      }
+    },
+    "window.available": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Available %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可用 %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可用 %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "空き %@"
+          }
+        }
+      }
+    },
+    "status.busy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Working"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "处理中"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "處理中"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "処理中"
+          }
+        }
+      }
+    },
+    "status.writable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Writable"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可写"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可寫"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "書き込み可"
+          }
+        }
+      }
+    },
+    "status.roSystem": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read-only · system NTFS"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "只读 · 系统 NTFS"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "唯讀 · 系統 NTFS"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み取り専用 · システム NTFS"
+          }
+        }
+      }
+    },
+    "status.roDirty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read-only · hibernate / unclean shutdown"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "只读 · 休眠/未正常关机"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "唯讀 · 休眠／未正常關機"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み取り専用 · 休止／不正シャットダウン"
+          }
+        }
+      }
+    },
+    "status.unmounted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not mounted"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未挂载"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未掛載"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未マウント"
+          }
+        }
+      }
+    },
+    "status.detailWritable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mounted (read/write)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已挂载（可读写）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已掛載（可讀寫）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マウント済み（読み書き可）"
+          }
+        }
+      }
+    },
+    "status.detailDirty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mounted (read-only): Windows hibernation or a dirty volume. Shut down Windows fully first"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已挂载（只读）：Windows 休眠或卷不干净，请先在 Windows 彻底关机"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已掛載（唯讀）：Windows 休眠或卷不乾淨，請先在 Windows 徹底關機"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マウント済み（読み取り専用）：Windows の休止またはダーティボリュームです。先に Windows を完全にシャットダウンしてください"
+          }
+        }
+      }
+    },
+    "status.detailRoSystem": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mounted (read-only): system NTFS driver. You can switch to writable below if the volume is clean"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已挂载（只读）：系统 NTFS 驱动，可在下方改成可写（卷须干净）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已掛載（唯讀）：系統 NTFS 驅動程式，可在下方改成可寫（卷須乾淨）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マウント済み（読み取り専用）：システム NTFS ドライバです。ボリュームがクリーンなら下で書き込み可能に切り替えられます"
+          }
+        }
+      }
+    },
+    "volume.stateWritable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Writable"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可写"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可寫"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "書き込み可"
+          }
+        }
+      }
+    },
+    "volume.stateRoSystem": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System read-only"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统只读"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系統唯讀"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "システム読み取り専用"
+          }
+        }
+      }
+    },
+    "volume.stateUnmounted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not mounted"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未挂载"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未掛載"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未マウント"
+          }
+        }
+      }
+    },
+    "format.cancel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キャンセル"
+          }
+        }
+      }
+    },
+    "format.action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erase and Format"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "抹掉并格式化"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "抹掉並格式化"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "消去してフォーマット"
+          }
+        }
+      }
+    },
+    "format.confirmTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erase “%@” and format as NTFS?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "抹掉「%@」并格式化为 NTFS？"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "抹掉「%@」並格式化為 NTFS？"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」を消去して NTFS にフォーマットしますか？"
+          }
+        }
+      }
+    },
+    "format.confirmExtra": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This deletes every file on the disk and cannot be undone.\nIn “Type the current name” below, enter “%@” exactly. “New volume name” is the name after formatting."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将删除盘上全部文件，且无法恢复。\n请在下方「输入当前名称」原样输入「%@」；「新卷名」为格式化后的名称。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "將刪除碟上全部檔案，且無法復原。\n請在下方「輸入目前名稱」原樣輸入「%@」；「新卷名」為格式化後的名稱。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ディスク上のすべてのファイルが削除され、元に戻せません。\n下の「現在の名前を入力」に「%@」をそのまま入力してください。「新しいボリューム名」はフォーマット後の名前です。"
+          }
+        }
+      }
+    },
+    "format.nameMismatch": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Names do not match; disk was not erased"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "名称不一致，未抹盘"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "名稱不一致，未抹碟"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "名前が一致しないため消去しませんでした"
+          }
+        }
+      }
+    },
+    "format.finalTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last chance: erase this disk?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最后确认：抹掉这张盘？"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最後確認：抹掉這張碟？"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最終確認：このディスクを消去しますか？"
+          }
+        }
+      }
+    },
+    "format.identitySize": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capacity: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "容量：%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "容量：%@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "容量：%@"
+          }
+        }
+      }
+    },
+    "format.identityDevice": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Device: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备：%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "裝置：%@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "デバイス：%@"
+          }
+        }
+      }
+    },
+    "format.identityMedia": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Media: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "介质：%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "媒體：%@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メディア：%@"
+          }
+        }
+      }
+    },
+    "format.identitySerial": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Serial: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "序列号：%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "序號：%@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シリアル番号：%@"
+          }
+        }
+      }
+    },
+    "format.unknown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未知"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未知"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不明"
+          }
+        }
+      }
+    },
+    "format.identityFS": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current format: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前格式：%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目前格式：%@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現在の形式：%@"
+          }
+        }
+      }
+    },
+    "format.finalWarning": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” · %@ · %@\nSerial: %@\nEvery file on this disk will be permanently deleted."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」· %@ · %@\n序列号：%@\n将永久删除这张盘上的全部文件。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」· %@ · %@\n序號：%@\n將永久刪除這張碟上的全部檔案。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」· %@ · %@\nシリアル番号：%@\nこのディスク上のすべてのファイルが完全に削除されます。"
+          }
+        }
+      }
+    },
+    "format.currentName": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type the current name:"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输入当前名称："
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "輸入目前名稱："
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現在の名前を入力："
+          }
+        }
+      }
+    },
+    "format.currentPlaceholder": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Must match the current volume name in the description exactly"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "须与说明中的当前卷名完全一致"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "須與說明中的目前卷名完全一致"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "説明の現在のボリューム名と完全に一致させる必要があります"
+          }
+        }
+      }
+    },
+    "format.newName": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New volume name:"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新卷名："
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新卷名："
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新しいボリューム名："
+          }
+        }
+      }
+    },
+    "format.unformatted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unformatted"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未格式化"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未格式化"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未フォーマット"
+          }
+        }
+      }
+    },
+    "encrypted.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Possibly encrypted — do not write or format. macOS cannot confirm BitLocker; missing clues are not a negative result."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可能加密，勿写入/勿格式化。macOS 无法确认 BitLocker；未见线索不是阴性证明。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可能加密，勿寫入／勿格式化。macOS 無法確認 BitLocker；未見線索不是陰性證明。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暗号化の可能性あり。書き込み／フォーマットしないでください。macOS は BitLocker を確認できません。手がかりがないことは陰性証明ではありません。"
+          }
+        }
+      }
+    },
+    "settings.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定"
+          }
+        }
+      }
+    },
+    "settings.mount": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mount"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "挂载"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "掛載"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マウント"
+          }
+        }
+      }
+    },
+    "settings.autoMount": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-mount external NTFS when inserted"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "插入时自动挂载外置 NTFS"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "插入時自動掛載外接 NTFS"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接続時に外付け NTFS を自動マウント"
+          }
+        }
+      }
+    },
+    "settings.autoMountNote": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off by default until the helper is installed, terms are accepted, and writable risk is confirmed. Internal disks and Boot Camp are never auto-mounted. Auto-mount is still not a v1.2.0 selling point (Issue #1)."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "默认关闭，直到已安装助手、同意条款并确认过可写风险。内置盘与 Boot Camp 不会自动挂载。自动挂载仍非 v1.2.0 卖点（Issue #1）。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "預設關閉，直到已安裝助手、同意條款並確認過可寫風險。內建碟與 Boot Camp 不會自動掛載。自動掛載仍非 v1.2.0 賣點（Issue #1）。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ヘルパーのインストール、条項への同意、書き込みリスクの確認が済むまで既定はオフです。内蔵ディスクと Boot Camp は自動マウントしません。自動マウントは v1.2.0 の売りではありません（Issue #1）。"
+          }
+        }
+      }
+    },
+    "settings.appearance": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appearance & Startup"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外观与启动"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外觀與啟動"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外観と起動"
+          }
+        }
+      }
+    },
+    "settings.launchAtLogin": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open at login"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录时打开"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登入時打開"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ログイン時に開く"
+          }
+        }
+      }
+    },
+    "settings.showDock": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show in Dock"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在程序坞显示"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 Dock 顯示"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dock に表示"
+          }
+        }
+      }
+    },
+    "settings.followsSystemLanguage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interface follows the system language"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "界面跟随系统语言"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "介面跟隨系統語言"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "界面はシステム言語に従います"
+          }
+        }
+      }
+    },
+    "settings.helper": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mount Helper"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "挂载助手"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "掛載助手"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マウントヘルパー"
+          }
+        }
+      }
+    },
+    "settings.install": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Install…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "安装…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "安裝…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "インストール…"
+          }
+        }
+      }
+    },
+    "settings.update": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新…"
+          }
+        }
+      }
+    },
+    "settings.uninstall": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uninstall Helper…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "卸载助手…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "解除安裝助手…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ヘルパーをアンインストール…"
+          }
+        }
+      }
+    },
+    "settings.compat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compatibility"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "兼容性"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "相容性"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "互換性"
+          }
+        }
+      }
+    },
+    "settings.log": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "日志"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "紀錄"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ログ"
+          }
+        }
+      }
+    },
+    "settings.refreshLog": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh Log"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刷新日志"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新整理紀錄"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ログを更新"
+          }
+        }
+      }
+    },
+    "settings.openConsole": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open in Console"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在控制台打开"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在主控台打開"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コンソールで開く"
+          }
+        }
+      }
+    },
+    "settings.aboutPrivacy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About & Privacy"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关于与隐私"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "關於與隱私權"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "情報とプライバシー"
+          }
+        }
+      }
+    },
+    "settings.aboutLine": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS Read-Write (NTFSMount) · direct distribution, not on the Mac App Store. No network by default; enabling “Check for Updates Automatically” or “Check for Updates…” contacts GitHub."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS 读写（NTFSMount）· 直发，不上 Mac App Store。默认不联网；打开「自动检查更新」或「检查更新…」时会访问 GitHub。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS 讀寫（NTFSMount）· 直發，不上 Mac App Store。預設不連網；打開「自動檢查更新」或「檢查更新…」時會連線 GitHub。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS 読み書き（NTFSMount）· 直配布、Mac App Store 未掲載。既定ではネットワーク不使用。更新の自動確認や「更新を確認…」を使うと GitHub に接続します。"
+          }
+        }
+      }
+    },
+    "settings.notarized": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This build is notarized."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前构建已公证。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目前建置已公證。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このビルドは公証済みです。"
+          }
+        }
+      }
+    },
+    "settings.signedNotNotarized": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signed with Developer ID, not yet notarized. Control-click the app → Open; or click “Open Anyway” in System Settings → Privacy & Security."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已用 Developer ID 签名，尚未公证。按住 Control 点应用 → 打开；也可在「系统设置 → 隐私与安全性」点「仍要打开」。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已用 Developer ID 簽名，尚未公證。按住 Control 點 App → 打開；也可在「系統設定 → 隱私權與安全性」點「仍要打開」。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Developer ID で署名済みですが、まだ公証されていません。Control クリック → 開く。または「システム設定 → プライバシーとセキュリティ」で「このまま開く」。"
+          }
+        }
+      }
+    },
+    "settings.adHoc": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This build is not notarized (ad-hoc). Gatekeeper may block it. Control-click the app → Open; or click “Open Anyway” in System Settings → Privacy & Security."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前构建未公证（ad-hoc），Gatekeeper 可能拦截。按住 Control 点应用 → 打开；也可在「系统设置 → 隐私与安全性」点「仍要打开」。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目前建置未公證（ad-hoc），Gatekeeper 可能攔截。按住 Control 點 App → 打開；也可在「系統設定 → 隱私權與安全性」點「仍要打開」。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このビルドは未公証（ad-hoc）です。Gatekeeper にブロックされることがあります。Control クリック → 開く。または「システム設定 → プライバシーとセキュリティ」で「このまま開く」。"
+          }
+        }
+      }
+    },
+    "settings.aboutButton": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About & Privacy…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关于与隐私…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "關於與隱私權…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "情報とプライバシー…"
+          }
+        }
+      }
+    },
+    "helper.statusMissing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not installed. Click “Install…” the first time you use the app."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未安装。第一次使用请点「安装…」。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未安裝。第一次使用請點「安裝…」。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未インストールです。初回は「インストール…」を押してください。"
+          }
+        }
+      }
+    },
+    "helper.statusNeedsUpdate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update required before every feature is available."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要更新后才能使用全部功能。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要更新後才能使用全部功能。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべての機能を使うには更新が必要です。"
+          }
+        }
+      }
+    },
+    "helper.statusLegacy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legacy sudo rules are still present. Update the helper to switch to signature pinning."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仍有旧版 sudo 规则，请更新助手以换成签名钉扎。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仍有舊版 sudo 規則，請更新助手以換成簽名釘扎。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "旧来の sudo 規則が残っています。署名ピン留めに切り替えるためヘルパーを更新してください。"
+          }
+        }
+      }
+    },
+    "helper.statusOK": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installed. Privileged calls go through the daemon, which verifies this app’s signature."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已安装。特权调用经守护进程校验本应用签名。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已安裝。特權呼叫經守護程式校驗本 App 簽名。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "インストール済みです。特権呼び出しはデーモンがこのアプリの署名を検証します。"
+          }
+        }
+      }
+    },
+    "helper.hintNotarized": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notarized: prefers system service authorization; falls back to an administrator password."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已公证：优先用系统服务授权；失败再输入管理员密码。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已公證：優先用系統服務授權；失敗再輸入管理員密碼。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "公証済み：システムサービスの承認を優先し、失敗時は管理者パスワードを求めます。"
+          }
+        }
+      }
+    },
+    "helper.hintAdHoc": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un-notarized builds cannot use system services reliably, so installing the helper asks for an administrator password."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未公证包无法稳定使用系统服务，安装助手会请求管理员密码。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未公證套件無法穩定使用系統服務，安裝助手會要求管理員密碼。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未公証パッケージではシステムサービスを安定して使えないため、ヘルパーのインストールで管理者パスワードが必要です。"
+          }
+        }
+      }
+    },
+    "helper.privilegeHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The mount helper runs as root and can mount, unmount, and format external disks. The administrator password is used only for one-time install and is not saved. The Unix socket is mode 0666 so this app can connect as a normal user; the daemon checks the caller against the CDHash written at install time and only runs the root-owned helper copy under /Library/Application Support/NTFSMount/. It does not write sudoers. Uninstall: “Uninstall Helper” above, or uninstall.sh in the repo. Logs are at ~/Library/Logs/ntfsmount.log and remain on this Mac after uninstall."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "挂载助手以 root 运行，可以挂载、卸载、格式化外置盘。管理员密码只用于一次性安装，不会保存。Unix socket 权限为 0666，便于本应用以普通用户连接；守护进程用安装时写入的 CDHash 校验调用方，并只执行 /Library/Application Support/NTFSMount/ 下 root 所有的助手副本。不写 sudoers。卸载：上面的「卸载助手」，或仓库 uninstall.sh。日志在 ~/Library/Logs/ntfsmount.log，卸载后仍会留在本机。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "掛載助手以 root 執行，可以掛載、卸載、格式化外接碟。管理員密碼只用於一次性安裝，不會儲存。Unix socket 權限為 0666，便於本 App 以一般使用者連線；守護程式用安裝時寫入的 CDHash 校驗呼叫方，並只執行 /Library/Application Support/NTFSMount/ 下 root 所有的助手副本。不寫 sudoers。解除安裝：上面的「解除安裝助手」，或倉庫 uninstall.sh。紀錄在 ~/Library/Logs/ntfsmount.log，解除安裝後仍會留在本機。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マウントヘルパーは root で動作し、外付けディスクのマウント、アンマウント、フォーマットができます。管理者パスワードは一度きりのインストールにだけ使い、保存しません。Unix socket の権限は 0666 で、このアプリが一般ユーザとして接続できます。デーモンはインストール時に書いた CDHash で呼び出し元を検証し、/Library/Application Support/NTFSMount/ にある root 所有のヘルパーだけを実行します。sudoers は書きません。アンインストール：上の「ヘルパーをアンインストール」、またはリポジトリの uninstall.sh。ログは ~/Library/Logs/ntfsmount.log にあり、アンインストール後もこの Mac に残ります。"
+          }
+        }
+      }
+    },
+    "alert.updateHelperTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update Mount Helper"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新挂载助手"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新掛載助手"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マウントヘルパーを更新"
+          }
+        }
+      }
+    },
+    "alert.updateHelperBody": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An update is required for formatting, auto-mount on insert, and other new features. macOS will ask for an administrator password once."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要更新才能使用格式化、插入时自动挂载等新功能。将请求一次管理员密码。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要更新才能使用格式化、插入時自動掛載等新功能。將要求一次管理員密碼。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フォーマットや接続時の自動マウントなど新機能を使うには更新が必要です。管理者パスワードを一度求めます。"
+          }
+        }
+      }
+    },
+    "alert.update": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新"
+          }
+        }
+      }
+    },
+    "alert.mountFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mount Failed"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "挂载失败"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "掛載失敗"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マウントに失敗"
+          }
+        }
+      }
+    },
+    "alert.kextBody": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FSKit/kernel extensions being unavailable is expected on macOS 13+. You can ignore it. This app does not use kernel extensions; the helper prefers NFS/userspace FUSE. Do not install a kext.\n\n%@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FSKit/内核扩展不可用是 macOS 13+ 的预期情况，可忽略。本应用不使用内核扩展，助手已优先使用 NFS/用户态 FUSE。请勿安装 kext。\n\n%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FSKit／核心延伸模組不可用是 macOS 13+ 的預期情況，可忽略。本 App 不使用核心延伸模組，助手已優先使用 NFS／使用者態 FUSE。請勿安裝 kext。\n\n%@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS 13 以降で FSKit／カーネル拡張が使えないのは想定どおりで、無視して構いません。このアプリはカーネル拡張を使いません。ヘルパーは NFS／ユーザ空間 FUSE を優先します。kext を入れないでください。\n\n%@"
+          }
+        }
+      }
+    },
+    "alert.uninstallTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uninstall the mount helper?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "卸载挂载助手？"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "解除安裝掛載助手？"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マウントヘルパーをアンインストールしますか？"
+          }
+        }
+      }
+    },
+    "alert.uninstallBody": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This removes the privileged daemon and auto-mount on insert. The app stays in Applications."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将删除特权守护进程和插入时自动挂载。应用仍留在「应用程序」里。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "將刪除特權守護程式和插入時自動掛載。App 仍留在「應用程式」裡。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "特権デーモンと接続時の自動マウントを削除します。アプリは「アプリケーション」に残ります。"
+          }
+        }
+      }
+    },
+    "alert.uninstall": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uninstall Helper"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "卸载助手"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "解除安裝助手"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ヘルパーをアンインストール"
+          }
+        }
+      }
+    },
+    "about.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Direct distribution. Not on the Mac App Store.\n\nPrivacy: no network by default; no accounts or contacts collected. Enabling “Check for Updates Automatically” or “Check for Updates…” contacts GitHub (Sparkle appcast, not Latest). Logs stay on this Mac:\n%@\nThe log remains on this Mac after you uninstall the app.\n\nSource and licenses: %@\nBundles ntfs-3g / mkntfs (GPL-2.0) and FUSE-T’s go-nfsv4. go-nfsv4 is for personal use; distributing it as a product requires a FUSE-T license.\n\nWriting NTFS can damage data. Back up first.\n\n%@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直发应用，不上 Mac App Store。\n\n隐私：默认不联网、不收集账户或通讯录。打开「自动检查更新」或点「检查更新…」时会访问 GitHub（Sparkle appcast，不是 Latest）。日志只写在本机：\n%@\n卸载应用后该日志仍会留在本机。\n\n源码与许可证：%@\n捆绑 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 仅供个人使用；作为产品分发须向 FUSE-T 取得许可。\n\n写 NTFS 有损坏数据的风险，请先备份。\n\n%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直發 App，不上 Mac App Store。\n\n隱私權：預設不連網、不收集帳號或通訊錄。打開「自動檢查更新」或點「檢查更新…」時會連線 GitHub（Sparkle appcast，不是 Latest）。紀錄只寫在本機：\n%@\n解除安裝後該紀錄仍會留在本機。\n\n原始碼與授權：%@\n內附 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 僅供個人使用；作為產品散佈須向 FUSE-T 取得許可。\n\n寫入 NTFS 有損壞資料的風險，請先備份。\n\n%@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直配布です。Mac App Store にはありません。\n\nプライバシー：既定ではネットワーク不使用。アカウントや連絡先は収集しません。「更新を自動確認」または「更新を確認…」を使うと GitHub（Sparkle appcast、Latest ではない）に接続します。ログはこの Mac にだけ書き込まれます：\n%@\nアプリをアンインストールしてもこのログは残ります。\n\nソースとライセンス：%@\nntfs-3g / mkntfs（GPL-2.0）と FUSE-T の go-nfsv4 を同梱しています。go-nfsv4 は個人利用向けです。製品として配布するには FUSE-T の許可が必要です。\n\nNTFS への書き込みはデータを破損するリスクがあります。先にバックアップしてください。\n\n%@"
+          }
+        }
+      }
+    },
+    "about.openSource": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Source Page"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开源码页"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打開原始碼頁"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ソースページを開く"
+          }
+        }
+      }
+    },
+    "about.notarized": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This build is notarized."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前构建已公证。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目前建置已公證。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このビルドは公証済みです。"
+          }
+        }
+      }
+    },
+    "about.unnotarized": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This build is not notarized (Gatekeeper may block it). Control-click the app → Open; or click “Open Anyway” in System Settings → Privacy & Security."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前构建未公证（Gatekeeper 可能拦截）。按住 Control 点应用 → 打开；也可在「系统设置 → 隐私与安全性」点「仍要打开」。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目前建置未公證（Gatekeeper 可能攔截）。按住 Control 點 App → 打開；也可在「系統設定 → 隱私權與安全性」點「仍要打開」。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このビルドは未公証です（Gatekeeper にブロックされることがあります）。Control クリック → 開く。または「システム設定 → プライバシーとセキュリティ」で「このまま開く」。"
+          }
+        }
+      }
+    },
+    "dirty.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try to repair the dirty volume?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尝试修复脏卷？"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "嘗試修復髒卷？"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ダーティボリュームの修復を試しますか？"
+          }
+        }
+      }
+    },
+    "dirty.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” was not shut down cleanly or used Fast Startup, so the volume is marked dirty.\nntfsfix can only do a basic repair and may drop Windows cache that was not written to disk. Back up first.\nThis will not clear the Windows hibernation file. If this disk is hibernated, fully shut down Windows and try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」未正常关机或处于快速启动，卷标记为不干净。\nntfsfix 只能做基本修复，可能丢失尚未写入磁盘的 Windows 缓存。请先备份。\n不会清除 Windows 休眠文件。若这是休眠盘，请在 Windows 彻底关机后再试。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」未正常關機或處於快速啟動，卷標記為不乾淨。\nntfsfix 只能做基本修復，可能遺失尚未寫入磁碟的 Windows 快取。請先備份。\n不會清除 Windows 休眠檔。若這是休眠碟，請在 Windows 徹底關機後再試。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」は正常にシャットダウンされていないか、高速スタートアップのため、ボリュームがダーティとマークされています。\nntfsfix は基本的な修復だけを行い、ディスクに書き込まれていない Windows キャッシュが失われることがあります。先にバックアップしてください。\nWindows の休止ファイルは消しません。休止中のディスクなら、Windows を完全にシャットダウンしてから再試行してください。"
+          }
+        }
+      }
+    },
+    "dirty.fix": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try Repair"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尝试修复"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "嘗試修復"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "修復を試す"
+          }
+        }
+      }
+    },
+    "eject.refuseInternal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refusing to eject an internal disk."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拒绝推出内置磁盘。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拒絕推出內建磁碟。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内蔵ディスクは取り出せません。"
+          }
+        }
+      }
+    },
+    "internal.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mount the internal disk writable?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以可写方式挂载内置磁盘？"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以可寫方式掛載內建磁碟？"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内蔵ディスクを書き込み可能でマウントしますか？"
+          }
+        }
+      }
+    },
+    "internal.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” is on an internal disk. A writable mount may affect data on Windows / Boot Camp."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」位于内置磁盘。可写挂载可能影响 Windows / Boot Camp 上的数据。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」位於內建磁碟。可寫掛載可能影響 Windows／Boot Camp 上的資料。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」は内蔵ディスクにあります。書き込み可能マウントは Windows / Boot Camp 上のデータに影響することがあります。"
+          }
+        }
+      }
+    },
+    "internal.anyway": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mount Anyway"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仍然挂载"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仍然掛載"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "それでもマウント"
+          }
+        }
+      }
+    },
+    "automount.enabled": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-mount on insert is on"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已打开插入时自动挂载"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已打開插入時自動掛載"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接続時の自動マウントをオンにしました"
+          }
+        }
+      }
+    },
+    "automount.disabled": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-mount on insert is off"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已关闭插入时自动挂载"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已關閉插入時自動掛載"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接続時の自動マウントをオフにしました"
+          }
+        }
+      }
+    },
+    "login.failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not set open at login: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录时打开失败：%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登入時打開失敗：%@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ログイン時に開くに失敗：%@"
+          }
+        }
+      }
+    },
+    "mount.needHelper": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Install the mount helper before mounting writable."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要先安装挂载助手才能以可写方式挂载。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要先安裝掛載助手才能以可寫方式掛載。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "書き込み可能でマウントするには、先にマウントヘルパーをインストールしてください。"
+          }
+        }
+      }
+    },
+    "mount.needUpdate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update the mount helper first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先更新挂载助手。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請先更新掛載助手。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "先にマウントヘルパーを更新してください。"
+          }
+        }
+      }
+    },
+    "mount.writableHelp": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mount writable. Back up first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以可写方式挂载。请先备份。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以可寫方式掛載。請先備份。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "書き込み可能でマウントします。先にバックアップしてください。"
+          }
+        }
+      }
+    },
+    "error.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The operation failed. Check the log."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作失败，请查看日志。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作失敗，請查看紀錄。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作に失敗しました。ログを確認してください。"
+          }
+        }
+      }
+    },
+    "error.canceled": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Canceled."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已取消。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已取消。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キャンセルしました。"
+          }
+        }
+      }
+    },
+    "error.helperInstallFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Helper install failed. Try again. Details were written to the log."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "安装助手失败，请再试一次。详情已写入日志。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "安裝助手失敗，請再試一次。詳情已寫入紀錄。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ヘルパーのインストールに失敗しました。再試行してください。詳細はログに書き込まれました。"
+          }
+        }
+      }
+    },
+    "error.helperMissing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mount helper not found. Click “Install Mount Helper”."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未找到挂载助手。请点「安装挂载助手」。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找不到掛載助手。請點「安裝掛載助手」。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マウントヘルパーが見つかりません。「マウントヘルパーをインストール」を押してください。"
+          }
+        }
+      }
+    },
+    "error.missingGoNfsv4": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bundled go-nfsv4 is missing. Reinstall the app. Details were written to the log."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找不到捆绑的 go-nfsv4。请重新安装应用。详情已写入日志。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找不到內附的 go-nfsv4。請重新安裝 App。詳情已寫入紀錄。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同梱の go-nfsv4 が見つかりません。アプリを再インストールしてください。詳細はログに書き込まれました。"
+          }
+        }
+      }
+    },
+    "error.missingBinary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A required program is missing (ntfs-3g or a mount component). Reinstall the app. Details were written to the log."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找不到所需程序（可能缺少 ntfs-3g 或挂载组件）。请重新安装应用。详情已写入日志。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找不到所需程式（可能缺少 ntfs-3g 或掛載元件）。請重新安裝 App。詳情已寫入紀錄。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "必要なプログラムが見つかりません（ntfs-3g またはマウント部品の欠落の可能性）。アプリを再インストールしてください。詳細はログに書き込まれました。"
+          }
+        }
+      }
+    },
+    "error.adminDenied": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not get administrator access. If you clicked Cancel, try again. Details were written to the log."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未能取得管理员权限。若刚才点了取消，可再试。详情已写入日志。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未能取得管理員權限。若剛才點了取消，可再試。詳情已寫入紀錄。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "管理者権限を取得できませんでした。キャンセルした場合は再試行できます。詳細はログに書き込まれました。"
+          }
+        }
+      }
+    },
+    "error.helperNeedsUpdate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The mount helper needs an update. Click “Update…” in the window."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "挂载助手需要更新。请在窗口点「更新…」。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "掛載助手需要更新。請在視窗點「更新…」。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マウントヘルパーの更新が必要です。ウィンドウで「更新…」を押してください。"
+          }
+        }
+      }
+    },
+    "error.diskBusy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The disk is in use: close Finder windows/files, then click Eject"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "磁盘正被占用：请关闭访达窗口/文件后点推出"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "磁碟正被占用：請關閉 Finder 視窗／檔案後點推出"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ディスク使用中：Finder のウィンドウ／ファイルを閉じてから取り出してください"
+          }
+        }
+      }
+    },
+    "error.failedWithLog": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The operation failed. Details were written to %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作失败。详情已写入 %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作失敗。詳情已寫入 %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作に失敗しました。詳細は %@ に書き込まれました"
+          }
+        }
+      }
+    },
+    "error.failedLog": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The operation failed. Details were written to the log."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作失败。详情已写入日志。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作失敗。詳情已寫入紀錄。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作に失敗しました。詳細はログに書き込まれました。"
+          }
+        }
+      }
+    },
+    "privileged.missingHelper": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app package is missing the mount helper. Please reinstall."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用包内缺少挂载助手，请重新安装。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App 套件內缺少掛載助手，請重新安裝。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アプリパッケージにマウントヘルパーがありません。再インストールしてください。"
+          }
+        }
+      }
+    },
+    "privileged.missingDaemon": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app package is missing the privileged daemon. Please reinstall."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用包内缺少特权守护进程，请重新安装。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App 套件內缺少特權守護程式，請重新安裝。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アプリパッケージに特権デーモンがありません。再インストールしてください。"
+          }
+        }
+      }
+    },
+    "privileged.missingInstallScript": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app package is missing the install script. Please reinstall."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用包内缺少安装脚本，请重新安装。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App 套件內缺少安裝指令碼，請重新安裝。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アプリパッケージにインストールスクリプトがありません。再インストールしてください。"
+          }
+        }
+      }
+    },
+    "privileged.installedPassword": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installed the LaunchDaemon with an administrator password (typical for un-notarized builds). %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已用管理员密码安装 LaunchDaemon（未公证包通常走这条路径）。%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已用管理員密碼安裝 LaunchDaemon（未公證套件通常走這條路徑）。%@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "管理者パスワードで LaunchDaemon をインストールしました（未公証ビルドではこの経路が一般的です）。%@"
+          }
+        }
+      }
+    },
+    "privileged.installedSM": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registered the mount helper with the system service."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已用系统服务注册挂载助手。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已用系統服務註冊掛載助手。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "システムサービスでマウントヘルパーを登録しました。"
+          }
+        }
+      }
+    },
+    "privileged.missingUninstallScript": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app package is missing the uninstall script."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用包内缺少卸载脚本。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App 套件內缺少解除安裝指令碼。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アプリパッケージにアンインストールスクリプトがありません。"
+          }
+        }
+      }
+    },
+    "privileged.mismatch": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The mount helper does not match this app and was not run. Click “Update Mount Helper” first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "挂载助手与本应用不匹配，已拒绝运行。请先点「更新挂载助手」。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "掛載助手與本 App 不符，已拒絕執行。請先點「更新掛載助手」。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マウントヘルパーがこのアプリと一致しないため実行しませんでした。先に「マウントヘルパーを更新」を押してください。"
+          }
+        }
+      }
+    },
+    "privileged.notFound": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mount helper not found. Click “Install Mount Helper”."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未找到挂载助手。请点「安装挂载助手」。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找不到掛載助手。請點「安裝掛載助手」。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マウントヘルパーが見つかりません。「マウントヘルパーをインストール」を押してください。"
+          }
+        }
+      }
+    },
+    "privileged.commFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not talk to the mount helper."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "与挂载助手通信失败。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "與掛載助手通訊失敗。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マウントヘルパーと通信できませんでした。"
+          }
+        }
+      }
+    },
+    "privileged.timeout": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The mount helper timed out. Check the log and try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "挂载助手超时。请查看日志后重试。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "掛載助手逾時。請查看紀錄後重試。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マウントヘルパーがタイムアウトしました。ログを確認して再試行してください。"
+          }
+        }
+      }
+    },
+    "privileged.noResponse": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The mount helper did not respond. Install or update the helper first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "挂载助手没有响应。请先安装或更新助手。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "掛載助手沒有回應。請先安裝或更新助手。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マウントヘルパーが応答しません。先にヘルパーをインストールまたは更新してください。"
+          }
+        }
+      }
+    },
+    "platform.cannotRun": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cannot run %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法运行 %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法執行 %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ を実行できません"
+          }
+        }
+      }
+    },
+    "platform.noIntel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intel Macs (x86_64) are not supported. Apple Silicon (M-series) is required."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不支持 Intel Mac（x86_64）。需要 Apple Silicon（M 芯片）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不支援 Intel Mac（x86_64）。需要 Apple Silicon（M 晶片）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intel Mac（x86_64）は非対応です。Apple Silicon（M チップ）が必要です。"
+          }
+        }
+      }
+    },
+    "platform.needOS": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS 13.0 or later is required"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要 macOS 13.0 或更高版本"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要 macOS 13.0 或更高版本"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS 13.0 以降が必要です"
+          }
+        }
+      }
+    },
+    "compat.belowMin": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This app supports only Apple Silicon (M-series) and macOS 13.0+. Intel Macs (x86_64) are not supported. This system is below macOS 13, untested; mounting may fail."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本应用仅支持 Apple Silicon（M 芯片）与 macOS 13.0+，不支持 Intel Mac（x86_64）。当前系统低于 macOS 13，未测试，挂载可能失败。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本 App 僅支援 Apple Silicon（M 晶片）與 macOS 13.0+，不支援 Intel Mac（x86_64）。目前系統低於 macOS 13，未測試，掛載可能失敗。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このアプリは Apple Silicon（M チップ）と macOS 13.0 以降のみ対応で、Intel Mac（x86_64）は非対応です。このシステムは macOS 13 未満で未検証のため、マウントに失敗する可能性があります。"
+          }
+        }
+      }
+    },
+    "compat.ok": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Silicon (M-series) and macOS 13.0+ only. Intel Macs (x86_64) are not supported. This app does not use kernel extensions. From macOS 13 Ventura, kexts are more restricted, so it uses userspace FUSE (ntfs-3g + FUSE-T). If you see FSKit/module not enabled, ignore it — the helper already prefers NFS/userspace. Do not install a kernel extension."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅支持 Apple Silicon（M 芯片）与 macOS 13.0+，不支持 Intel Mac（x86_64）。本应用不使用内核扩展。macOS 13 Ventura 起对 kext 限制更严，因此使用用户态 FUSE（ntfs-3g + FUSE-T）。若提示 FSKit/模块未启用，可忽略——助手已优先使用 NFS/用户态路径，请勿安装内核扩展。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "僅支援 Apple Silicon（M 晶片）與 macOS 13.0+，不支援 Intel Mac（x86_64）。本 App 不使用核心延伸模組。macOS 13 Ventura 起對 kext 限制更嚴，因此使用使用者態 FUSE（ntfs-3g + FUSE-T）。若提示 FSKit／模組未啟用，可忽略——助手已優先使用 NFS／使用者態路徑，請勿安裝核心延伸模組。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Silicon（M チップ）と macOS 13.0 以降のみ対応。Intel Mac（x86_64）は非対応です。このアプリはカーネル拡張を使いません。macOS 13 Ventura 以降は kext の制限が厳しいため、ユーザ空間 FUSE（ntfs-3g + FUSE-T）を使います。FSKit／モジュールが無効と出ても無視してください。ヘルパーはすでに NFS／ユーザ空間経路を優先します。カーネル拡張を入れないでください。"
+          }
+        }
+      }
+    },
+    "log.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No log yet. It appears here after a mount or format: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还没有日志。挂载或格式化之后会出现在 %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "還沒有紀錄。掛載或格式化之後會出現在 %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "まだログはありません。マウントまたはフォーマット後に表示されます：%@"
+          }
+        }
+      }
+    },
+    "menu.diagnose": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diagnose Environment…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "诊断环境…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "診斷環境…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "環境診断…"
+          }
+        }
+      }
+    },
+    "diagnose.alertTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Environment Diagnose"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "环境诊断"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "環境診斷"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "環境診断"
+          }
+        }
+      }
+    },
+    "diagnose.copy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy Results"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制结果"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "複製結果"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "結果をコピー"
+          }
+        }
+      }
+    },
+    "diagnose.openLog": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Log"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开日志"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打開紀錄"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ログを開く"
+          }
+        }
+      }
+    },
+    "diagnose.header": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS Read-Write · environment diagnose (read-only; does not mount or install the helper)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS 读写 · 环境诊断（只读，不挂载、不装助手）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS 讀寫 · 環境診斷（唯讀，不掛載、不裝助手）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS 読み書き · 環境診断（読み取り専用。マウントもヘルパー導入もしません）"
+          }
+        }
+      }
+    },
+    "diagnose.fuseTNote": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This app uses bundled FUSE-T go-nfsv4 + ntfs-3g and does not need macFUSE installed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本应用使用捆绑 FUSE-T go-nfsv4 + ntfs-3g，不需要安装 macFUSE。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本 App 使用內附 FUSE-T go-nfsv4 + ntfs-3g，不需要安裝 macFUSE。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このアプリは同梱の FUSE-T go-nfsv4 + ntfs-3g を使い、macFUSE のインストールは不要です。"
+          }
+        }
+      }
+    },
+    "diagnose.notAppleSilicon": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not Apple Silicon (%@); this app does not support Intel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "非 Apple Silicon（%@）；本应用不支持 Intel"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "非 Apple Silicon（%@）；本 App 不支援 Intel"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Silicon ではありません（%@）。このアプリは Intel 非対応です"
+          }
+        }
+      }
+    },
+    "diagnose.needMacOS": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (macOS %d+ required)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@（需要 macOS %d+）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@（需要 macOS %d+）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@（macOS %d+ が必要）"
+          }
+        }
+      }
+    },
+    "diagnose.appleSiliconOK": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Silicon · %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Silicon · %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Silicon · %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Silicon · %@"
+          }
+        }
+      }
+    },
+    "diagnose.runtimeOK": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bundled ntfs-3g / ntfsfix / go-nfsv4 are all present"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "捆绑 ntfs-3g / ntfsfix / go-nfsv4 齐全"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "內附 ntfs-3g / ntfsfix / go-nfsv4 齊全"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同梱の ntfs-3g / ntfsfix / go-nfsv4 はすべてあります"
+          }
+        }
+      }
+    },
+    "diagnose.runtimeMissing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Missing bundled %@ (reinstall the app; no need for Homebrew ntfs-3g-mac)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "缺少捆绑 %@（请重新安装应用；不必装 Homebrew ntfs-3g-mac）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "缺少內附 %@（請重新安裝 App；不必裝 Homebrew ntfs-3g-mac）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同梱の %@ がありません（アプリを再インストール。Homebrew ntfs-3g-mac は不要）"
+          }
+        }
+      }
+    },
+    "diagnose.fuseOK": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bundled go-nfsv4 (pinned FUSE-T %@)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "捆绑 go-nfsv4（钉死 FUSE-T %@）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "內附 go-nfsv4（釘死 FUSE-T %@）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同梱 go-nfsv4（FUSE-T %@ を固定）"
+          }
+        }
+      }
+    },
+    "diagnose.fusePath": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ": %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "：%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "：%@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "：%@"
+          }
+        }
+      }
+    },
+    "diagnose.fuseSysUnused": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "; system FUSE-T %@ is not used"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "；系统 FUSE-T %@ 未被使用"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "；系統 FUSE-T %@ 未被使用"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "；システムの FUSE-T %@ は使っていません"
+          }
+        }
+      }
+    },
+    "diagnose.fuseMissing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bundled go-nfsv4 is missing (pinned FUSE-T %@; no need to install macFUSE)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "捆绑 go-nfsv4 缺失（钉死 FUSE-T %@；不必安装 macFUSE）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "內附 go-nfsv4 缺失（釘死 FUSE-T %@；不必安裝 macFUSE）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同梱 go-nfsv4 がありません（FUSE-T %@ 固定。macFUSE のインストールは不要）"
+          }
+        }
+      }
+    },
+    "diagnose.helperMissing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Helper not installed (socket missing; this diagnose will not install it)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "助手未安装（socket 不存在；本诊断不会去安装）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "助手未安裝（socket 不存在；本診斷不會去安裝）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ヘルパー未インストール（socket なし。この診断ではインストールしません）"
+          }
+        }
+      }
+    },
+    "diagnose.helperAliveRejected": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Helper socket is present; daemon is alive (signature rejection is expected)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "助手 socket 在，守护进程活着（签名校验拒绝属预期）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "助手 socket 在，守護程式活著（簽名校驗拒絕屬預期）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ヘルパー socket あり。デーモンは稼働中（署名検証の拒否は想定どおり）"
+          }
+        }
+      }
+    },
+    "diagnose.helperAlive": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Helper socket reachable (%@)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "助手 socket 可连通（%@）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "助手 socket 可連通（%@）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ヘルパー socket に接続できます（%@）"
+          }
+        }
+      }
+    },
+    "diagnose.helperConnectFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Helper socket exists but cannot connect (%@; this diagnose will not install it)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "助手 socket 在但无法连通（%@；本诊断不会去安装）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "助手 socket 在但無法連通（%@；本診斷不會去安裝）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ヘルパー socket はあるが接続できません（%@。この診断ではインストールしません）"
+          }
+        }
+      }
+    },
+    "diagnose.helperPing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Helper socket present, ping: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "助手 socket 在，ping: %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "助手 socket 在，ping: %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ヘルパー socket あり、ping: %@"
+          }
+        }
+      }
+    },
+    "diagnose.sysext": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "system extension"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统扩展"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系統延伸功能"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "システム拡張"
+          }
+        }
+      }
+    },
+    "diagnose.conflict": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detected %@ (may interfere with FUSE-T; this app does not need macFUSE)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检测到 %@（可能干扰 FUSE-T；本应用不需要 macFUSE）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "偵測到 %@（可能干擾 FUSE-T；本 App 不需要 macFUSE）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ を検出（FUSE-T を妨げる可能性。このアプリに macFUSE は不要）"
+          }
+        }
+      }
+    },
+    "diagnose.noMacFuseBrew": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No macFUSE kext detected (missing Homebrew is normal; this app does not need macFUSE)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未检测到 macFUSE kext（无 Homebrew 属正常；本应用不需要 macFUSE）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未偵測到 macFUSE kext（無 Homebrew 屬正常；本 App 不需要 macFUSE）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macFUSE kext は未検出（Homebrew がなくても正常。このアプリに macFUSE は不要）"
+          }
+        }
+      }
+    },
+    "diagnose.noMacFuse": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No macFUSE detected (this app does not need macFUSE installed)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未检测到 macFUSE（本应用不需要安装 macFUSE）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未偵測到 macFUSE（本 App 不需要安裝 macFUSE）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macFUSE は未検出（このアプリに macFUSE のインストールは不要）"
+          }
+        }
+      }
+    },
+    "diagnose.quarantine": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App is quarantined (Gatekeeper may block it; Control-click to Open)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用带隔离属性（Gatekeeper 可能拦截；Control-click 打开）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App 帶隔離屬性（Gatekeeper 可能攔截；Control-click 打開）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アプリに隔離属性があります（Gatekeeper がブロックする可能性。Control クリックで開く）"
+          }
+        }
+      }
+    },
+    "diagnose.spctlNotarized": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "notarized"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已公证"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已公證"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "公証済み"
+          }
+        }
+      }
+    },
+    "diagnose.spctlAccepted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "allowed to run"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已允许运行"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已允許執行"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "実行が許可されています"
+          }
+        }
+      }
+    },
+    "diagnose.spctlRejected": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "assessment failed"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "评估未通过"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "評估未通過"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "評価に失敗"
+          }
+        }
+      }
+    },
+    "diagnose.spctlUnchecked": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "notarization not checked"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未检查公证"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未檢查公證"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "公証未確認"
+          }
+        }
+      }
+    },
+    "diagnose.noQuarantine": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not quarantined · %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无隔离属性 · %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無隔離屬性 · %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隔離属性なし · %@"
+          }
+        }
+      }
+    },
+    "diagnose.gatekeeper": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gatekeeper: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gatekeeper：%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gatekeeper：%@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gatekeeper：%@"
+          }
+        }
+      }
+    },
+    "settings.diagnoseHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read-only check of bundled components and the helper. Does not mount or install the helper. This app does not need macFUSE."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "只读检查捆绑组件与助手，不挂载、不装助手；本应用不需要 macFUSE。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "唯讀檢查內附元件與助手，不掛載、不裝助手；本 App 不需要 macFUSE。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同梱コンポーネントとヘルパーの読み取り専用チェック。マウントもヘルパー導入もしません。このアプリに macFUSE は不要です。"
+          }
+        }
+      }
+    },
+    "premount.dirtyTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS volume may be damaged or was not unmounted cleanly"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS 卷可能已损坏/未正常卸载"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS 卷可能已損壞／未正常卸載"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS ボリュームが破損しているか、正常にアンマウントされていません"
+          }
+        }
+      }
+    },
+    "premount.hiberTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Windows hibernation detected"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检测到 Windows 休眠"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "偵測到 Windows 休眠"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Windows の休止を検出"
+          }
+        }
+      }
+    },
+    "premount.readOnly": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mount Read-Only"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以只读挂载"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以唯讀掛載"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み取り専用でマウント"
+          }
+        }
+      }
+    },
+    "premount.fixThenWritable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repair then mount writable"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尝试修复后可写"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "嘗試修復後可寫"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "修復してから書き込み可能でマウント"
+          }
+        }
+      }
+    },
+    "premount.probing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking disk health…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在检查磁盘健康…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在檢查磁碟健康…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ディスクの状態を確認しています…"
+          }
+        }
+      }
+    },
+    "premount.dirtyBody": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” was not unmounted cleanly, or NTFS metadata may be damaged.\nContinuing writable may make the damage worse. Opening read-only is recommended.\n“Repair then mount writable” runs ntfsfix after another confirmation and may drop Windows cache that was not written to disk. Back up first.\nThis will not clear the hibernation file, and will not auto-repair or format."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」未正常卸载，或 NTFS 元数据可能已损坏。\n继续可写可能加重损坏。建议先只读打开。\n「尝试修复后可写」会再确认后运行 ntfsfix，可能丢失尚未写入磁盘的 Windows 缓存。请先备份。\n不会清除休眠文件，也不会自动修复或格式化。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」未正常卸載，或 NTFS 中繼資料可能已損壞。\n繼續可寫可能加重損壞。建議先唯讀打開。\n「嘗試修復後可寫」會再確認後執行 ntfsfix，可能遺失尚未寫入磁碟的 Windows 快取。請先備份。\n不會清除休眠檔，也不會自動修復或格式化。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」は正常にアンマウントされていないか、NTFS メタデータが破損している可能性があります。\n書き込み可能のまま続けると破損が悪化することがあります。まず読み取り専用で開くことを推奨します。\n「修復してから書き込み可能でマウント」は再確認のあと ntfsfix を実行し、ディスクに書き込まれていない Windows キャッシュが失われることがあります。先にバックアップしてください。\n休止ファイルは消さず、自動修復もフォーマットもしません。"
+          }
+        }
+      }
+    },
+    "premount.hiberBody": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” is still in Windows hibernation or Fast Startup.\nIt will be mounted read-only so hibernation data is not damaged. Fully shut down Windows (no hibernate / Fast Startup) before mounting writable.\nThis will not run ntfsfix and will not clear the hibernation file."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」仍处于 Windows 休眠或快速启动。\n将只读挂载，以免破坏休眠数据。请在 Windows 彻底关机（不要休眠/快速启动）后再以可写方式挂载。\n不会运行 ntfsfix，也不会清除休眠文件。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」仍處於 Windows 休眠或快速啟動。\n將唯讀掛載，以免破壞休眠資料。請在 Windows 徹底關機（不要休眠／快速啟動）後再以可寫方式掛載。\n不會執行 ntfsfix，也不會清除休眠檔。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」はまだ Windows の休止または高速スタートアップ中です。\n休止データを壊さないよう読み取り専用でマウントします。書き込み可能でマウントする前に、Windows を完全にシャットダウンしてください（休止／高速スタートアップは使わない）。\nntfsfix は実行せず、休止ファイルも消しません。"
+          }
+        }
+      }
+    },
+    "ntfs3g.diagnoseMissing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bundled ntfs-3g not found; cannot check the driver version (PATH was not searched)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未找到捆绑 ntfs-3g，无法校验驱动版本（未查 PATH）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找不到內附 ntfs-3g，無法校驗驅動程式版本（未查 PATH）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同梱の ntfs-3g が見つからず、ドライバ版を確認できません（PATH は検索していません）"
+          }
+        }
+      }
+    },
+    "ntfs3g.mountWarningTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Untested ntfs-3g version"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未经测试的 ntfs-3g 版本"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未經測試的 ntfs-3g 版本"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未テストの ntfs-3g バージョン"
+          }
+        }
+      }
+    },
+    "ntfs3g.continue": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue Anyway"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仍然继续"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仍然繼續"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このまま続ける"
+          }
+        }
+      }
+    },
+    "ntfs3g.settingsChecking": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading bundled ntfs-3g version…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在读取捆绑 ntfs-3g 版本…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在讀取內附 ntfs-3g 版本…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同梱 ntfs-3g のバージョンを読み取り中…"
+          }
+        }
+      }
+    },
+    "ntfs3g.allowListCaption": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only 2026.7.7 and 2026.8.x are tested. Unknown versions warn about risk and do not block mounting."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅 2026.7.7 与 2026.8.x 经过测试。未知版本提醒风险，不会阻止挂载。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "僅 2026.7.7 與 2026.8.x 經過測試。未知版本提醒風險，不會阻止掛載。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "テスト済みは 2026.7.7 と 2026.8.x のみです。未知のバージョンはリスクを知らせますが、マウントは止めません。"
+          }
+        }
+      }
+    },
+    "ntfs3g.settingsGroup": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Driver Version"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "驱动版本"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "驅動程式版本"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ドライババージョン"
+          }
+        }
+      }
+    },
+    "ntfs3g.diagnoseAllowed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Driver ntfs-3g %@ (tested; allowed %@)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "驱动 ntfs-3g %@（已测试；允许 %@）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "驅動程式 ntfs-3g %@（已測試；允許 %@）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ドライバ ntfs-3g %@（テスト済み。許可 %@）"
+          }
+        }
+      }
+    },
+    "ntfs3g.diagnoseUntested": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Driver ntfs-3g %@ is untested (allowed %@); unknown versions are risky but you can still mount"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "驱动 ntfs-3g %@ 未经测试（允许 %@）；未知版本有风险，仍可继续挂载"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "驅動程式 ntfs-3g %@ 未經測試（允許 %@）；未知版本有風險，仍可繼續掛載"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ドライバ ntfs-3g %@ は未テスト（許可 %@）。未知バージョンにはリスクがありますが、マウントは続けられます"
+          }
+        }
+      }
+    },
+    "ntfs3g.settingsAllowed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bundled ntfs-3g %@ (tested: %@)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "捆绑 ntfs-3g %@（已测试：%@）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "內附 ntfs-3g %@（已測試：%@）"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同梱 ntfs-3g %@（テスト済み：%@）"
+          }
+        }
+      }
+    },
+    "ntfs3g.settingsUntested": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bundled ntfs-3g %@ is untested (allowed: %@). Unknown versions have write risk; you can still mount."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "捆绑 ntfs-3g %@ 未经测试（允许：%@）。未知版本有写入风险，可继续挂载。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "內附 ntfs-3g %@ 未經測試（允許：%@）。未知版本有寫入風險，可繼續掛載。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同梱 ntfs-3g %@ は未テスト（許可：%@）。未知バージョンには書き込みリスクがありますが、マウントは続けられます。"
+          }
+        }
+      }
+    },
+    "ntfs3g.mountWarningBody": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The bundled driver is ntfs-3g %@. Only %@ has been tested. Unknown versions have write risk; you can still mount."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前捆绑驱动是 ntfs-3g %@。仅 %@ 经过测试。未知版本有写入风险，可继续挂载。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目前內附驅動程式是 ntfs-3g %@。僅 %@ 經過測試。未知版本有寫入風險，可繼續掛載。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同梱ドライバは ntfs-3g %@ です。テスト済みは %@ のみ。未知バージョンには書き込みリスクがありますが、マウントは続けられます。"
+          }
+        }
+      }
+    },
+    "update.menuCheck": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check for Updates…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检查更新…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "檢查更新…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新を確認…"
+          }
+        }
+      }
+    },
+    "update.settingsGroup": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updates"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アップデート"
+          }
+        }
+      }
+    },
+    "update.autoCheck": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check for Updates Automatically"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自动检查更新"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自動檢查更新"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新を自動で確認"
+          }
+        }
+      }
+    },
+    "update.checkNow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check for Updates…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检查更新…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "檢查更新…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新を確認…"
+          }
+        }
+      }
+    },
+    "update.autoCheckNote": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off by default. No network until you turn it on. When on, it periodically queries the Sparkle appcast on GitHub for a new version (currently the pre-release v1.2.0 asset, not GitHub Latest). If an update is found you can install it in one click; it never installs silently. This build is ad-hoc and not notarized; update trust is Sparkle EdDSA, not Developer ID."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "默认关闭。打开前不会访问网络。打开后会定期向 GitHub 上的 Sparkle appcast 查询新版本（当前指向 pre-release v1.2.0 资产，不是 GitHub Latest）。发现更新后可一键安装，不会静默安装。当前构建为 ad-hoc、未公证；更新信任靠 Sparkle EdDSA 签名，不是 Developer ID。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "預設關閉。打開前不會造訪網路。打開後會定期向 GitHub 上的 Sparkle appcast 查詢新版本（目前指向 pre-release v1.2.0 資產，不是 GitHub Latest）。發現更新後可一鍵安裝，不會靜默安裝。目前建置為 ad-hoc、未公證；更新信任靠 Sparkle EdDSA 簽名，不是 Developer ID。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "既定はオフです。オンにするまでネットワークは使いません。オンにすると GitHub 上の Sparkle appcast を定期的に問い合わせます（現在は pre-release v1.2.0 の資産で、GitHub Latest ではありません）。更新が見つかればワンクリックでインストールでき、サイレントインストールはしません。このビルドは ad-hoc で未公証です。更新の信頼は Sparkle の EdDSA 署名であり、Developer ID ではありません。"
+          }
+        }
+      }
+    },
+    "update.settingsAboutLine": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS Read-Write (NTFSMount) · direct distribution, not on the Mac App Store. No network by default; “Check for Updates Automatically” or “Check for Updates…” contacts GitHub."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS 读写（NTFSMount）· 直发，不上 Mac App Store。默认不联网；打开「自动检查更新」或「检查更新…」时会访问 GitHub。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS 讀寫（NTFSMount）· 直發，不上 Mac App Store。預設不連網；打開「自動檢查更新」或「檢查更新…」時會造訪 GitHub。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFS 読み書き（NTFSMount）· 直配布、Mac App Store 未掲載。既定はネットワーク不使用。「更新を自動で確認」または「更新を確認…」で GitHub にアクセスします。"
+          }
+        }
+      }
+    },
+    "update.aboutPrivacy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Direct distribution. Not on the Mac App Store.\n\nPrivacy: no network by default, no accounts or contacts collected. Opening “Check for Updates Automatically” or “Check for Updates…” contacts GitHub (Sparkle appcast, not Latest). Logs stay on this Mac:\n%@\nThe log remains on this Mac after you uninstall the app.\n\nSource and licenses: %@\nBundles ntfs-3g / mkntfs (GPL-2.0) and FUSE-T’s go-nfsv4. go-nfsv4 is for personal use; distributing it as a product requires a FUSE-T license. The updater is Sparkle (MIT).\n\nWriting NTFS can damage data. Back up first.\n\n%@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直发应用，不上 Mac App Store。\n\n隐私：默认不联网、不收集账户或通讯录。打开「自动检查更新」或点「检查更新…」时会访问 GitHub（Sparkle appcast，不是 Latest）。日志只写在本机：\n%@\n卸载应用后该日志仍会留在本机。\n\n源码与许可证：%@\n捆绑 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 仅供个人使用；作为产品分发须向 FUSE-T 取得许可。更新框架为 Sparkle（MIT）。\n\n写 NTFS 有损坏数据的风险，请先备份。\n\n%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直發 App，不上 Mac App Store。\n\n隱私權：預設不連網、不收集帳號或通訊錄。打開「自動檢查更新」或點「檢查更新…」時會造訪 GitHub（Sparkle appcast，不是 Latest）。紀錄只寫在本機：\n%@\n解除安裝後該紀錄仍會留在本機。\n\n原始碼與授權：%@\n內附 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 僅供個人使用；作為產品散佈須向 FUSE-T 取得許可。更新框架為 Sparkle（MIT）。\n\n寫入 NTFS 有損壞資料的風險，請先備份。\n\n%@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直配布です。Mac App Store にはありません。\n\nプライバシー：既定はネットワーク不使用。アカウントや連絡先は収集しません。「更新を自動で確認」または「更新を確認…」を開くと GitHub にアクセスします（Sparkle appcast。Latest ではありません）。ログはこの Mac にだけ書き込まれます：\n%@\nアプリをアンインストールしてもこのログは残ります。\n\nソースとライセンス：%@\nntfs-3g / mkntfs（GPL-2.0）と FUSE-T の go-nfsv4 を同梱しています。go-nfsv4 は個人利用向けです。製品として配布するには FUSE-T の許可が必要です。アップデータは Sparkle（MIT）です。\n\nNTFS への書き込みはデータを破損するリスクがあります。先にバックアップしてください。\n\n%@"
+          }
+        }
+      }
+    },
+    "menu.checkForUpdates": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检查更新…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check for Updates…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "檢查更新…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新を確認…"
+          }
+        }
+      }
+    },
+    "settings.updates": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updates"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新"
+          }
+        }
+      }
+    },
+    "settings.autoCheckUpdates": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自动检查更新"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check for Updates Automatically"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自動檢查更新"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新を自動確認"
+          }
+        }
+      }
+    },
+    "settings.checkNow": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检查更新…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check for Updates…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "檢查更新…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新を確認…"
+          }
+        }
+      }
+    },
+    "settings.autoCheckUpdatesNote": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "默认关闭。打开前不会访问网络。打开后会定期向 GitHub 上的 Sparkle appcast 查询新版本（当前指向 pre-release v1.2.0 资产，不是 GitHub Latest）。发现更新后可一键安装，不会静默安装。当前构建为 ad-hoc、未公证；更新信任靠 Sparkle EdDSA 签名，不是 Developer ID。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off by default. The app does not use the network for updates until you turn this on. When on, it periodically asks GitHub for the Sparkle appcast (pre-release v1.2.0 asset, not GitHub Latest). Updates are one-click, not silent. This build is ad-hoc and not notarized; update trust is Sparkle EdDSA, not Developer ID."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "預設關閉。打開前不會連網。打開後會定期向 GitHub 上的 Sparkle appcast 查詢新版本（目前指向 pre-release v1.2.0 資產，不是 GitHub Latest）。發現更新後可一鍵安裝，不會靜默安裝。目前建置為 ad-hoc、未公證；更新信任靠 Sparkle EdDSA 簽名，不是 Developer ID。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "既定はオフです。オンにするまで更新のためにネットワークを使いません。オンにすると GitHub の Sparkle appcast（pre-release v1.2.0、GitHub Latest ではない）を定期的に確認します。更新はワンクリックで、サイレントインストールしません。現在のビルドは ad-hoc で未公証です。更新の信頼は Sparkle EdDSA であり、Developer ID ではありません。"
+          }
+        }
+      }
+    }
+  }
+}

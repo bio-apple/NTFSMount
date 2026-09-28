@@ -7,6 +7,7 @@ public struct FormatDisk: Identifiable, Equatable, Sendable {
   public let fsHint: String
   public let serial: String
   public let mediaName: String
+  public let encryptionWarning: String?
 
   public init(
     id: String,
@@ -14,7 +15,8 @@ public struct FormatDisk: Identifiable, Equatable, Sendable {
     size: Int64,
     fsHint: String,
     serial: String = "",
-    mediaName: String = ""
+    mediaName: String = "",
+    encryptionWarning: String? = nil
   ) {
     self.id = id
     self.name = name
@@ -22,6 +24,7 @@ public struct FormatDisk: Identifiable, Equatable, Sendable {
     self.fsHint = fsHint
     self.serial = serial
     self.mediaName = mediaName
+    self.encryptionWarning = encryptionWarning
   }
 
   public var sizeLabel: String {
@@ -53,12 +56,14 @@ public struct FormatDisk: Identifiable, Equatable, Sendable {
       guard size > 0 else { continue }
       let media = info["MediaName"] as? String ?? ""
       let parts = disk["Partitions"] as? [[String: Any]] ?? []
-      var hint = "未格式化"
+      var hint = L10n.t("format.unformatted")
       var volName = ""
       var partInfo: [String: Any]?
+      var partContent = ""
       for part in parts {
         let content = part["Content"] as? String ?? ""
         if content.uppercased().contains("EFI") { continue }
+        partContent = content
         if let pid = part["DeviceIdentifier"] as? String,
            let pinfo = catalog.infoPlist(pid) {
           partInfo = pinfo
@@ -78,13 +83,16 @@ public struct FormatDisk: Identifiable, Equatable, Sendable {
       } else {
         name = ident
       }
+      let encWarn = EncryptedDiskHint.warning(from: partInfo ?? info, content: partContent)
+        ?? EncryptedDiskHint.warning(from: info, content: partContent)
       out.append(FormatDisk(
         id: ident,
         name: name,
         size: size,
         fsHint: hint,
         serial: serial(from: info, part: partInfo),
-        mediaName: media
+        mediaName: media,
+        encryptionWarning: encWarn
       ))
     }
     return out.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }

@@ -6,13 +6,24 @@
 #   ./scripts/ntfsmount-diagnose.sh [--json]
 set -euo pipefail
 
-ROOT="$(cd "$(/usr/bin/dirname "$0")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(/usr/bin/dirname "$0")" && pwd)"
+IN_APP=0
+APP_BUNDLE="/Applications/NTFSMount.app"
+case "$SCRIPT_DIR" in
+  *.app/Contents/Resources)
+    IN_APP=1
+    APP_BUNDLE="$(cd "$SCRIPT_DIR/../.." && pwd)"
+    ROOT="$SCRIPT_DIR"
+    ;;
+  *)
+    ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+    ;;
+esac
 SOCK="/var/run/com.bioapple.ntfsmount.sock"
 HELPER_PLIST="/Library/LaunchDaemons/com.bioapple.ntfsmount.helper.plist"
 HELPERD="/Library/PrivilegedHelperTools/com.bioapple.ntfsmount.helperd"
 FUSE_T_BIN="/Library/Application Support/fuse-t/bin"
 FUSE_T_APP="/Applications/FUSE-T.app"
-APP_BUNDLE="/Applications/NTFSMount.app"
 
 JSON=0
 while [[ $# -gt 0 ]]; do
@@ -56,10 +67,38 @@ json_obj() {
   /usr/bin/python3 -c 'import json,sys; print(json.dumps(json.loads(sys.argv[1]), ensure_ascii=False, separators=(",", ":")))' "$1"
 }
 
+# 驱动版本允许列表（与 Ntfs3gVersion.swift / runtime/versions.txt 一致）
+NTFS3G_VER_LIB=""
+for cand in "$SCRIPT_DIR/ntfs3g-version.sh" "$ROOT/scripts/ntfs3g-version.sh"; do
+  if [[ -f "$cand" ]]; then
+    NTFS3G_VER_LIB="$cand"
+    break
+  fi
+done
+if [[ -n "$NTFS3G_VER_LIB" ]]; then
+  # shellcheck source=ntfs3g-version.sh
+  . "$NTFS3G_VER_LIB"
+else
+  NTFS3G_PINNED="2026.7.7"
+  NTFS3G_ALLOW_LIST="2026.7.7,2026.8.x"
+  NTFS3G_ALLOW_HUMAN="2026.7.7、2026.8.x"
+  ntfs3g_parse_version() { printf '%s' ""; }
+  ntfs3g_version_allowed() { return 1; }
+  ntfs3g_human_line() { printf '%s' "无法加载版本校验脚本"; }
+fi
+
 # --- app / helper 版本（读文件，不执行挂载路径） ---
 app_version="unknown"
-if [[ -f "$ROOT/Resources/Info.plist" ]]; then
-  app_version="$(/usr/bin/plutil -extract CFBundleShortVersionString raw "$ROOT/Resources/Info.plist" 2>/dev/null || true)"
+app_plist=""
+if [[ "$IN_APP" == 1 && -f "$APP_BUNDLE/Contents/Info.plist" ]]; then
+  app_plist="$APP_BUNDLE/Contents/Info.plist"
+elif [[ -f "$ROOT/Resources/Info.plist" ]]; then
+  app_plist="$ROOT/Resources/Info.plist"
+elif [[ -f "$APP_BUNDLE/Contents/Info.plist" ]]; then
+  app_plist="$APP_BUNDLE/Contents/Info.plist"
+fi
+if [[ -n "$app_plist" ]]; then
+  app_version="$(/usr/bin/plutil -extract CFBundleShortVersionString raw "$app_plist" 2>/dev/null || true)"
   app_version="$(trim "${app_version:-unknown}")"
 fi
 installed_version=""
@@ -69,16 +108,33 @@ if [[ -f "$APP_BUNDLE/Contents/Info.plist" ]]; then
 fi
 
 helper_version="unknown"
-if [[ -f "$ROOT/helper/ntfs-rw-helper" ]]; then
-  helper_version="$(/usr/bin/awk -F= '/^HELPER_VERSION=/{print $2; exit}' "$ROOT/helper/ntfs-rw-helper" 2>/dev/null || true)"
+helper_src=""
+for cand in \
+  "$ROOT/helper/ntfs-rw-helper" \
+  "$SCRIPT_DIR/ntfs-rw-helper" \
+  "$APP_BUNDLE/Contents/Resources/ntfs-rw-helper"
+do
+  if [[ -f "$cand" ]]; then
+    helper_src="$cand"
+    break
+  fi
+done
+if [[ -n "$helper_src" ]]; then
+  helper_version="$(/usr/bin/awk -F= '/^HELPER_VERSION=/{print $2; exit}' "$helper_src" 2>/dev/null || true)"
   helper_version="$(trim "${helper_version:-unknown}")"
 fi
 
-pinned_fuse_t="unknown"
-if [[ -f "$ROOT/runtime/versions.txt" ]]; then
-  pinned_fuse_t="$(/usr/bin/awk '/^FUSE-T[[:space:]]/{print $2; exit}' "$ROOT/runtime/versions.txt" 2>/dev/null || true)"
-  pinned_fuse_t="$(trim "${pinned_fuse_t:-unknown}")"
-fi
+pinned_fuse_t="1.2.7"
+pinned_ntfs3g="$NTFS3G_PINNED"
+for verfile in "$ROOT/runtime/versions.txt" "$SCRIPT_DIR/versions.txt" "$ROOT/versions.txt"; do
+  if [[ -f "$verfile" ]]; then
+    pinned_fuse_t="$(/usr/bin/awk '/^FUSE-T[[:space:]]/{print $2; exit}' "$verfile" 2>/dev/null || true)"
+    pinned_fuse_t="$(trim "${pinned_fuse_t:-1.2.7}")"
+    pinned_ntfs3g="$(/usr/bin/awk '/^ntfs-3g[[:space:]]/{print $2; exit}' "$verfile" 2>/dev/null || true)"
+    pinned_ntfs3g="$(trim "${pinned_ntfs3g:-$NTFS3G_PINNED}")"
+    break
+  fi
+done
 
 # --- macOS ---
 macos_product="$(/usr/bin/sw_vers -productName 2>/dev/null || true)"
@@ -143,6 +199,52 @@ done
 bundled_present=false
 [[ -n "$bundled_go" ]] && bundled_present=true
 
+bundled_ntfs3g=""
+for cand in \
+  "$ROOT/runtime/ntfs-3g" \
+  "$APP_BUNDLE/Contents/MacOS/ntfs-3g"
+do
+  if [[ -x "$cand" ]]; then
+    bundled_ntfs3g="$cand"
+    break
+  fi
+done
+ntfs_3g_present=false
+[[ -n "$bundled_ntfs3g" ]] && ntfs_3g_present=true
+
+# 只跑捆绑二进制 --version，不用 PATH 里的 ntfs-3g。
+ntfs3g_raw=""
+ntfs3g_ver="unknown"
+ntfs3g_allowed=false
+if [[ "$ntfs_3g_present" == true ]]; then
+  ntfs3g_raw="$(/usr/bin/perl -e 'alarm shift; exec @ARGV' 3 "$bundled_ntfs3g" --version 2>&1 || true)"
+  if [[ -z "$(trim "$ntfs3g_raw")" ]]; then
+    ntfs3g_raw="$(/usr/bin/perl -e 'alarm shift; exec @ARGV' 3 "$bundled_ntfs3g" -V 2>&1 || true)"
+  fi
+  ntfs3g_raw="$(oneline "$ntfs3g_raw")"
+  parsed="$(ntfs3g_parse_version "$ntfs3g_raw")"
+  if [[ -n "$parsed" ]]; then
+    ntfs3g_ver="$parsed"
+  fi
+  if ntfs3g_version_allowed "$ntfs3g_ver"; then
+    ntfs3g_allowed=true
+  fi
+fi
+ntfs3g_h="$(ntfs3g_human_line "$ntfs_3g_present" "$ntfs3g_ver" "$ntfs3g_allowed")"
+
+bundled_ntfsfix=""
+for cand in \
+  "$ROOT/runtime/ntfsfix" \
+  "$APP_BUNDLE/Contents/MacOS/ntfsfix"
+do
+  if [[ -x "$cand" ]]; then
+    bundled_ntfsfix="$cand"
+    break
+  fi
+done
+ntfsfix_present=false
+[[ -n "$bundled_ntfsfix" ]] && ntfsfix_present=true
+
 # --- helper socket ping（存在才连；校验失败说明守护进程活着。不触发安装） ---
 socket_exists=false
 [[ -e "$SOCK" || -S "$SOCK" ]] && socket_exists=true
@@ -195,6 +297,68 @@ PY
     ping_result="connect_failed: $ping_err"
   else
     ping_result="connect_failed: unknown"
+  fi
+fi
+
+# --- 可选冲突探测（macFUSE 不是依赖；缺 brew 也正常） ---
+brew_macfuse="brew_missing"
+brew_bin=""
+for b in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+  if [[ -x "$b" ]]; then
+    brew_bin="$b"
+    break
+  fi
+done
+if [[ -n "$brew_bin" ]]; then
+  if "$brew_bin" list macfuse >/dev/null 2>&1; then
+    brew_macfuse="present"
+  else
+    brew_macfuse="absent"
+  fi
+fi
+
+kext_macfuse="unavailable"
+if [[ -x /usr/sbin/kextstat ]]; then
+  kext_out="$(timeout_run 3 /usr/sbin/kextstat || true)"
+  if printf '%s' "$kext_out" | /usr/bin/grep -qiE 'macfuse|osxfuse'; then
+    kext_macfuse="present"
+  else
+    kext_macfuse="absent"
+  fi
+fi
+
+sysext_macfuse="unavailable"
+sysext_raw=""
+if [[ -x /usr/bin/systemextensionsctl ]]; then
+  sysext_raw="$(timeout_run 5 /usr/bin/systemextensionsctl list || true)"
+  sysext_raw="$(oneline "$sysext_raw")"
+  if printf '%s' "$sysext_raw" | /usr/bin/grep -qiE 'macfuse|osxfuse'; then
+    sysext_macfuse="present"
+  elif [[ -n "$sysext_raw" ]]; then
+    sysext_macfuse="absent"
+  fi
+fi
+
+# --- Gatekeeper / quarantine / spctl（对已安装或当前包） ---
+gk_target=""
+if [[ -d "$APP_BUNDLE" ]]; then
+  gk_target="$APP_BUNDLE"
+fi
+quarantine=false
+spctl_status="unavailable"
+spctl_detail=""
+if [[ -n "$gk_target" ]]; then
+  q="$(/usr/bin/xattr -p com.apple.quarantine "$gk_target" 2>/dev/null || true)"
+  [[ -n "$q" ]] && quarantine=true
+  spctl_detail="$(timeout_run 5 /usr/sbin/spctl --assess --type execute -vv "$gk_target" || true)"
+  spctl_detail="$(oneline "$spctl_detail")"
+  spctl_l="$(printf '%s' "$spctl_detail" | /usr/bin/tr '[:upper:]' '[:lower:]')"
+  if printf '%s' "$spctl_l" | /usr/bin/grep -q 'notarized'; then
+    spctl_status="notarized"
+  elif printf '%s' "$spctl_l" | /usr/bin/grep -q 'rejected'; then
+    spctl_status="rejected"
+  elif printf '%s' "$spctl_l" | /usr/bin/grep -q 'accepted'; then
+    spctl_status="accepted"
   fi
 fi
 
@@ -419,19 +583,22 @@ bitlocker_note="macOS diskutil cannot reliably confirm BitLocker without Windows
 
 fuse_t_json="$(json_obj "{\"system_app\":$system_app,\"system_bin_dir\":$(json_str "$FUSE_T_BIN"),\"system_go_nfsv4\":$(json_str "$system_go"),\"system_version\":$(json_str "$system_fuse_ver"),\"bundled_go_nfsv4\":$(json_str "$bundled_go"),\"bundled_present\":$bundled_present,\"pinned_version\":$(json_str "$pinned_fuse_t")}")"
 helper_json="$(json_obj "{\"socket_path\":$(json_str "$SOCK"),\"socket_exists\":$socket_exists,\"daemon_plist_exists\":$plist_exists,\"helperd_exists\":$helperd_exists,\"bundled_helper_version\":$(json_str "$helper_version"),\"ping\":$(json_str "$ping_result")}")"
+runtime_json="$(json_obj "{\"ntfs_3g_path\":$(json_str "$bundled_ntfs3g"),\"ntfs_3g_present\":$ntfs_3g_present,\"ntfs_3g_version\":$(json_str "$ntfs3g_ver"),\"ntfs_3g_raw\":$(json_str "$ntfs3g_raw"),\"ntfs_3g_allowed\":$ntfs3g_allowed,\"ntfs_3g_allow_list\":$(json_str "$NTFS3G_ALLOW_LIST"),\"pinned_ntfs_3g\":$(json_str "$pinned_ntfs3g"),\"ntfsfix_path\":$(json_str "$bundled_ntfsfix"),\"ntfsfix_present\":$ntfsfix_present,\"go_nfsv4_path\":$(json_str "$bundled_go"),\"go_nfsv4_present\":$bundled_present,\"pinned_fuse_t\":$(json_str "$pinned_fuse_t")}")"
+conflicts_json="$(json_obj "{\"brew_macfuse\":$(json_str "$brew_macfuse"),\"kext_macfuse\":$(json_str "$kext_macfuse"),\"systemextensions_macfuse\":$(json_str "$sysext_macfuse"),\"note\":$(json_str "macFUSE is not required; present kext/formula may interfere with FUSE-T.")}")"
+gatekeeper_json="$(json_obj "{\"target\":$(json_str "$gk_target"),\"quarantine\":$quarantine,\"spctl\":$(json_str "$spctl_status"),\"spctl_detail\":$(json_str "$spctl_detail")}")"
 vmnet_json="$(json_obj "{\"status\":$(json_str "$vmnet_status"),\"interfaces\":$vmnet_ifaces_json,\"launchctl\":$lc_json,\"note\":$(json_str "$vmnet_note")}")"
 nfs_json="$(json_obj "{\"nfsd_enabled\":$nfsd_enabled,\"nfsd_running\":$nfsd_running,\"nfsd_status\":$(json_str "$nfsd_out_line"),\"nfsstat\":$(json_str "$nfsstat_line"),\"showmount\":$(json_str "$showmount_line"),\"go_nfsv4_processes\":$go_procs_json,\"localhost_listeners\":$listen_json,\"note\":$(json_str "$nfs_note")}")"
 bitlocker_json="$(json_obj "{\"status\":$(json_str "$bl_status"),\"volumes\":$bl_json,\"note\":$(json_str "$bitlocker_note")}")"
 
 if [[ "$JSON" -eq 1 ]]; then
   /usr/bin/python3 -c 'import json,sys
-keys=["schema_version","app_version","installed_app_version","macos_product_name","macos_version","macos_build","hw_model","arch","apple_silicon","chip","fuse_t","helper","vmnet","nfs","mounts","bitlocker"]
+keys=["schema_version","app_version","installed_app_version","macos_product_name","macos_version","macos_build","hw_model","arch","apple_silicon","chip","fuse_t","helper","runtime","conflicts","gatekeeper","vmnet","nfs","mounts","bitlocker"]
 vals=sys.argv[1:]
-obj={"schema_version":1}
+obj={"schema_version":2}
 for k,v in zip(keys[1:], vals):
     if k in ("apple_silicon",):
         obj[k] = (v == "true")
-    elif k in ("fuse_t","helper","vmnet","nfs","bitlocker") or k=="mounts":
+    elif k in ("fuse_t","helper","runtime","conflicts","gatekeeper","vmnet","nfs","bitlocker") or k=="mounts":
         obj[k] = json.loads(v) if v else None
     else:
         obj[k] = v
@@ -448,6 +615,9 @@ print()' \
     "$chip" \
     "$fuse_t_json" \
     "$helper_json" \
+    "$runtime_json" \
+    "$conflicts_json" \
+    "$gatekeeper_json" \
     "$vmnet_json" \
     "$nfs_json" \
     "$mounts_json" \
@@ -503,12 +673,31 @@ if [[ -n "$system_go" ]]; then
 else
   fuse_h="${fuse_h}；系统 FUSE-T: 未安装（应用不要求）"
 fi
+fuse_h="${fuse_h}；钉死 ${pinned_fuse_t}"
+
+runtime_h="ntfs-3g: "
+if [[ "$ntfs_3g_present" == true ]]; then
+  runtime_h="${runtime_h}有（${bundled_ntfs3g}）"
+else
+  runtime_h="${runtime_h}无"
+fi
+runtime_h="${runtime_h}；ntfsfix: "
+if [[ "$ntfsfix_present" == true ]]; then
+  runtime_h="${runtime_h}有（${bundled_ntfsfix}）"
+else
+  runtime_h="${runtime_h}无"
+fi
+
+conflict_h="brew=${brew_macfuse} kext=${kext_macfuse} sysext=${sysext_macfuse}（本应用不需要 macFUSE；kext 存在可能干扰）"
+gk_h="quarantine=${quarantine} spctl=${spctl_status}"
 
 cat <<EOF
 NTFSMount 诊断（只读，app ${app_version}）
 
 • macOS 版本: ${macos_product} ${macos_version} (${macos_build})
 • Apple Silicon 型号: ${silicon_h}
+• 捆绑 ntfs-3g / ntfsfix: ${runtime_h}
+• 驱动版本校验: ${ntfs3g_h}
 • vmnet 是否正常: ${vmnet_h}
 • NFS 服务状态: ${nfs_h}
 • 挂载点占用情况:
@@ -517,6 +706,8 @@ ${mounts_human}• BitLocker 状态: ${bl_human}
 助手: ${helper_h}
 捆绑 HELPER_VERSION=${helper_version}
 FUSE-T / go-nfsv4: ${fuse_h}
+macFUSE 冲突探测: ${conflict_h}
+Gatekeeper: ${gk_h}
 
 提交 Bug 或给 CI 收日志请附上本输出；机器可读: ./scripts/ntfsmount diagnose --json
 EOF

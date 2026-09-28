@@ -43,9 +43,9 @@ public struct NTFSVolume: Identifiable, Equatable, Sendable {
   }
 
   public var stateLabel: String {
-    if isWritableFuse { return "可写" }
-    if isReadOnlyMounted { return "系统只读" }
-    return "未挂载"
+    if isWritableFuse { return L10n.t("volume.stateWritable") }
+    if isReadOnlyMounted { return L10n.t("volume.stateRoSystem") }
+    return L10n.t("volume.stateUnmounted")
   }
 
   public var hasUsage: Bool {

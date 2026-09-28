@@ -269,6 +269,9 @@ Homebrew：
 
 [[ -f "$SUMS" ]] || die "缺少 $SUMS"
 
+# shellcheck source=ntfs3g-version.sh
+. "$ROOT/scripts/ntfs3g-version.sh"
+
 check_build_deps
 obtain_fuse_t
 obtain_ntfs3g
@@ -293,8 +296,23 @@ fi
 
 /bin/cp -f "$WORK/go-nfsv4" "$WORK/libfuse.2.dylib" "$WORK/ntfs-3g" "$WORK/mkntfs" "$WORK/ntfsfix" "$WORK/libntfs-3g.90.dylib" "$RUNTIME/"
 /bin/chmod 755 "$RUNTIME/go-nfsv4" "$RUNTIME/libfuse.2.dylib" "$RUNTIME/ntfs-3g" "$RUNTIME/mkntfs" "$RUNTIME/ntfsfix" "$RUNTIME/libntfs-3g.90.dylib"
-"$RUNTIME/ntfs-3g" --version
+ntfs3g_out="$("$RUNTIME/ntfs-3g" --version 2>&1 || true)"
+echo "$ntfs3g_out"
 "$RUNTIME/mkntfs" --version
 "$RUNTIME/ntfsfix" --version
+ntfs3g_ver="$(ntfs3g_parse_version "$ntfs3g_out")"
+pin="$(/usr/bin/awk '/^ntfs-3g[[:space:]]/{print $2; exit}' "$ROOT/runtime/versions.txt" 2>/dev/null || true)"
+pin="${pin:-$NTFS3G_PINNED}"
+if ! ntfs3g_version_allowed "$ntfs3g_ver"; then
+  cat <<EOF >&2
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+warning: 捆绑 ntfs-3g 版本 ${ntfs3g_ver:-unknown} 不在允许列表（${NTFS3G_ALLOW_HUMAN}）。
+未知版本有写入风险。请改用已测试版本，或审核后更新 runtime/versions.txt 与 Ntfs3gVersion.swift。
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+EOF
+fi
+if [[ -n "$pin" && -n "$ntfs3g_ver" && "$ntfs3g_ver" != "$pin" ]]; then
+  echo "warning: 下载到的 ntfs-3g ${ntfs3g_ver} 与 runtime/versions.txt 钉死的 ${pin} 不一致。请更新 versions.txt 后再当作新钉死版本，不要静默越过。" >&2
+fi
 echo "runtime ready (SHA256 verified against $SUMS):"
 /bin/ls -lh "$RUNTIME/go-nfsv4" "$RUNTIME/ntfs-3g" "$RUNTIME/mkntfs" "$RUNTIME/ntfsfix" "$RUNTIME/libfuse.2.dylib" "$RUNTIME/libntfs-3g.90.dylib"

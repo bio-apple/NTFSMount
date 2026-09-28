@@ -1,0 +1,478 @@
+/* NTFSMount Localizable */
+
+"ok" = "OK";
+
+"ok.gotIt" = "OK";
+
+"cancel" = "キャンセル";
+
+"quit" = "終了";
+
+"later" = "後で";
+
+"retry" = "再試行";
+
+"installing" = "インストール中…";
+
+"app.productName" = "NTFS 読み書き";
+
+"onboarding.title" = "ご使用の前に確認してください";
+
+"onboarding.agree" = "同意して続ける";
+
+"onboarding.quit" = "終了";
+
+"onboarding.body" = "1. NTFS を書き込み可能でマウントしたりフォーマットしたりすると、データが破損する可能性があります。先にバックアップしてください。
+2. 同梱の FUSE-T go-nfsv4 は GPL ではなく、既定では個人利用向けです。製品として配布または販売する前に、FUSE-T（https://www.fuse-t.org/）から書面の許可を得てください。本パッケージは現時点で再配布可能な製品ではありません。
+3. 既定ではネットワークを使わず、アカウントも収集しません。設定の「更新を自動確認」または「更新を確認…」を使うと、GitHub 上の Sparkle appcast（pre-release v1.2.0、GitHub Latest ではない）に接続します。ディスク内容は送信しません。ログはこの Mac にだけ書き込まれます。アプリをアンインストールしてもログファイルはユーザフォルダに残ります。
+4. マウントヘルパーは root デーモンとして動作し、外付けディスクのマウント、アンマウント、フォーマットができます。インストール時に入力した管理者パスワードは保存されません。
+
+初回はウィンドウで「インストール…」を押してマウントヘルパーを入れてください。未公証ビルドは管理者パスワードを求めます。公証済みビルドはシステムサービスの承認を優先します。
+
+Return で同意します。同意しない場合は「終了」を押してください。";
+
+"onboarding.gatekeeperTitle" = "未公証ビルド";
+
+"onboarding.gatekeeperBody" = "このビルドは公証されていません。開発元を確認できないと表示されることがあります。Control キーを押しながらアプリをクリックして「開く」。または「システム設定 → プライバシーとセキュリティ」で「このまま開く」を選んでください。\n隔離属性を外すターミナルコマンドは README のトラブルシューティングにあります。内容を理解せずに実行しないでください。";
+
+"writable.title" = "書き込み可能でマウントしますか？";
+
+"writable.body" = "サードパーティのドライバで NTFS に書き込むと、ボリューム上のファイルが破損する可能性があります。重要なデータをバックアップ済みか確認してください。この確認は一度だけ表示されます。";
+
+"writable.continue" = "バックアップ済み、続ける";
+
+"menu.openWindow" = "ウィンドウを開く";
+
+"menu.installHelper" = "マウントヘルパーをインストール…";
+
+"menu.updateHelper" = "マウントヘルパーを更新…";
+
+"menu.noNTFS" = "NTFS ディスクが見つかりません";
+
+"menu.insertHint" = "Windows 形式の外付けディスクを接続してからメニューを開いてください";
+
+"menu.formatOtherHint" = "ウィンドウの「NTFS にフォーマット」で他の外付けディスクを NTFS にできます";
+
+"menu.encryptedLine" = "%@：暗号化の可能性あり。書き込み／フォーマットしないでください";
+
+"menu.fixDirty" = "ダーティボリュームの修復を試す…";
+
+"menu.mountWritable" = "書き込み可能でマウント";
+
+"menu.mountWritableInternal" = "書き込み可能でマウント（内蔵ディスク、確認が必要）";
+
+"menu.openFinder" = "Finder で開く";
+
+"menu.unmount" = "アンマウント";
+
+"menu.eject" = "取り出す（抜いても安全）";
+
+"menu.formatNTFS" = "NTFS にフォーマット…";
+
+"menu.mountAll" = "すべて書き込み可能でマウント";
+
+"menu.refresh" = "更新";
+
+"menu.settings" = "設定…";
+
+"menu.quitApp" = "NTFS 読み書きを終了";
+
+"menu.mountAllHelp" = "すべての外付け NTFS をマウント";
+
+"menu.needHelper" = "先にマウントヘルパーをインストールしてください";
+
+"menu.eraseWholeDisk" = "ディスク全体を消去します";
+
+"menu.formatItem" = "%@  ·  %@  ·  %@";
+
+"help.unmount" = "このアプリの書き込み可能マウントを解除します。ディスクは接続されたままです。抜く前は「取り出す」を使ってください。";
+
+"help.eject" = "取り出すと先にアンマウントしてからディスクを排出します。Finder から消えてから抜いてください。";
+
+"window.devices" = "デバイス";
+
+"window.noNTFS" = "NTFS ディスクなし";
+
+"window.refresh" = "更新";
+
+"window.refreshHelp" = "ディスク一覧を更新";
+
+"window.viewLog" = "ログを表示";
+
+"window.viewLogHelp" = "この Mac のマウントログを開く";
+
+"window.about" = "このアプリについて";
+
+"window.settings" = "設定";
+
+"window.firstInstall" = "初回はマウントヘルパーのインストールが必要です。";
+
+"window.helperUpdate" = "すべての機能を使うにはマウントヘルパーの更新が必要です。";
+
+"window.update" = "更新…";
+
+"window.emptyTitle" = "NTFS ディスクが見つかりません";
+
+"window.emptySubtitle" = "Windows 形式の外付けディスクを接続すると左側に表示されます。";
+
+"window.encryptedLine" = "%@（%@）：%@";
+
+"window.otherDisks" = "他の外付けディスクを NTFS にフォーマットできます：";
+
+"window.formatNamed" = "NTFS にフォーマット…  %@  ·  %@  ·  %@";
+
+"window.capacity" = "容量";
+
+"window.filesystem" = "ファイルシステム";
+
+"window.used" = "使用済み %@";
+
+"window.available" = "空き %@";
+
+"status.busy" = "処理中";
+
+"status.writable" = "書き込み可";
+
+"status.roSystem" = "読み取り専用 · システム NTFS";
+
+"status.roDirty" = "読み取り専用 · 休止／不正シャットダウン";
+
+"status.unmounted" = "未マウント";
+
+"status.detailWritable" = "マウント済み（読み書き可）";
+
+"status.detailDirty" = "マウント済み（読み取り専用）：Windows の休止またはダーティボリュームです。先に Windows を完全にシャットダウンしてください";
+
+"status.detailRoSystem" = "マウント済み（読み取り専用）：システム NTFS ドライバです。ボリュームがクリーンなら下で書き込み可能に切り替えられます";
+
+"volume.stateWritable" = "書き込み可";
+
+"volume.stateRoSystem" = "システム読み取り専用";
+
+"volume.stateUnmounted" = "未マウント";
+
+"format.cancel" = "キャンセル";
+
+"format.action" = "消去してフォーマット";
+
+"format.confirmTitle" = "「%@」を消去して NTFS にフォーマットしますか？";
+
+"format.confirmExtra" = "ディスク上のすべてのファイルが削除され、元に戻せません。\n下の「現在の名前を入力」に「%@」をそのまま入力してください。「新しいボリューム名」はフォーマット後の名前です。";
+
+"format.nameMismatch" = "名前が一致しないため消去しませんでした";
+
+"format.finalTitle" = "最終確認：このディスクを消去しますか？";
+
+"format.identitySize" = "容量：%@";
+
+"format.identityDevice" = "デバイス：%@";
+
+"format.identityMedia" = "メディア：%@";
+
+"format.identitySerial" = "シリアル番号：%@";
+
+"format.unknown" = "不明";
+
+"format.identityFS" = "現在の形式：%@";
+
+"format.finalWarning" = "「%@」· %@ · %@\nシリアル番号：%@\nこのディスク上のすべてのファイルが完全に削除されます。";
+
+"format.currentName" = "現在の名前を入力：";
+
+"format.currentPlaceholder" = "説明の現在のボリューム名と完全に一致させる必要があります";
+
+"format.newName" = "新しいボリューム名：";
+
+"format.unformatted" = "未フォーマット";
+
+"encrypted.message" = "暗号化の可能性あり。書き込み／フォーマットしないでください。macOS は BitLocker を確認できません。手がかりがないことは陰性証明ではありません。";
+
+"settings.title" = "設定";
+
+"settings.mount" = "マウント";
+
+"settings.autoMount" = "接続時に外付け NTFS を自動マウント";
+
+"settings.autoMountNote" = "ヘルパーのインストール、条項への同意、書き込みリスクの確認が済むまで既定はオフです。内蔵ディスクと Boot Camp は自動マウントしません。自動マウントは v1.2.0 の売りではありません（Issue #1）。";
+
+"settings.appearance" = "外観と起動";
+
+"settings.launchAtLogin" = "ログイン時に開く";
+
+"settings.showDock" = "Dock に表示";
+
+"settings.followsSystemLanguage" = "界面はシステム言語に従います";
+
+"settings.helper" = "マウントヘルパー";
+
+"settings.install" = "インストール…";
+
+"settings.update" = "更新…";
+
+"settings.uninstall" = "ヘルパーをアンインストール…";
+
+"settings.compat" = "互換性";
+
+"settings.log" = "ログ";
+
+"settings.refreshLog" = "ログを更新";
+
+"settings.openConsole" = "コンソールで開く";
+
+"settings.aboutPrivacy" = "情報とプライバシー";
+
+"settings.aboutLine" = "NTFS 読み書き（NTFSMount）· 直配布、Mac App Store 未掲載。既定ではネットワーク不使用。更新の自動確認や「更新を確認…」を使うと GitHub に接続します。";
+
+"settings.notarized" = "このビルドは公証済みです。";
+
+"settings.signedNotNotarized" = "Developer ID で署名済みですが、まだ公証されていません。Control クリック → 開く。または「システム設定 → プライバシーとセキュリティ」で「このまま開く」。";
+
+"settings.adHoc" = "このビルドは未公証（ad-hoc）です。Gatekeeper にブロックされることがあります。Control クリック → 開く。または「システム設定 → プライバシーとセキュリティ」で「このまま開く」。";
+
+"settings.aboutButton" = "情報とプライバシー…";
+
+"helper.statusMissing" = "未インストールです。初回は「インストール…」を押してください。";
+
+"helper.statusNeedsUpdate" = "すべての機能を使うには更新が必要です。";
+
+"helper.statusLegacy" = "旧来の sudo 規則が残っています。署名ピン留めに切り替えるためヘルパーを更新してください。";
+
+"helper.statusOK" = "インストール済みです。特権呼び出しはデーモンがこのアプリの署名を検証します。";
+
+"helper.hintNotarized" = "公証済み：システムサービスの承認を優先し、失敗時は管理者パスワードを求めます。";
+
+"helper.hintAdHoc" = "未公証パッケージではシステムサービスを安定して使えないため、ヘルパーのインストールで管理者パスワードが必要です。";
+
+"helper.privilegeHint" = "マウントヘルパーは root で動作し、外付けディスクのマウント、アンマウント、フォーマットができます。管理者パスワードは一度きりのインストールにだけ使い、保存しません。Unix socket の権限は 0666 で、このアプリが一般ユーザとして接続できます。デーモンはインストール時に書いた CDHash で呼び出し元を検証し、/Library/Application Support/NTFSMount/ にある root 所有のヘルパーだけを実行します。sudoers は書きません。アンインストール：上の「ヘルパーをアンインストール」、またはリポジトリの uninstall.sh。ログは ~/Library/Logs/ntfsmount.log にあり、アンインストール後もこの Mac に残ります。";
+
+"alert.updateHelperTitle" = "マウントヘルパーを更新";
+
+"alert.updateHelperBody" = "フォーマットや接続時の自動マウントなど新機能を使うには更新が必要です。管理者パスワードを一度求めます。";
+
+"alert.update" = "更新";
+
+"alert.mountFailed" = "マウントに失敗";
+
+"alert.kextBody" = "macOS 13 以降で FSKit／カーネル拡張が使えないのは想定どおりで、無視して構いません。このアプリはカーネル拡張を使いません。ヘルパーは NFS／ユーザ空間 FUSE を優先します。kext を入れないでください。\n\n%@";
+
+"alert.uninstallTitle" = "マウントヘルパーをアンインストールしますか？";
+
+"alert.uninstallBody" = "特権デーモンと接続時の自動マウントを削除します。アプリは「アプリケーション」に残ります。";
+
+"alert.uninstall" = "ヘルパーをアンインストール";
+
+"about.body" = "直配布です。Mac App Store にはありません。\n\nプライバシー：既定ではネットワーク不使用。アカウントや連絡先は収集しません。「更新を自動確認」または「更新を確認…」を使うと GitHub（Sparkle appcast、Latest ではない）に接続します。ログはこの Mac にだけ書き込まれます：\n%@\nアプリをアンインストールしてもこのログは残ります。\n\nソースとライセンス：%@\nntfs-3g / mkntfs（GPL-2.0）と FUSE-T の go-nfsv4 を同梱しています。go-nfsv4 は個人利用向けです。製品として配布するには FUSE-T の許可が必要です。\n\nNTFS への書き込みはデータを破損するリスクがあります。先にバックアップしてください。\n\n%@";
+
+"about.openSource" = "ソースページを開く";
+
+"about.notarized" = "このビルドは公証済みです。";
+
+"about.unnotarized" = "このビルドは未公証です（Gatekeeper にブロックされることがあります）。Control クリック → 開く。または「システム設定 → プライバシーとセキュリティ」で「このまま開く」。";
+
+"dirty.title" = "ダーティボリュームの修復を試しますか？";
+
+"dirty.body" = "「%@」は正常にシャットダウンされていないか、高速スタートアップのため、ボリュームがダーティとマークされています。\nntfsfix は基本的な修復だけを行い、ディスクに書き込まれていない Windows キャッシュが失われることがあります。先にバックアップしてください。\nWindows の休止ファイルは消しません。休止中のディスクなら、Windows を完全にシャットダウンしてから再試行してください。";
+
+"dirty.fix" = "修復を試す";
+
+"eject.refuseInternal" = "内蔵ディスクは取り出せません。";
+
+"internal.title" = "内蔵ディスクを書き込み可能でマウントしますか？";
+
+"internal.body" = "「%@」は内蔵ディスクにあります。書き込み可能マウントは Windows / Boot Camp 上のデータに影響することがあります。";
+
+"internal.anyway" = "それでもマウント";
+
+"automount.enabled" = "接続時の自動マウントをオンにしました";
+
+"automount.disabled" = "接続時の自動マウントをオフにしました";
+
+"login.failed" = "ログイン時に開くに失敗：%@";
+
+"mount.needHelper" = "書き込み可能でマウントするには、先にマウントヘルパーをインストールしてください。";
+
+"mount.needUpdate" = "先にマウントヘルパーを更新してください。";
+
+"mount.writableHelp" = "書き込み可能でマウントします。先にバックアップしてください。";
+
+"error.empty" = "操作に失敗しました。ログを確認してください。";
+
+"error.canceled" = "キャンセルしました。";
+
+"error.helperInstallFailed" = "ヘルパーのインストールに失敗しました。再試行してください。詳細はログに書き込まれました。";
+
+"error.helperMissing" = "マウントヘルパーが見つかりません。「マウントヘルパーをインストール」を押してください。";
+
+"error.missingGoNfsv4" = "同梱の go-nfsv4 が見つかりません。アプリを再インストールしてください。詳細はログに書き込まれました。";
+
+"error.missingBinary" = "必要なプログラムが見つかりません（ntfs-3g またはマウント部品の欠落の可能性）。アプリを再インストールしてください。詳細はログに書き込まれました。";
+
+"error.adminDenied" = "管理者権限を取得できませんでした。キャンセルした場合は再試行できます。詳細はログに書き込まれました。";
+
+"error.helperNeedsUpdate" = "マウントヘルパーの更新が必要です。ウィンドウで「更新…」を押してください。";
+
+"error.diskBusy" = "ディスク使用中：Finder のウィンドウ／ファイルを閉じてから取り出してください";
+
+"error.failedWithLog" = "操作に失敗しました。詳細は %@ に書き込まれました";
+
+"error.failedLog" = "操作に失敗しました。詳細はログに書き込まれました。";
+
+"privileged.missingHelper" = "アプリパッケージにマウントヘルパーがありません。再インストールしてください。";
+
+"privileged.missingDaemon" = "アプリパッケージに特権デーモンがありません。再インストールしてください。";
+
+"privileged.missingInstallScript" = "アプリパッケージにインストールスクリプトがありません。再インストールしてください。";
+
+"privileged.installedPassword" = "管理者パスワードで LaunchDaemon をインストールしました（未公証ビルドではこの経路が一般的です）。%@";
+
+"privileged.installedSM" = "システムサービスでマウントヘルパーを登録しました。";
+
+"privileged.missingUninstallScript" = "アプリパッケージにアンインストールスクリプトがありません。";
+
+"privileged.mismatch" = "マウントヘルパーがこのアプリと一致しないため実行しませんでした。先に「マウントヘルパーを更新」を押してください。";
+
+"privileged.notFound" = "マウントヘルパーが見つかりません。「マウントヘルパーをインストール」を押してください。";
+
+"privileged.commFailed" = "マウントヘルパーと通信できませんでした。";
+
+"privileged.timeout" = "マウントヘルパーがタイムアウトしました。ログを確認して再試行してください。";
+
+"privileged.noResponse" = "マウントヘルパーが応答しません。先にヘルパーをインストールまたは更新してください。";
+
+"platform.cannotRun" = "%@ を実行できません";
+
+"platform.noIntel" = "Intel Mac（x86_64）は非対応です。Apple Silicon（M チップ）が必要です。";
+
+"platform.needOS" = "macOS 13.0 以降が必要です";
+
+"compat.belowMin" = "このアプリは Apple Silicon（M チップ）と macOS 13.0 以降のみ対応で、Intel Mac（x86_64）は非対応です。このシステムは macOS 13 未満で未検証のため、マウントに失敗する可能性があります。";
+
+"compat.ok" = "Apple Silicon（M チップ）と macOS 13.0 以降のみ対応。Intel Mac（x86_64）は非対応です。このアプリはカーネル拡張を使いません。macOS 13 Ventura 以降は kext の制限が厳しいため、ユーザ空間 FUSE（ntfs-3g + FUSE-T）を使います。FSKit／モジュールが無効と出ても無視してください。ヘルパーはすでに NFS／ユーザ空間経路を優先します。カーネル拡張を入れないでください。";
+
+"log.empty" = "まだログはありません。マウントまたはフォーマット後に表示されます：%@";
+/* diagnose / premount / ntfs3g */
+
+"menu.diagnose" = "環境診断…";
+
+"diagnose.alertTitle" = "環境診断";
+
+"diagnose.copy" = "結果をコピー";
+
+"diagnose.openLog" = "ログを開く";
+
+"diagnose.header" = "NTFS 読み書き · 環境診断（読み取り専用。マウントもヘルパー導入もしません）";
+
+"diagnose.fuseTNote" = "このアプリは同梱の FUSE-T go-nfsv4 + ntfs-3g を使い、macFUSE のインストールは不要です。";
+
+"diagnose.notAppleSilicon" = "Apple Silicon ではありません（%@）。このアプリは Intel 非対応です";
+
+"diagnose.needMacOS" = "%@（macOS %d+ が必要）";
+
+"diagnose.appleSiliconOK" = "Apple Silicon · %@";
+
+"diagnose.runtimeOK" = "同梱の ntfs-3g / ntfsfix / go-nfsv4 はすべてあります";
+
+"diagnose.runtimeMissing" = "同梱の %@ がありません（アプリを再インストール。Homebrew ntfs-3g-mac は不要）";
+
+"diagnose.fuseOK" = "同梱 go-nfsv4（FUSE-T %@ を固定）";
+
+"diagnose.fusePath" = "：%@";
+
+"diagnose.fuseSysUnused" = "；システムの FUSE-T %@ は使っていません";
+
+"diagnose.fuseMissing" = "同梱 go-nfsv4 がありません（FUSE-T %@ 固定。macFUSE のインストールは不要）";
+
+"diagnose.helperMissing" = "ヘルパー未インストール（socket なし。この診断ではインストールしません）";
+
+"diagnose.helperAliveRejected" = "ヘルパー socket あり。デーモンは稼働中（署名検証の拒否は想定どおり）";
+
+"diagnose.helperAlive" = "ヘルパー socket に接続できます（%@）";
+
+"diagnose.helperConnectFailed" = "ヘルパー socket はあるが接続できません（%@。この診断ではインストールしません）";
+
+"diagnose.helperPing" = "ヘルパー socket あり、ping: %@";
+
+"diagnose.sysext" = "システム拡張";
+
+"diagnose.conflict" = "%@ を検出（FUSE-T を妨げる可能性。このアプリに macFUSE は不要）";
+
+"diagnose.noMacFuseBrew" = "macFUSE kext は未検出（Homebrew がなくても正常。このアプリに macFUSE は不要）";
+
+"diagnose.noMacFuse" = "macFUSE は未検出（このアプリに macFUSE のインストールは不要）";
+
+"diagnose.quarantine" = "アプリに隔離属性があります（Gatekeeper がブロックする可能性。Control クリックで開く）";
+
+"diagnose.spctlNotarized" = "公証済み";
+
+"diagnose.spctlAccepted" = "実行が許可されています";
+
+"diagnose.spctlRejected" = "評価に失敗";
+
+"diagnose.spctlUnchecked" = "公証未確認";
+
+"diagnose.noQuarantine" = "隔離属性なし · %@";
+
+"diagnose.gatekeeper" = "Gatekeeper：%@";
+
+"settings.diagnoseHint" = "同梱コンポーネントとヘルパーの読み取り専用チェック。マウントもヘルパー導入もしません。このアプリに macFUSE は不要です。";
+
+"premount.dirtyTitle" = "NTFS ボリュームが破損しているか、正常にアンマウントされていません";
+
+"premount.hiberTitle" = "Windows の休止を検出";
+
+"premount.readOnly" = "読み取り専用でマウント";
+
+"premount.fixThenWritable" = "修復してから書き込み可能でマウント";
+
+"premount.probing" = "ディスクの状態を確認しています…";
+
+"premount.dirtyBody" = "「%@」は正常にアンマウントされていないか、NTFS メタデータが破損している可能性があります。\n書き込み可能のまま続けると破損が悪化することがあります。まず読み取り専用で開くことを推奨します。\n「修復してから書き込み可能でマウント」は再確認のあと ntfsfix を実行し、ディスクに書き込まれていない Windows キャッシュが失われることがあります。先にバックアップしてください。\n休止ファイルは消さず、自動修復もフォーマットもしません。";
+
+"premount.hiberBody" = "「%@」はまだ Windows の休止または高速スタートアップ中です。\n休止データを壊さないよう読み取り専用でマウントします。書き込み可能でマウントする前に、Windows を完全にシャットダウンしてください（休止／高速スタートアップは使わない）。\nntfsfix は実行せず、休止ファイルも消しません。";
+
+"ntfs3g.diagnoseMissing" = "同梱の ntfs-3g が見つからず、ドライバ版を確認できません（PATH は検索していません）";
+
+"ntfs3g.mountWarningTitle" = "未テストの ntfs-3g バージョン";
+
+"ntfs3g.continue" = "このまま続ける";
+
+"ntfs3g.settingsChecking" = "同梱 ntfs-3g のバージョンを読み取り中…";
+
+"ntfs3g.allowListCaption" = "テスト済みは 2026.7.7 と 2026.8.x のみです。未知のバージョンはリスクを知らせますが、マウントは止めません。";
+
+"ntfs3g.settingsGroup" = "ドライババージョン";
+
+"ntfs3g.diagnoseAllowed" = "ドライバ ntfs-3g %@（テスト済み。許可 %@）";
+
+"ntfs3g.diagnoseUntested" = "ドライバ ntfs-3g %@ は未テスト（許可 %@）。未知バージョンにはリスクがありますが、マウントは続けられます";
+
+"ntfs3g.settingsAllowed" = "同梱 ntfs-3g %@（テスト済み：%@）";
+
+"ntfs3g.settingsUntested" = "同梱 ntfs-3g %@ は未テスト（許可：%@）。未知バージョンには書き込みリスクがありますが、マウントは続けられます。";
+
+"ntfs3g.mountWarningBody" = "同梱ドライバは ntfs-3g %@ です。テスト済みは %@ のみ。未知バージョンには書き込みリスクがありますが、マウントは続けられます。";
+/* sparkle updates */
+
+"update.menuCheck" = "更新を確認…";
+
+"update.settingsGroup" = "アップデート";
+
+"update.autoCheck" = "更新を自動で確認";
+
+"update.checkNow" = "更新を確認…";
+
+"update.autoCheckNote" = "既定はオフです。オンにするまでネットワークは使いません。オンにすると GitHub 上の Sparkle appcast を定期的に問い合わせます（現在は pre-release v1.2.0 の資産で、GitHub Latest ではありません）。更新が見つかればワンクリックでインストールでき、サイレントインストールはしません。このビルドは ad-hoc で未公証です。更新の信頼は Sparkle の EdDSA 署名であり、Developer ID ではありません。";
+
+"update.settingsAboutLine" = "NTFS 読み書き（NTFSMount）· 直配布、Mac App Store 未掲載。既定はネットワーク不使用。「更新を自動で確認」または「更新を確認…」で GitHub にアクセスします。";
+
+"update.aboutPrivacy" = "直配布です。Mac App Store にはありません。\n\nプライバシー：既定はネットワーク不使用。アカウントや連絡先は収集しません。「更新を自動で確認」または「更新を確認…」を開くと GitHub にアクセスします（Sparkle appcast。Latest ではありません）。ログはこの Mac にだけ書き込まれます：\n%@\nアプリをアンインストールしてもこのログは残ります。\n\nソースとライセンス：%@\nntfs-3g / mkntfs（GPL-2.0）と FUSE-T の go-nfsv4 を同梱しています。go-nfsv4 は個人利用向けです。製品として配布するには FUSE-T の許可が必要です。アップデータは Sparkle（MIT）です。\n\nNTFS への書き込みはデータを破損するリスクがあります。先にバックアップしてください。\n\n%@";
+
+"menu.checkForUpdates" = "更新を確認…";
+
+"settings.updates" = "更新";
+
+"settings.autoCheckUpdates" = "更新を自動確認";
+
+"settings.checkNow" = "更新を確認…";
+
+"settings.autoCheckUpdatesNote" = "既定はオフです。オンにするまで更新のためにネットワークを使いません。オンにすると GitHub の Sparkle appcast（pre-release v1.2.0、GitHub Latest ではない）を定期的に確認します。更新はワンクリックで、サイレントインストールしません。現在のビルドは ad-hoc で未公証です。更新の信頼は Sparkle EdDSA であり、Developer ID ではありません。";

@@ -85,7 +85,7 @@ macFUSE 依赖内核扩展，本项目不改用。在取得可再分发的用户
 
 ## 3. 特权模型
 
-优先用 macOS 13+ 的 `SMAppService.daemon` 注册 `Contents/Library/LaunchDaemons/com.bioapple.ntfsmount.helper.plist`（**已公证且 Developer ID 签名**时才稳定）。**ad-hoc / 未公证包上 `SMAppService` 通常失败**，回退为管理员密码安装同一 LaunchDaemon。守护进程经 Unix socket 调用应用包内的 `ntfs-rw-helper`，并用调用方 **CDHash + bundle id + 可执行路径** 钉扎。
+优先用 macOS 13+ 的 `SMAppService.daemon` 注册 `Contents/Library/LaunchDaemons/com.bioapple.ntfsmount.helper.plist`（**已公证且 Developer ID 签名**时才稳定）。**ad-hoc / 未公证包上 `SMAppService` 通常失败**，回退为管理员密码安装同一 LaunchDaemon。守护进程经 Unix socket 只执行 `/Library/Application Support/NTFSMount/ntfs-rw-helper`（root:wheel 755 副本），并用 `SecCodeCheckValidity` / `SecStaticCodeCheckValidity` 加上**安装时写入的** `allowed.cdhash` 钉扎调用方，不只对照现场 `.app` 的 CDHash。
 
 **不会**写入 `/etc/sudoers.d`。安装/更新/卸载都会删除旧版 `/etc/sudoers.d/ntfs-rw` 和 `/usr/local/sbin/ntfs-rw-helper`。仓库里已删除会写 NOPASSWD 的 `scripts/repair-and-mount.sh`。
 
@@ -107,3 +107,13 @@ shasum -a 256 NTFSMount.dmg
 ```
 
 CI 在 `release: published` 时若 Release 已有 `NTFSMount.dmg` 但没有 sidecar，会补传 `.sha256` 并把哈希写入正文。打 `v*` tag 的 job 会自己附上 DMG 与 sidecar。
+
+## 5. Sparkle 更新
+
+自动更新用 Sparkle EdDSA 签 DMG / appcast，**不是**用 GitHub Releases Atom，也**不要**把 feed 指到 GitHub Latest（FUSE-T 仍为个人使用预发布时）。
+
+- Feed：`https://github.com/bio-apple/NTFSMount/releases/download/v1.2.0/appcast.xml`
+- 设置「自动检查更新」默认关闭；菜单「检查更新…」始终可用
+- 当前构建为 ad-hoc 时，更新信任只来自 Sparkle EdDSA，不要写成已公证更新
+- 密钥与 `generate_appcast` 步骤：[docs/SPARKLE.md](./SPARKLE.md)
+

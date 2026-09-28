@@ -11,7 +11,7 @@ final class MainWindowController: NSObject, NSWindowDelegate {
     if window == nil {
       let hosting = NSHostingController(rootView: MainWindowView(store: store))
       let win = NSWindow(contentViewController: hosting)
-      win.title = "NTFS 读写"
+      win.title = L10n.t("app.productName")
       win.styleMask = [.titled, .closable, .miniaturizable, .resizable]
       win.toolbarStyle = .unified
       win.setContentSize(NSSize(width: 840, height: 540))
@@ -92,23 +92,23 @@ struct MainWindowView: View {
         Button {
           store.refresh()
         } label: {
-          Label("刷新", systemImage: "arrow.clockwise")
+          Label(L10n.t("window.refresh"), systemImage: "arrow.clockwise")
         }
-        .help("刷新磁盘列表")
+        .help(L10n.t("window.refreshHelp"))
       }
       ToolbarItem(placement: .automatic) {
         Button {
           LogViewer.open()
         } label: {
-          Label("查看日志", systemImage: "doc.text")
+          Label(L10n.t("window.viewLog"), systemImage: "doc.text")
         }
-        .help("打开本机挂载日志")
+        .help(L10n.t("window.viewLogHelp"))
       }
       ToolbarItem(placement: .automatic) {
         Button {
           store.showAbout()
         } label: {
-          Label("关于", systemImage: "info.circle")
+          Label(L10n.t("window.about"), systemImage: "info.circle")
         }
       }
     }
@@ -116,9 +116,9 @@ struct MainWindowView: View {
 
   private var sidebar: some View {
     List(selection: $selectedId) {
-      Section("设备") {
+      Section(L10n.t("window.devices")) {
         if store.volumes.isEmpty {
-          Text("没有 NTFS 磁盘")
+          Text(L10n.t("window.noNTFS"))
             .foregroundStyle(.secondary)
         }
         ForEach(store.volumes) { vol in
@@ -127,12 +127,12 @@ struct MainWindowView: View {
         }
       }
       Section {
-        Label("设置", systemImage: "gearshape")
+        Label(L10n.t("window.settings"), systemImage: "gearshape")
           .tag("__settings__")
       }
     }
     .listStyle(.sidebar)
-    .navigationTitle("NTFS 读写")
+    .navigationTitle(L10n.t("app.productName"))
   }
 
   @ViewBuilder
@@ -184,29 +184,94 @@ private struct VolumeSidebarRow: View {
   }
 }
 
+struct HelperInstallBanner: View {
+  @ObservedObject var store: VolumeStore
+  var text: String
+  var button: String
+  var action: () -> Void
+
+  var body: some View {
+    HStack(spacing: 10) {
+      Image(systemName: "exclamationmark.triangle.fill")
+        .foregroundStyle(Color(nsColor: .systemOrange))
+      Text(store.helperInstallBusy ? L10n.t("installing") : text)
+      Spacer()
+      Button(store.helperInstallBusy ? L10n.t("installing") : button, action: action)
+        .controlSize(.small)
+        .disabled(store.helperInstallBusy)
+    }
+    .padding(.horizontal, 16)
+    .padding(.vertical, 10)
+    .background(Color(nsColor: .controlBackgroundColor))
+  }
+}
+
 private struct EmptyVolumeView: View {
   @ObservedObject var store: VolumeStore
 
   var body: some View {
-    VStack(spacing: 12) {
-      Image(systemName: "externaldrive.badge.questionmark")
-        .font(.system(size: 48))
-        .symbolRenderingMode(.hierarchical)
-        .foregroundStyle(.secondary)
-      Text("没有检测到 NTFS 硬盘")
-        .font(.title3.weight(.semibold))
-      Text(store.formatDisks.isEmpty
-        ? "插入 Windows 格式的移动盘后会出现在左侧。"
-        : "其他移动盘可通过「格式化为 NTFS」转换。设置在左侧底部。")
-        .font(.callout)
-        .foregroundStyle(.secondary)
-        .multilineTextAlignment(.center)
-        .frame(maxWidth: 360)
-      Button("刷新") { store.refresh() }
-        .controlSize(.large)
+    VStack(alignment: .leading, spacing: 0) {
+      if !store.helperInstalled {
+        HelperInstallBanner(
+          store: store,
+          text: L10n.t("window.firstInstall"),
+          button: L10n.t("menu.installHelper"),
+          action: { store.installHelper() }
+        )
+      } else if Privileged.helperNeedsUpdate {
+        HelperInstallBanner(
+          store: store,
+          text: L10n.t("window.helperUpdate"),
+          button: L10n.t("window.update"),
+          action: { store.installHelper() }
+        )
+      }
+
+      VStack(spacing: 12) {
+        Image(systemName: "externaldrive.badge.questionmark")
+          .font(.system(size: 48))
+          .symbolRenderingMode(.hierarchical)
+          .foregroundStyle(.secondary)
+        Text(L10n.t("window.emptyTitle"))
+          .font(.title3.weight(.semibold))
+        Text(L10n.t("window.emptySubtitle"))
+          .font(.callout)
+          .foregroundStyle(.secondary)
+          .multilineTextAlignment(.center)
+          .frame(maxWidth: 360)
+
+        if !store.encryptedDisks.isEmpty {
+          VStack(alignment: .leading, spacing: 6) {
+            ForEach(store.encryptedDisks) { disk in
+              Text(L10n.format("window.encryptedLine", disk.name, disk.id, EncryptedDiskHint.userMessage))
+                .font(.caption)
+                .foregroundStyle(.orange)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+          }
+          .frame(maxWidth: 420)
+        }
+
+        if !store.formatDisks.isEmpty {
+          VStack(alignment: .leading, spacing: 8) {
+            Text(L10n.t("window.otherDisks"))
+              .font(.callout)
+              .foregroundStyle(.secondary)
+            ForEach(store.formatDisks) { disk in
+              Button(L10n.format("window.formatNamed", disk.name, disk.fsHint, disk.sizeLabel)) {
+                store.confirmFormat(disk)
+              }
+              .disabled(store.busyId != nil)
+            }
+          }
+        }
+
+        Button(L10n.t("window.refresh")) { store.refresh() }
+          .controlSize(.large)
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .padding()
     }
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .padding()
   }
 }
 
@@ -222,15 +287,17 @@ private struct VolumeDetailView: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
       if !store.helperInstalled {
-        helperBanner(
-          text: "第一次使用需要安装挂载助手。",
-          button: "安装…",
+        HelperInstallBanner(
+          store: store,
+          text: L10n.t("window.firstInstall"),
+          button: L10n.t("menu.installHelper"),
           action: { store.installHelper() }
         )
       } else if Privileged.helperNeedsUpdate {
-        helperBanner(
-          text: "挂载助手需要更新后才能使用全部功能。",
-          button: "更新…",
+        HelperInstallBanner(
+          store: store,
+          text: L10n.t("window.helperUpdate"),
+          button: L10n.t("window.update"),
           action: { store.installHelper() }
         )
       }
@@ -241,8 +308,8 @@ private struct VolumeDetailView: View {
           CapacityBar(used: vol.usedBytes, free: vol.freeBytes)
         }
         properties
-        if !store.message.isEmpty {
-          Text(store.message)
+        if !store.volumeMessage(vol).isEmpty {
+          Text(store.volumeMessage(vol))
             .font(.callout)
             .foregroundStyle(.secondary)
             .textSelection(.enabled)
@@ -312,13 +379,13 @@ private struct VolumeDetailView: View {
   private var properties: some View {
     Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 20, verticalSpacing: 8) {
       GridRow {
-        Text("容量")
+        Text(L10n.t("window.capacity"))
           .foregroundStyle(.secondary)
           .gridColumnAlignment(.trailing)
         Text(vol.sizeLabel)
       }
       GridRow {
-        Text("文件系统")
+        Text(L10n.t("window.filesystem"))
           .foregroundStyle(.secondary)
           .gridColumnAlignment(.trailing)
         Text("NTFS")
@@ -331,67 +398,76 @@ private struct VolumeDetailView: View {
     VStack(alignment: .leading, spacing: 10) {
       HStack(spacing: 10) {
         if vol.isWritableFuse {
-          Button("卸载") { store.unmount(vol) }
+          Button(L10n.t("menu.unmount")) { store.unmount(vol) }
             .buttonStyle(.bordered)
-          Button("推出（可安全拔出）") { store.eject(vol) }
-            .buttonStyle(.borderedProminent)
-            .disabled(vol.isInternal)
-            .help("先释放 ntfs-3g 再弹出")
+            .help(VolumeActionCopy.unmountHelp)
+          if !vol.isInternal {
+            Button(L10n.t("menu.eject")) { store.eject(vol) }
+              .buttonStyle(.borderedProminent)
+              .help(VolumeActionCopy.ejectHelp)
+          }
         } else {
-          Button("以可写方式挂载") { store.mount(vol) }
+          if store.canOfferDirtyFix(vol) {
+            Button(L10n.t("menu.fixDirty")) { store.confirmDirtyFix(vol) }
+              .buttonStyle(.bordered)
+          }
+          Button(L10n.t("menu.mountWritable")) { store.mount(vol) }
             .buttonStyle(.borderedProminent)
-          Button("推出（可安全拔出）") { store.eject(vol) }
-            .buttonStyle(.bordered)
-            .disabled(vol.isInternal)
-            .help(vol.isInternal ? "内置磁盘不能推出" : "先释放 ntfs-3g 再弹出")
+            .disabled(!store.canMountWritable(vol))
+            .help(store.writableMountHelp(vol))
+          if !vol.isInternal {
+            Button(L10n.t("menu.eject")) { store.eject(vol) }
+              .buttonStyle(.bordered)
+              .help(VolumeActionCopy.ejectHelp)
+          }
         }
 
-        if store.canOfferDirtyFix(vol) {
-          Button("尝试修复脏卷…") { store.confirmDirtyFix(vol) }
+        if store.failedCommand(vol) != nil {
+          Button(L10n.t("retry")) { store.retry(vol) }
             .buttonStyle(.bordered)
         }
 
-        Button("在访达中打开") {
+        Button(L10n.t("menu.openFinder")) {
           NSWorkspace.shared.open(URL(fileURLWithPath: vol.expectedMountPoint))
         }
         .buttonStyle(.bordered)
         .disabled(vol.mountPoint.isEmpty)
       }
       .controlSize(.large)
-      Text("先释放 ntfs-3g 再弹出")
-        .font(.caption)
-        .foregroundStyle(.secondary)
+      if !vol.isInternal {
+        Text(VolumeActionCopy.ejectHelp)
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
+      if !store.canMountWritable(vol), !vol.isWritableFuse {
+        Text(store.writableMountHelp(vol))
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
+      if store.driverVersionUntested {
+        Text(store.driverVersionLine)
+          .font(.caption)
+          .foregroundStyle(.orange)
+          .fixedSize(horizontal: false, vertical: true)
+      }
 
       HStack(spacing: 10) {
-        Button("查看日志") { LogViewer.open() }
+        Button(L10n.t("window.viewLog")) { LogViewer.open() }
           .buttonStyle(.bordered)
-        Button("关于与隐私") { store.showAbout() }
+        Button(L10n.t("settings.aboutPrivacy")) { store.showAbout() }
           .buttonStyle(.bordered)
         Spacer(minLength: 8)
         if let disk = formatDisk {
-          Button("格式化为 NTFS…", role: .destructive) {
+          Button(L10n.t("menu.formatNTFS"), role: .destructive) {
             store.confirmFormat(disk)
           }
           .buttonStyle(.bordered)
+          .help(disk.encryptionWarning ?? L10n.t("menu.eraseWholeDisk"))
         }
       }
       .controlSize(.regular)
     }
     .disabled(busy)
-  }
-
-  private func helperBanner(text: String, button: String, action: @escaping () -> Void) -> some View {
-    HStack(spacing: 10) {
-      Image(systemName: "exclamationmark.triangle.fill")
-        .foregroundStyle(Color(nsColor: .systemOrange))
-      Text(text)
-      Spacer()
-      Button(button, action: action)
-        .controlSize(.small)
-    }
-    .padding(.horizontal, 16)
-    .padding(.vertical, 10)
-    .background(Color(nsColor: .controlBackgroundColor))
   }
 }
 
@@ -414,9 +490,9 @@ private struct CapacityBar: View {
       }
       .frame(height: 11)
       HStack {
-        Text("已用 \(ByteCountFormatter.string(fromByteCount: used, countStyle: .file))")
+        Text(L10n.format("window.used", ByteCountFormatter.string(fromByteCount: used, countStyle: .file)))
         Spacer()
-        Text("可用 \(ByteCountFormatter.string(fromByteCount: free, countStyle: .file))")
+        Text(L10n.format("window.available", ByteCountFormatter.string(fromByteCount: free, countStyle: .file)))
       }
       .font(.caption)
       .foregroundStyle(.secondary)

@@ -1,8 +1,9 @@
 import CryptoKit
 import Foundation
+import NTFSMountCore
 
 enum AppIdentity {
-  static let productName = "NTFS 读写"
+  static var productName: String { L10n.t("app.productName") }
   static let bundleId = "com.bioapple.ntfsmount"
   static let helperVersion = "5"
   static let sourceURL = "https://github.com/bio-apple/NTFSMount"
@@ -10,6 +11,7 @@ enum AppIdentity {
   static let helperDaemonPath = "/Library/PrivilegedHelperTools/com.bioapple.ntfsmount.helperd"
   static let helperSupportPath = "/Library/Application Support/NTFSMount/ntfs-rw-helper"
   static let helperStampPath = "/Library/Application Support/NTFSMount/helper.stamp"
+  static let allowedCDHashPath = "/Library/Application Support/NTFSMount/allowed.cdhash"
   static let appPathFile = "/Library/Application Support/NTFSMount/app.path"
   static let legacyHelperPath = "/usr/local/sbin/ntfs-rw-helper"
   static let legacySudoers = "/etc/sudoers.d/ntfs-rw"
@@ -24,9 +26,11 @@ enum AppIdentity {
     static let didShowCompat = "com.bioapple.ntfsmount.didShowCompatNotice"
     static let didMigrate = "com.bioapple.ntfsmount.didMigrateDefaults"
     static let didAcceptLegal = "com.bioapple.ntfsmount.didAcceptLegal"
+    static let didAcceptLegalVersion = "com.bioapple.ntfsmount.didAcceptLegalVersion"
     static let didAcceptWritable = "com.bioapple.ntfsmount.didAcceptWritable"
     static let didShowGatekeeper = "com.bioapple.ntfsmount.didShowGatekeeper"
     static let lastHelperSHA = "com.bioapple.ntfsmount.lastHelperSHA"
+    static let acceptedUntestedNtfs3g = "com.bioapple.ntfsmount.acceptedUntestedNtfs3g"
   }
 
   static func migrateDefaultsIfNeeded() {

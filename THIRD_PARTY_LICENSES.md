@@ -28,6 +28,14 @@ Userspace FUSE library used by the bundled ntfs-3g. No kernel extension is requi
 
 **Personal use only until you have written permission or a commercial license from the FUSE-T authors.** Do not sell or redistribute this app as a product without that license. Pre-release GitHub downloads are not a commercial distribution grant. See [NOTICE](./NOTICE). Set `FUSE_T_REDISTRIBUTION_OK=1` when packaging only after you have it. Contact: https://www.fuse-t.org/
 
+## Sparkle
+
+- **Upstream:** Sparkle Project
+- **License:** MIT
+- **Source:** https://github.com/sparkle-project/Sparkle
+
+Embedded as `Sparkle.framework` for in-app updates. The appcast is a Sparkle RSS feed (not the GitHub Releases Atom). Automatic checks are off by default. EdDSA public key is `SUPublicEDKey` in Info.plist; the private key is not in this repository. See [docs/SPARKLE.md](./docs/SPARKLE.md).
+
 ## Notices
 
 This file is informational and is not legal advice. The GPL-2.0 text is in [LICENSE](./LICENSE). LGPL-2.1 is available at https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.

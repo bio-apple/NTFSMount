@@ -13,7 +13,11 @@ go-nfsv4        1.2.7          # 包内文件名 go-nfsv4-1.2.7；无独立 --ve
 libfuse.2.dylib 2.9.9          # FUSE library version；compat 12.9.0
 
 # ntfs-3g（Homebrew formula / Tuxera；brew 核对 bottle SHA256）
+# 驱动版本校验允许列表（未知版本只警告，不硬拦挂载）：
+#   精确 2026.7.7，或 2026.8.x（2026.8.0–2026.8.99）
+# 源码：Sources/NTFSMountCore/Ntfs3gVersion.swift ；脚本：scripts/ntfs3g-version.sh
 ntfs-3g         2026.7.7       # `ntfs-3g --version` → ntfs-3g 2026.7.7 external FUSE 29
+ntfs-3g-allow   2026.7.7 2026.8.x
 mkntfs          2026.7.7       # `mkntfs --version` → mkntfs v2026.7.7 (libntfs-3g)
 ntfsfix         2026.7.7       # `ntfsfix --version` → ntfsfix v2026.7.7；与 ntfs-3g 同包
 libntfs-3g      90.dylib       # compatibility 91.0.0
@@ -21,7 +25,7 @@ formula         https://github.com/Homebrew/homebrew-core/blob/HEAD/Formula/n/nt
 upstream        https://github.com/tuxera/ntfs-3g
 
 # 复现
-#   brew install ntfs-3g          # 需要 2026.7.7（或之后仍能挂载的版本）
+#   brew install ntfs-3g          # 钉死 2026.7.7；允许列表另含 2026.8.x。超出则警告，须更新本文件后再当新钉死版本
 #   ./scripts/prepare-runtime.sh  # 拉 FUSE-T 1.2.7 pkg 并校验 SHA256
 #                                 # 缺 Homebrew / ntfs-3g / 本机 FUSE-T 时会打印安装命令
 #                                 # 不必启动 FUSE-T.app；不会静默把 FUSE-T 装进系统

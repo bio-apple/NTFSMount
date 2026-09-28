@@ -27,23 +27,7 @@ public struct LiveDiskCatalog: DiskCatalog {
     proc.waitUntilExit()
     let data = (proc.standardOutput as? Pipe)?.fileHandleForReading.readDataToEndOfFile() ?? Data()
     let text = String(data: data, encoding: .utf8) ?? ""
-    var fuse = Set<String>()
-    for line in text.split(separator: "\n") {
-      let s = String(line)
-      let lower = s.lowercased()
-      guard lower.contains("macfuse")
-        || lower.contains("osxfuse")
-        || lower.contains("fuse-t")
-        || lower.contains("fuset")
-        || lower.contains("ntfs-3g")
-        || s.contains(" fuse,")
-      else { continue }
-      if let range = s.range(of: " on "),
-         let end = s.range(of: " (") {
-        fuse.insert(String(s[range.upperBound..<end.lowerBound]))
-      }
-    }
-    return fuse
+    return FuseMountLine.fuseMountPoints(fromMountOutput: text)
   }
 
   public func fileSystemUsage(at path: String) -> (total: Int64, free: Int64)? {
