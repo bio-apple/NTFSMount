@@ -916,6 +916,18 @@ if /usr/bin/grep -nE 'brew install shellcheck' "$ROOT/.github/workflows/build.ym
   echo "build.yml must not brew install shellcheck in Security Scan; use the ShellCheck job" >&2
   exit 1
 fi
+if /usr/bin/grep -nE '^[[:space:]]*brew[[:space:]]+install[[:space:]]+(--force-bottle[[:space:]]+|--build-from-source[[:space:]]+)?ntfs-3g' "$ROOT/.github/workflows/build.yml"; then
+  echo "CI must not brew install ntfs-3g (homebrew/core has no macOS bottle)" >&2
+  exit 1
+fi
+if /usr/bin/grep -nE '^[[:space:]]*(HOMEBREW_[A-Z_]+=[^[:space:]]+[[:space:]]+)*("\$brew_bin"|\$brew_bin|brew)[[:space:]]+install[[:space:]]+--build-from-source' "$ROOT/scripts/prepare-runtime.sh" "$ROOT/.github/workflows/build.yml"; then
+  echo "must not build ntfs-3g from source (slow; may pull macfuse)" >&2
+  exit 1
+fi
+if /usr/bin/grep -nE '^[[:space:]]*(HOMEBREW_[A-Z_]+=[^[:space:]]+[[:space:]]+)*("\$brew_bin"|\$brew_bin|brew)[[:space:]]+install[[:space:]]+(macfuse|fuse-t)' "$ROOT/scripts/prepare-runtime.sh" "$ROOT/.github/workflows/build.yml"; then
+  echo "must not brew install macfuse or fuse-t" >&2
+  exit 1
+fi
 CHECK_DEPS="$ROOT/scripts/check-fuse-deps.sh"
 if [[ ! -f "$CHECK_DEPS" ]]; then
   echo "missing scripts/check-fuse-deps.sh" >&2

@@ -93,7 +93,9 @@ jobs:
         env:
           MACOSX_DEPLOYMENT_TARGET: "13.0"
 
-  # 完整 .app（含 runtime）只在 main / 手动跑；PR 不跑 brew ntfs-3g，避免第五个检查名和 flaky 依赖。
+  # 完整 .app（含 runtime）只在 main / 手动跑。ntfs-3g 用仓库 runtime/ 已提交的捆绑文件，
+  # 不 brew install（homebrew/core 现为 Linux-only，GitHub-hosted macOS 无 bottle；不要 --build-from-source）。
+  # FUSE-T 仍由 prepare-runtime 按 SHA256SUMS 拉官方 pkg。UnitTest 只跑 swift test，不需要 ntfs-3g。
   app:
     name: App
     runs-on: macos-14
@@ -107,8 +109,6 @@ jobs:
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           CODESIGN_IDENTITY: ${{ secrets.CODESIGN_IDENTITY }}
         run: bash scripts/ci-import-signing.sh
-      - name: Install ntfs-3g for bundled runtime
-        run: brew install ntfs-3g
       - name: Prepare runtime
         run: bash scripts/prepare-runtime.sh
         env:
@@ -174,7 +174,6 @@ jobs:
           FUSE_T_REDISTRIBUTION_OK: ${{ vars.FUSE_T_REDISTRIBUTION_OK }}
         run: |
           set -euo pipefail
-          brew install ntfs-3g
           bash scripts/prepare-runtime.sh
           bash scripts/check-runtime-sha256.sh
           bash scripts/package-dmg.sh

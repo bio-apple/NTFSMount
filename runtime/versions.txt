@@ -1,5 +1,6 @@
 # 已知可用的捆绑运行时（Apple Silicon / arm64，macOS 13+）
-# 校验哈希见同目录 SHA256SUMS。二进制本身不进 Git。
+# 校验哈希见同目录 SHA256SUMS。
+# FUSE-T（go-nfsv4 / libfuse）不进 Git；ntfs-3g 四件套提交进 Git（CI 无 macOS bottle）。
 # FUSE-T 钉死 1.2.7：与 scripts/prepare-runtime.sh 的 FUSE_T_VERSION 一致。
 # Package.swift（Swift SPM）无法钉 macOS pkg，不要为此加假的 SPM 依赖。
 #
@@ -12,7 +13,7 @@ pkg SHA256      6a29c747e61a86a405a189efc3de42812d73147135f93a1bb0624c1e7b90e654
 go-nfsv4        1.2.7          # 包内文件名 go-nfsv4-1.2.7；无独立 --version
 libfuse.2.dylib 2.9.9          # FUSE library version；compat 12.9.0
 
-# ntfs-3g（Homebrew formula / Tuxera；brew 核对 bottle SHA256）
+# ntfs-3g（Tuxera；捆绑副本进 Git，哈希见 SHA256SUMS。homebrew/core 现无 macOS bottle）
 # 驱动版本校验允许列表（未知版本只警告，不硬拦挂载）：
 #   精确 2026.7.7，或 2026.8.x（2026.8.0–2026.8.99）
 # 源码：Sources/NTFSMountCore/Ntfs3gVersion.swift ；脚本：scripts/ntfs3g-version.sh
@@ -25,9 +26,12 @@ formula         https://github.com/Homebrew/homebrew-core/blob/HEAD/Formula/n/nt
 upstream        https://github.com/tuxera/ntfs-3g
 
 # 复现
-#   brew install ntfs-3g          # 钉死 2026.7.7；允许列表另含 2026.8.x。超出则警告，须更新本文件后再当新钉死版本
+#   仓库 runtime/ 已含 ntfs-3g / mkntfs / ntfsfix / libntfs-3g.90.dylib 时，
+#   ./scripts/prepare-runtime.sh 跳过 brew（本机与 CI 皆然；不需要 Homebrew）。
+#   打包机若需刷新这些文件：仅当该 macOS 有 bottle 时才
+#     brew install --force-bottle ntfs-3g
+#   禁止 brew install --build-from-source ntfs-3g，禁止 brew install macfuse / fuse-t。
 #   ./scripts/prepare-runtime.sh  # 拉 FUSE-T 1.2.7 pkg 并校验 SHA256
-#                                 # 缺 Homebrew / ntfs-3g / 本机 FUSE-T 时会打印安装命令
 #                                 # 不必启动 FUSE-T.app；不会静默把 FUSE-T 装进系统
 #
 # 换 FUSE-T 大版本时：改 scripts/prepare-runtime.sh 里的 FUSE_T_VERSION，

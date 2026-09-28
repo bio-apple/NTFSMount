@@ -1,7 +1,9 @@
 #!/bin/bash
 # 把 ntfs-3g / mkntfs / ntfsfix / go-nfsv4 / libfuse 放进 runtime/，供 build.sh 打进 app。
-# 二进制不进 Git：从 FUSE-T 官方 pkg 与 Homebrew ntfs-3g 取得，并用 runtime/SHA256SUMS 校验。
-# FUSE-T 钉死版本见 FUSE_T_VERSION 与 runtime/versions.txt（Package.swift 无法钉 macOS pkg）。
+# FUSE-T（go-nfsv4 / libfuse）不进 Git：从官方 pkg 取得，runtime/SHA256SUMS 校验。
+# ntfs-3g 四件套优先用 runtime/ 已提交的捆绑文件。仅当缺失且 Homebrew 对该 macOS
+# 有 bottle 时才 brew install --force-bottle ntfs-3g。禁止 --build-from-source，
+# 禁止 brew install macfuse / fuse-t。FUSE-T 钉死版本见 FUSE_T_VERSION 与 versions.txt。
 set -euo pipefail
 if [[ "$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null || true)" != "1" && "$(/usr/bin/uname -m)" != "arm64" ]]; then
   echo "error: NTFSMount 仅支持 Apple Silicon（M 芯片 / arm64），不支持 Intel Mac（x86_64）。当前架构：$(/usr/bin/uname -m)" >&2
@@ -180,15 +182,14 @@ check_build_deps() {
     print_fuse_t_install_help
   fi
 
-  if p="$(find_ntfs3g_bin)"; then
+  if bundled_ntfs3g_present; then
+    echo "已找到捆绑 ntfs-3g：$RUNTIME/ntfs-3g（不执行 brew）" >&2
+  elif p="$(find_ntfs3g_bin)"; then
     echo "已找到 ntfs-3g：$p" >&2
-  elif find_brew >/dev/null; then
-    echo "未找到 ntfs-3g。将执行：brew install ntfs-3g" >&2
+  elif find_brew >/dev/null && brew_ntfs3g_has_macos_bottle; then
+    echo "未找到 ntfs-3g。将执行：brew install --force-bottle ntfs-3g" >&2
   else
-    die "未找到 Homebrew，也无法定位 ntfs-3g。请先安装 Homebrew 再装 ntfs-3g：
-  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"
-  brew install ntfs-3g
-然后重新运行 ./scripts/prepare-runtime.sh"
+    echo "未找到捆绑 ntfs-3g，且 Homebrew 无 macOS bottle（homebrew/core 现为 Linux-only）。" >&2
   fi
   if mp="$(find_mount_ntfs)"; then
     echo "（可选）本机 mount_ntfs：$mp — 运行时不用它，只用捆绑 ntfs-3g。" >&2
@@ -221,6 +222,53 @@ hashes_ok() {
   want="$(expected_sha "$name")"
   have="$(/usr/bin/shasum -a 256 "$file" | /usr/bin/awk '{print $1}')"
   [[ "$have" == "$want" ]]
+}
+
+bundled_ntfs3g_present() {
+  [[ -f "$RUNTIME/ntfs-3g" && -f "$RUNTIME/mkntfs" && -f "$RUNTIME/ntfsfix" && -f "$RUNTIME/libntfs-3g.90.dylib" ]]
+}
+
+# homebrew/core 的 ntfs-3g 现为 Linux-only；仅当 JSON 里出现非 linux bottle 才允许 brew。
+brew_ntfs3g_has_macos_bottle() {
+  local brew_bin json
+  brew_bin="$(find_brew)" || return 1
+  json="$("$brew_bin" info --json=v2 ntfs-3g 2>/dev/null || true)"
+  [[ -n "$json" ]] || return 1
+  printf '%s' "$json" | /usr/bin/python3 -c '
+import json, sys
+try:
+    d = json.load(sys.stdin)
+    files = d["formulae"][0].get("bottle", {}).get("stable", {}).get("files", {})
+except Exception:
+    sys.exit(1)
+sys.exit(0 if any(not str(k).endswith("linux") for k in files) else 1)
+'
+}
+
+brew_ntfs3g_would_pull_fuse() {
+  local brew_bin deps
+  brew_bin="$(find_brew)" || return 1
+  deps="$("$brew_bin" deps --union ntfs-3g 2>/dev/null || true)"
+  if printf '%s' "$deps" | /usr/bin/grep -qiE '(^|[[:space:]])(macfuse|fuse-t|osxfuse)($|[[:space:]])'; then
+    return 0
+  fi
+  return 1
+}
+
+copy_bundled_ntfs3g() {
+  local name
+  bundled_ntfs3g_present || return 1
+  for name in ntfs-3g mkntfs ntfsfix libntfs-3g.90.dylib; do
+    hashes_ok "$RUNTIME/$name" "$name" || return 1
+  done
+  copy_if_exec "$RUNTIME/ntfs-3g" "$WORK/ntfs-3g" || return 1
+  copy_if_exec "$RUNTIME/mkntfs" "$WORK/mkntfs" || return 1
+  copy_if_exec "$RUNTIME/ntfsfix" "$WORK/ntfsfix" || return 1
+  copy_if_exec "$RUNTIME/libntfs-3g.90.dylib" "$WORK/libntfs-3g.90.dylib" || return 1
+  assert_arm64 "$WORK/ntfs-3g"
+  assert_arm64 "$WORK/mkntfs"
+  assert_arm64 "$WORK/ntfsfix"
+  assert_arm64 "$WORK/libntfs-3g.90.dylib"
 }
 
 fetch_url() {
@@ -316,17 +364,23 @@ copy_beside_or() {
 obtain_ntfs3g() {
   local prefix brew_bin bin
   export_homebrew_path
+  if copy_bundled_ntfs3g; then
+    echo "使用已捆绑的 runtime ntfs-3g（跳过 brew）" >&2
+    return 0
+  fi
   if ! prefix="$(ntfs3g_prefix)"; then
-    if brew_bin="$(find_brew)"; then
-      echo "brew install ntfs-3g" >&2
-      "$brew_bin" install ntfs-3g
+    brew_bin="$(find_brew || true)"
+    if [[ -n "$brew_bin" ]] && brew_ntfs3g_has_macos_bottle && ! brew_ntfs3g_would_pull_fuse; then
+      echo "brew install --force-bottle ntfs-3g" >&2
+      HOMEBREW_NO_BOTTLE_SOURCE_FALLBACK=1 "$brew_bin" install --force-bottle ntfs-3g
       export_homebrew_path
-      prefix="$(ntfs3g_prefix)" || die "brew install ntfs-3g 后仍找不到 ntfs-3g"
+      prefix="$(ntfs3g_prefix)" || die "brew install --force-bottle ntfs-3g 后仍找不到 ntfs-3g"
     else
-      die "需要 Homebrew ntfs-3g。请先安装 Homebrew，再执行：
-  brew install ntfs-3g
-Homebrew（Apple Silicon 装到 /opt/homebrew，不要假设 /usr/local）：
-  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+      die "未找到可用的 ntfs-3g。homebrew/core 现为 Linux-only，GitHub-hosted macOS 没有 bottle。
+不要 brew install --build-from-source ntfs-3g（慢，还可能拖 macfuse）。
+不要 brew install macfuse / fuse-t。
+把已校验的 ntfs-3g / mkntfs / ntfsfix / libntfs-3g.90.dylib 放进 runtime/ 后重跑；
+打包机仅在该 OS 有 bottle 时才：brew install --force-bottle ntfs-3g && ./scripts/prepare-runtime.sh"
     fi
   fi
   bin="$(find_ntfs3g_bin)" || die "找不到 ntfs-3g"
@@ -367,7 +421,10 @@ check_build_deps
 obtain_fuse_t
 obtain_ntfs3g
 
-install_name_tool -id '@rpath/libntfs-3g.90.dylib' "$WORK/libntfs-3g.90.dylib"
+ntfs3g_id="$(/usr/bin/otool -D "$WORK/libntfs-3g.90.dylib" | /usr/bin/awk 'NR==2 {print; exit}')"
+if [[ "$ntfs3g_id" != "@rpath/libntfs-3g.90.dylib" ]]; then
+  install_name_tool -id '@rpath/libntfs-3g.90.dylib' "$WORK/libntfs-3g.90.dylib"
+fi
 relink_ntfs3g_libs
 if ! /usr/bin/otool -l "$WORK/ntfs-3g" | /usr/bin/grep -q 'path @executable_path'; then
   install_name_tool -add_rpath '@executable_path' "$WORK/ntfs-3g"
