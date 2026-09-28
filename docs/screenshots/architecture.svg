@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 430" width="920" height="430" role="img" aria-labelledby="title desc">
+  <title id="title">NTFSMount architecture</title>
+  <desc id="desc">I/O path: macOS Finder to FUSE-T NFS to go-nfsv4 plus ntfs-3g to an NTFS disk. Privilege path: unprivileged menu-bar app to Unix socket v2 to ntfsmount-helperd to ntfs-rw-helper to ntfs-3g.</desc>
+  <rect width="920" height="430" rx="18" fill="#f6f8fa" stroke="#d0d7de"/>
+
+  <text x="28" y="36" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#57606a">I/O path - userspace FUSE-T, no kext</text>
+
+  <g font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif">
+    <rect x="28" y="52" width="188" height="78" rx="12" fill="#ddf4ff" stroke="#54aeff"/>
+    <text x="122" y="84" text-anchor="middle" font-size="14" font-weight="600" fill="#0a3069">macOS Finder</text>
+    <text x="122" y="106" text-anchor="middle" font-size="11" fill="#0969da">reads and writes files</text>
+
+    <path d="M226 91h22" stroke="#8c959f" stroke-width="2" fill="none"/>
+    <path d="M248 91l-7-5v10z" fill="#8c959f"/>
+
+    <rect x="256" y="52" width="188" height="78" rx="12" fill="#fbefff" stroke="#a475f9"/>
+    <text x="350" y="84" text-anchor="middle" font-size="14" font-weight="600" fill="#3b1f6e">FUSE-T NFS</text>
+    <text x="350" y="106" text-anchor="middle" font-size="11" fill="#8250df">userspace NFS (soft)</text>
+
+    <path d="M454 91h22" stroke="#8c959f" stroke-width="2" fill="none"/>
+    <path d="M476 91l-7-5v10z" fill="#8c959f"/>
+
+    <rect x="484" y="52" width="188" height="78" rx="12" fill="#dafbe1" stroke="#4ac26b"/>
+    <text x="578" y="80" text-anchor="middle" font-size="14" font-weight="600" fill="#1a4d2a">go-nfsv4 + ntfs-3g</text>
+    <text x="578" y="100" text-anchor="middle" font-size="11" fill="#1a7f37">FUSE-T NFS server</text>
+    <text x="578" y="116" text-anchor="middle" font-size="11" fill="#1a7f37">+ NTFS driver</text>
+
+    <path d="M682 91h22" stroke="#8c959f" stroke-width="2" fill="none"/>
+    <path d="M704 91l-7-5v10z" fill="#8c959f"/>
+
+    <rect x="712" y="52" width="180" height="78" rx="12" fill="#fff1e5" stroke="#fb8f44"/>
+    <text x="802" y="84" text-anchor="middle" font-size="14" font-weight="600" fill="#762c00">NTFS disk</text>
+    <text x="802" y="106" text-anchor="middle" font-size="11" fill="#bc4c00">external volume</text>
+  </g>
+
+  <text x="28" y="176" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#656d76">Finder mounts the volume over NFS. go-nfsv4 is FUSE-T's userspace NFS server, not a generic libkrun microVM product.</text>
+
+  <text x="28" y="228" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#57606a">Privilege path - LaunchDaemon as root</text>
+
+  <g font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif">
+    <rect x="28" y="244" width="188" height="78" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+    <text x="122" y="276" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328">Menu bar app</text>
+    <text x="122" y="298" text-anchor="middle" font-size="11" fill="#656d76">unprivileged Swift</text>
+
+    <path d="M226 283h22" stroke="#8c959f" stroke-width="2" fill="none"/>
+    <path d="M248 283l-7-5v10z" fill="#8c959f"/>
+
+    <rect x="256" y="244" width="188" height="78" rx="12" fill="#fff8c5" stroke="#d4a72c"/>
+    <text x="350" y="276" text-anchor="middle" font-size="13" font-weight="600" fill="#633806">ntfsmount-helperd</text>
+    <text x="350" y="298" text-anchor="middle" font-size="11" fill="#9a6700">root / CDHash pin</text>
+
+    <path d="M454 283h22" stroke="#8c959f" stroke-width="2" fill="none"/>
+    <path d="M476 283l-7-5v10z" fill="#8c959f"/>
+
+    <rect x="484" y="244" width="188" height="78" rx="12" fill="#fff8c5" stroke="#d4a72c"/>
+    <text x="578" y="276" text-anchor="middle" font-size="13" font-weight="600" fill="#633806">ntfs-rw-helper</text>
+    <text x="578" y="298" text-anchor="middle" font-size="11" fill="#9a6700">sealed bash</text>
+
+    <path d="M682 283h22" stroke="#8c959f" stroke-width="2" fill="none"/>
+    <path d="M704 283l-7-5v10z" fill="#8c959f"/>
+
+    <rect x="712" y="244" width="180" height="78" rx="12" fill="#dafbe1" stroke="#4ac26b"/>
+    <text x="802" y="276" text-anchor="middle" font-size="14" font-weight="600" fill="#1a4d2a">ntfs-3g</text>
+    <text x="802" y="298" text-anchor="middle" font-size="11" fill="#1a7f37">mount / mkntfs</text>
+  </g>
+
+  <text x="28" y="348" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#656d76">App to helperd over Unix socket v2 (length-prefixed). No sudoers. Hung-up clients are not executed.</text>
+  <text x="28" y="400" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#8c959f">NTFSMount / Apple Silicon / macOS 13+</text>
+</svg>
