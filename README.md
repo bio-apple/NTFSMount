@@ -2,7 +2,7 @@
 
 Writable **external NTFS** on Apple Silicon Macs (macOS 13+). No kernel extension, no SIP change. Intel is not supported. The UI follows the system language (English / 简体中文 / 繁體中文 / 日本語).
 
-**[Download v1.2.1 DMG](https://github.com/bio-apple/NTFSMount/releases/download/v1.2.1/NTFSMount.dmg)** · [SHA256](https://github.com/bio-apple/NTFSMount/releases/tag/v1.2.1)
+**[Download DMG](https://github.com/bio-apple/NTFSMount/releases/latest/download/NTFSMount.dmg)** · [SHA256](https://github.com/bio-apple/NTFSMount/releases/latest)
 
 - **Back up first.** Writable mount or format can destroy data.
 - **Not notarized.** Control-click the app → **Open**, or System Settings → Privacy & Security → **Open Anyway**.
@@ -10,7 +10,7 @@ Writable **external NTFS** on Apple Silicon Macs (macOS 13+). No kernel extensio
 
 ## Quick Start
 
-1. Download the DMG above (this pre-release, not GitHub Latest).
+1. Download the DMG above (GitHub Latest, always the current release).
 2. Drag NTFSMount into Applications and open it as above.
 3. Agree, then **Install…** the mount helper (admin password on this build). Remove it later from **Settings**; full uninstall: `./uninstall.sh`.
 4. Plug in an external NTFS disk → menu bar **NTFS** → **Mount Writable**.
