@@ -105,7 +105,7 @@ git push origin v0.1.0
 
 - 联系：https://www.fuse-t.org/
 - 取得书面授权后：`FUSE_T_REDISTRIBUTION_OK=1 ./scripts/package-dmg.sh`，并把本文件此节改为「已授权」。
-- 未设置该变量时，DMG 带「个人使用说明」。GitHub Latest 可以指向这份个人使用包（README 的 `/releases/latest/download/NTFSMount.dmg`），**不要**把它当成可再分发或可销售的产品，也禁止第三方镜像。
+- 未设置该变量时，DMG 带 `Personal Use.txt`。GitHub Latest 可以指向这份个人使用包（README 的 `/releases/latest/download/NTFSMount.dmg`），**不要**把它当成可再分发或可销售的产品，也禁止第三方镜像。
 - **当作产品对外再分发**仅当已公证并且 FUSE-T 许可证允许再分发（仓库变量 `vars.FUSE_T_REDISTRIBUTION_OK=1`）。缺一不可。
 - 正式对外下载页必须同时完成 Developer ID 公证与 FUSE-T 书面授权。许可证拆分见仓库根目录 [NOTICE](../NOTICE)。
 

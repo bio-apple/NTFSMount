@@ -1,21 +1,21 @@
 #!/bin/bash
-# 打包成可双击分发的 DMG：把 NTFSMount.app 拖进「应用程序」即可。
+# Build a double-click DMG: drag NTFSMount.app into Applications.
 set -euo pipefail
 if [[ "$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null || true)" != "1" && "$(/usr/bin/uname -m)" != "arm64" ]]; then
-  echo "error: NTFSMount 仅支持 Apple Silicon（M 芯片 / arm64），不支持 Intel Mac（x86_64）。当前架构：$(/usr/bin/uname -m)" >&2
+  echo "error: NTFSMount supports Apple Silicon (M-series / arm64) only, not Intel Macs (x86_64). This machine: $(/usr/bin/uname -m)" >&2
   exit 1
 fi
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="${1:-$ROOT/dist/NTFSMount.dmg}"
-VOLNAME="NTFS 读写"
+VOLNAME="NTFSMount"
 
-echo "==> 编译 NTFSMount.app"
+echo "==> Building NTFSMount.app"
 bash "$ROOT/scripts/build.sh"
 APP_SRC="$ROOT/dist/NTFSMount.app"
 if [[ ! -d "$APP_SRC" && -d /tmp/NTFSMount.app ]]; then
   APP_SRC="/tmp/NTFSMount.app"
 fi
-[[ -d "$APP_SRC" ]] || { echo "error: 找不到 NTFSMount.app" >&2; exit 1; }
+[[ -d "$APP_SRC" ]] || { echo "error: NTFSMount.app not found" >&2; exit 1; }
 
 STAGE="$(/usr/bin/mktemp -d /tmp/ntfsmount-dmg.XXXXXX)"
 RW="$(/usr/bin/mktemp /tmp/ntfsmount-rw.XXXXXX).dmg"
@@ -35,68 +35,68 @@ trap cleanup EXIT
 /bin/cp "$ROOT/NOTICE" "$STAGE/NOTICE"
 /bin/cp "$ROOT/THIRD_PARTY_LICENSES.md" "$STAGE/THIRD_PARTY_LICENSES.md"
 /bin/cp "$ROOT/docs/DISTRIBUTION.md" "$STAGE/DISTRIBUTION.md"
-printf '%s\n' "源码: https://github.com/bio-apple/NTFSMount" > "$STAGE/源码.txt"
-/bin/cat > "$STAGE/使用说明.txt" <<'EOF'
-NTFS 读写（NTFSMount）v1.0.0
-直发，不上 Mac App Store。个人使用预发布。
+printf '%s\n' "Source: https://github.com/bio-apple/NTFSMount" > "$STAGE/Source.txt"
+/bin/cat > "$STAGE/Read Me.txt" <<'EOF'
+NTFSMount v1.0.0
+Direct download, not Mac App Store. Personal-use pre-release, not notarized.
 
-仅 Apple Silicon（M 芯片）与 macOS 13.0+。不支持 Intel Mac。
+Apple Silicon (M-series) and macOS 13.0+ only. Intel Macs are not supported.
 
-安装
-1. 把 NTFS 读写拖到右边的「应用程序」
-2. 打开后菜单栏显示 NTFS。关掉窗口后图标还在；从程序坞退出才会消失
-3. 悬停菜单栏图标可看到磁盘状态，不必打开窗口
-4. 首次只有一个确认框。回车「同意并继续」，Esc「退出」
-5. 在窗口点「安装…」。未公证包会要管理员密码
-6. 若无法验证开发者：Control-click → 打开；或「系统设置 → 隐私与安全性」→ 仍要打开。仍被隔离：
+Install
+1. Drag NTFSMount to Applications on the right
+2. Menu bar shows NTFS. Closing the window keeps the icon; Quit from the Dock to exit
+3. Hover the menu-bar icon for disk status; you do not need the window
+4. First launch: one confirmation. Return = Agree and Continue, Esc = Quit
+5. In the window, click Install…. Unnotarized builds ask for an admin password
+6. If macOS cannot verify the developer: Control-click → Open; or System Settings → Privacy & Security → Open Anyway. Still quarantined:
    xattr -d com.apple.quarantine /Applications/NTFSMount.app
 
-读写
-1. 插入外置 NTFS。第一次可写挂载会再确认「已备份」
-2. 子菜单「以可写方式挂载」。内置盘 / Boot Camp 不会自动挂
-3. 用完点「推出（可安全拔出）」，等盘消失后再拔线
-4. 自动挂载、登录、程序坞、助手：窗口「设置」。当前构建未公证，请到 GitHub Releases 手动下载更新
+Read / write
+1. Plug in an external NTFS disk. The first writable mount asks you to confirm a backup
+2. Submenu: Mount Writable. Built-in / Boot Camp volumes are not auto-mounted
+3. When done, Eject (safe to unplug) and wait until the volume disappears
+4. Auto-mount, login, Dock, helper: window Settings. This build is not notarized; download updates from GitHub Releases
 
-格式化
-根菜单「抹掉整盘为 NTFS…」（不在每块盘的子菜单里）。必须输入当前卷名。回车默认取消。内置盘不能格式化。
+Format
+Root menu: Erase Disk as NTFS… (not in each volume submenu). You must type the current volume name. Return defaults to Cancel. Built-in disks cannot be formatted.
 
-卸载助手：设置 → 卸载助手
-完全卸载：仓库 ./uninstall.sh（只删 NTFSMount；不碰系统级 FUSE-T / MacFUSE）
+Remove helper: Settings → Remove Helper
+Full uninstall: repo ./uninstall.sh (NTFSMount only; does not touch system FUSE-T / MacFUSE)
 EOF
 
 if [[ "${FUSE_T_REDISTRIBUTION_OK:-}" != "1" ]]; then
-  /bin/cat > "$STAGE/个人使用说明.txt" <<'EOF'
-本安装包仅供个人使用。仅支持 Apple Silicon（M 芯片）与 macOS 13.0+，不支持 Intel Mac（x86_64）。
+  /bin/cat > "$STAGE/Personal Use.txt" <<'EOF'
+This package is for personal use only. Apple Silicon (M-series) and macOS 13.0+ only; Intel Macs (x86_64) are not supported.
 
-捆绑的 FUSE-T go-nfsv4 不是 GPL。作为产品嵌入、分发或销售前，须向 FUSE-T 取得许可：
+Bundled FUSE-T go-nfsv4 is not GPL. Before embedding, redistributing, or selling as a product, get a license from FUSE-T:
 https://www.fuse-t.org/
 
-未公证的构建会被 Gatekeeper 拦截。按住 Control 点应用 → 打开；也可在「系统设置 → 隐私与安全性」点「仍要打开」。正式发给他人请使用 Developer ID 公证。
-详见 DISTRIBUTION.md 与 THIRD_PARTY_LICENSES.md。
+Unnotarized builds are blocked by Gatekeeper. Control-click the app → Open; or System Settings → Privacy & Security → Open Anyway. Notarize with Developer ID before giving this to others.
+See DISTRIBUTION.md and THIRD_PARTY_LICENSES.md.
 EOF
 fi
 
 SIZE_MB="$(/usr/bin/du -sm "$STAGE" | /usr/bin/awk '{print int($1)+30}')"
-echo "==> 制作磁盘映像（${SIZE_MB} MB）"
+echo "==> Creating disk image (${SIZE_MB} MB)"
 /usr/bin/hdiutil create -ov -quiet -fs HFS+ -volname "$VOLNAME" -size "${SIZE_MB}m" "$RW" >/dev/null
 
 ATTACH="$(/usr/bin/hdiutil attach -readwrite -noverify -noautoopen "$RW")"
 MNT="$(printf '%s\n' "$ATTACH" | /usr/bin/awk -F'\t' '/\/Volumes\//{print $NF; exit}')"
-[[ -d "$MNT" ]] || { echo "error: 未能挂上临时 DMG" >&2; exit 1; }
+[[ -d "$MNT" ]] || { echo "error: failed to attach temporary DMG" >&2; exit 1; }
 
 /bin/cp -R "$STAGE/NTFSMount.app" "$MNT/NTFSMount.app"
 /bin/ln -s /Applications "$MNT/Applications"
-/bin/cp "$STAGE/使用说明.txt" "$MNT/使用说明.txt"
+/bin/cp "$STAGE/Read Me.txt" "$MNT/Read Me.txt"
 /bin/cp "$STAGE/LICENSE" "$MNT/LICENSE"
 /bin/cp "$STAGE/NOTICE" "$MNT/NOTICE"
 /bin/cp "$STAGE/THIRD_PARTY_LICENSES.md" "$MNT/THIRD_PARTY_LICENSES.md"
 /bin/cp "$STAGE/DISTRIBUTION.md" "$MNT/DISTRIBUTION.md"
-/bin/cp "$STAGE/源码.txt" "$MNT/源码.txt"
-if [[ -f "$STAGE/个人使用说明.txt" ]]; then
-  /bin/cp "$STAGE/个人使用说明.txt" "$MNT/个人使用说明.txt"
+/bin/cp "$STAGE/Source.txt" "$MNT/Source.txt"
+if [[ -f "$STAGE/Personal Use.txt" ]]; then
+  /bin/cp "$STAGE/Personal Use.txt" "$MNT/Personal Use.txt"
 fi
 
-# 摆成「左边应用、右边应用程序」的常见安装窗口
+# Common installer window: app on the left, Applications on the right
 /usr/bin/osascript <<EOF
 tell application "Finder"
   tell disk "$VOLNAME"
@@ -110,9 +110,9 @@ tell application "Finder"
     set icon size of opts to 96
     set position of item "NTFSMount.app" of container window to {160, 140}
     set position of item "Applications" of container window to {480, 140}
-    set position of item "使用说明.txt" of container window to {160, 320}
+    set position of item "Read Me.txt" of container window to {160, 320}
     set position of item "LICENSE" of container window to {320, 320}
-    set position of item "源码.txt" of container window to {480, 320}
+    set position of item "Source.txt" of container window to {480, 320}
     update without registering applications
     delay 1
     close
@@ -122,12 +122,12 @@ tell application "Finder"
 end tell
 EOF
 
-# 访达排版后再写卷图标，避免转换时丢掉不可见文件
+# Write the volume icon after Finder layout so conversion keeps the invisible file
 if [[ -f "$ROOT/Resources/AppIcon.icns" ]]; then
   /bin/cp "$ROOT/Resources/AppIcon.icns" "$MNT/.VolumeIcon.icns"
   /usr/bin/SetFile -c icnC "$MNT/.VolumeIcon.icns"
   /usr/bin/SetFile -a C "$MNT"
-  [[ -f "$MNT/.VolumeIcon.icns" ]] || { echo "error: 未能写入 .VolumeIcon.icns" >&2; exit 1; }
+  [[ -f "$MNT/.VolumeIcon.icns" ]] || { echo "error: failed to write .VolumeIcon.icns" >&2; exit 1; }
 fi
 
 sync
@@ -136,15 +136,15 @@ MNT=""
 
 mkdir -p "$(/usr/bin/dirname "$OUT")"
 /bin/rm -f "$OUT"
-echo "==> 压缩为 $OUT"
+echo "==> Compressing $OUT"
 /usr/bin/hdiutil convert "$RW" -quiet -format UDZO -imagekey zlib-level=9 -o "$OUT" >/dev/null
 
 echo "ok $OUT"
 /bin/ls -lh "$OUT"
 if [[ -n "${CODESIGN_IDENTITY:-}" ]]; then
-  bash "$ROOT/scripts/notarize.sh" "$OUT" || echo "warning: DMG 公证/staple 失败（应用若已公证仍可用）" >&2
+  bash "$ROOT/scripts/notarize.sh" "$OUT" || echo "warning: DMG notarize/staple failed (app still usable if already notarized)" >&2
 fi
-# staple 会改 DMG，哈希必须在最后算
+# staple rewrites the DMG; hash last
 bash "$ROOT/scripts/write-dmg-sha256.sh" "$OUT"
 if [[ "${FUSE_T_REDISTRIBUTION_OK:-}" != "1" ]]; then
   echo "note: FUSE_T_REDISTRIBUTION_OK unset; DMG is personal-use only" >&2
