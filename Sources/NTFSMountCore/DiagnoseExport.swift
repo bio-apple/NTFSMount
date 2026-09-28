@@ -237,7 +237,10 @@ public enum DiagnoseExport {
       "full_disk_access": [
         "app": snap.fullDiskAccess.rawValue,
         "path": FullDiskAccess.gatedPath,
-        "note": "Readability of a gated path in this process; not a TCC.db scrape. LaunchDaemon does not inherit the app grant.",
+        "note": """
+        Readability of a gated path in this process; not a TCC.db scrape. \
+        LaunchDaemon does not inherit the app grant.
+        """,
       ],
     ]
   }

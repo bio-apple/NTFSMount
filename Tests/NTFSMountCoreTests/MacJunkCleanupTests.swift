@@ -77,9 +77,18 @@ final class MacJunkCleanupTests: XCTestCase {
     let trashes = root.appendingPathComponent(".Trashes", isDirectory: true)
     try fm.createDirectory(at: trashes, withIntermediateDirectories: true)
     try "trashed\n".write(to: trashes.appendingPathComponent("old.txt"), atomically: true, encoding: .utf8)
-    try fm.createDirectory(at: root.appendingPathComponent(".Spotlight-V100", isDirectory: true), withIntermediateDirectories: true)
-    try fm.createDirectory(at: root.appendingPathComponent(".fseventsd", isDirectory: true), withIntermediateDirectories: true)
-    try fm.createDirectory(at: root.appendingPathComponent(".TemporaryItems", isDirectory: true), withIntermediateDirectories: true)
+    try fm.createDirectory(
+      at: root.appendingPathComponent(".Spotlight-V100", isDirectory: true),
+      withIntermediateDirectories: true
+    )
+    try fm.createDirectory(
+      at: root.appendingPathComponent(".fseventsd", isDirectory: true),
+      withIntermediateDirectories: true
+    )
+    try fm.createDirectory(
+      at: root.appendingPathComponent(".TemporaryItems", isDirectory: true),
+      withIntermediateDirectories: true
+    )
 
     let appleDoubleDir = root.appendingPathComponent("._keepme", isDirectory: true)
     try fm.createDirectory(at: appleDoubleDir, withIntermediateDirectories: true)

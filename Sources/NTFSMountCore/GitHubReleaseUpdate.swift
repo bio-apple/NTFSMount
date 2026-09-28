@@ -20,11 +20,11 @@ public enum GitHubReleaseUpdate {
 
   public static func compare(_ lhs: String, _ rhs: String) -> ComparisonResult {
     let a = versionComponents(lhs)
-    let b = versionComponents(rhs)
-    let n = max(a.count, b.count)
+    let right = versionComponents(rhs)
+    let n = max(a.count, right.count)
     for i in 0..<n {
       let x = i < a.count ? a[i] : 0
-      let y = i < b.count ? b[i] : 0
+      let y = i < right.count ? right[i] : 0
       if x < y { return .orderedAscending }
       if x > y { return .orderedDescending }
     }
