@@ -22,7 +22,7 @@ FUSE_T_VERSION="1.2.7"
 FUSE_T_PKG_NAME="fuse-t-macos-installer-${FUSE_T_VERSION}.pkg"
 FUSE_T_URL="${FUSE_T_PKG_URL:-https://github.com/macos-fuse-t/fuse-t/releases/download/${FUSE_T_VERSION}/${FUSE_T_PKG_NAME}}"
 FUSE_T_BIN_DIR="/Library/Application Support/fuse-t/bin"
-FUSE_T_LIBFUSE="/usr/local/lib/libfuse.2.dylib"
+FUSE_T_LIB_DIR="/Library/Application Support/fuse-t/lib"
 
 die() { echo "error: $*" >&2; exit 1; }
 
@@ -116,8 +116,10 @@ FUSE-T 不是 GPL，通常不在 Homebrew。不要 brew install fuse-t（专有�
 本脚本查找本机文件（pkg 安装后即出现，不必先启动 FUSE-T.app）：
   ${FUSE_T_BIN_DIR}/go-nfsv4-${FUSE_T_VERSION}
   ${FUSE_T_BIN_DIR}/go-nfsv4
-  ${FUSE_T_LIBFUSE}
-不查找 /usr/local/bin/go-nfsv4。哈希与 SHA256SUMS 一致才用本机副本，否则改下官方 ${FUSE_T_VERSION} pkg 并解出二进制（不会把 FUSE-T 装进系统）。
+  ${FUSE_T_LIB_DIR}/libfuse-t-${FUSE_T_VERSION}.dylib
+  /usr/local/lib/libfuse-t-${FUSE_T_VERSION}.dylib
+不使用 /usr/local/lib/libfuse.2.dylib（那是 macFUSE）。不查找 /usr/local/bin/go-nfsv4。
+哈希与 SHA256SUMS 一致才用本机副本，否则改下官方 ${FUSE_T_VERSION} pkg 并解出二进制（不会把 FUSE-T 装进系统）。
 
 不必启动 FUSE-T.app，也不必加载系统 FUSE-T 守护进程：prepare-runtime 只复制文件；NTFSMount 运行时用包内捆绑的 go-nfsv4（FUSE_NFSSRV_PATH），不依赖系统级 FUSE-T。
 
@@ -154,7 +156,29 @@ local_fuse_t_version() {
 local_fuse_t_present() {
   [[ -x "${FUSE_T_BIN_DIR}/go-nfsv4-${FUSE_T_VERSION}" ]] \
     || [[ -x "${FUSE_T_BIN_DIR}/go-nfsv4" ]] \
-    || [[ -f "$FUSE_T_LIBFUSE" ]]
+    || [[ -n "$(find_local_fuse_t_dylib || true)" ]]
+}
+
+# FUSE-T 1.2.x 不再提供 libfuse.2.dylib（macFUSE 才装那个）。libfuse 2 ABI 在 libfuse-t-VERSION.dylib。
+find_local_fuse_t_dylib() {
+  local f
+  for f in \
+    "${FUSE_T_LIB_DIR}/libfuse-t-${FUSE_T_VERSION}.dylib" \
+    "${FUSE_T_LIB_DIR}/libfuse-t.dylib" \
+    "/usr/local/lib/libfuse-t-${FUSE_T_VERSION}.dylib" \
+    "/usr/local/lib/libfuse-t.dylib"
+  do
+    if [[ -f "$f" ]]; then
+      printf '%s' "$f"
+      return 0
+    fi
+  done
+  return 1
+}
+
+pkg_find_named() {
+  local root="$1" name="$2"
+  /usr/bin/find "$root" -name "$name" -type f -print -quit 2>/dev/null || true
 }
 
 check_build_deps() {
@@ -293,12 +317,12 @@ obtain_fuse_t() {
   local go_src fuse_src pkg expanded local_ver=""
   go_src="${FUSE_T_BIN_DIR}/go-nfsv4-${FUSE_T_VERSION}"
   [[ -x "$go_src" ]] || go_src="${FUSE_T_BIN_DIR}/go-nfsv4"
-  fuse_src="$FUSE_T_LIBFUSE"
+  fuse_src="$(find_local_fuse_t_dylib || true)"
   local_ver="$(local_fuse_t_version || true)"
 
   if [[ -n "$local_ver" && "$local_ver" != "$FUSE_T_VERSION" ]]; then
     echo "warning: 本机 FUSE-T ${local_ver} 超出钉死版本 ${FUSE_T_VERSION}，不用本机副本。" >&2
-  elif [[ -f "$go_src" && -f "$fuse_src" ]]; then
+  elif [[ -f "$go_src" && -n "$fuse_src" && -f "$fuse_src" ]]; then
     copy_if_exec "$go_src" "$WORK/go-nfsv4"
     copy_if_exec "$fuse_src" "$WORK/libfuse.2.dylib"
     if hashes_ok "$WORK/go-nfsv4" go-nfsv4 && hashes_ok "$WORK/libfuse.2.dylib" libfuse.2.dylib; then
@@ -318,10 +342,14 @@ obtain_fuse_t() {
 
   expanded="$WORK/fuse-t-pkg"
   /usr/sbin/pkgutil --expand-full "$pkg" "$expanded"
-  go_src="$(/usr/bin/find "$expanded" \( -name "go-nfsv4-${FUSE_T_VERSION}" -o -name 'go-nfsv4' \) -type f -print -quit)"
-  fuse_src="$(/usr/bin/find "$expanded" -name 'libfuse.2.dylib' -type f -print -quit)"
+  go_src="$(pkg_find_named "$expanded" "go-nfsv4-${FUSE_T_VERSION}")"
+  [[ -n "$go_src" && -f "$go_src" ]] || go_src="$(pkg_find_named "$expanded" "go-nfsv4")"
+  # 1.2.x 包内是 libfuse-t-VERSION.dylib，没有 libfuse.2.dylib；复制成 libfuse.2.dylib 供 ntfs-3g @rpath。
+  fuse_src="$(pkg_find_named "$expanded" "libfuse.2.dylib")"
+  [[ -n "$fuse_src" && -f "$fuse_src" ]] || fuse_src="$(pkg_find_named "$expanded" "libfuse-t-${FUSE_T_VERSION}.dylib")"
+  [[ -n "$fuse_src" && -f "$fuse_src" ]] || fuse_src="$(pkg_find_named "$expanded" "libfuse-t.dylib")"
   [[ -n "$go_src" && -f "$go_src" ]] || die "pkg 里没有 go-nfsv4"
-  [[ -n "$fuse_src" && -f "$fuse_src" ]] || die "pkg 里没有 libfuse.2.dylib"
+  [[ -n "$fuse_src" && -f "$fuse_src" ]] || die "pkg 里没有 libfuse-t / libfuse.2.dylib"
   copy_if_exec "$go_src" "$WORK/go-nfsv4"
   copy_if_exec "$fuse_src" "$WORK/libfuse.2.dylib"
   verify_file "$WORK/go-nfsv4" go-nfsv4

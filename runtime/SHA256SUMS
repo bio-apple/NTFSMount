@@ -3,7 +3,9 @@
 #
 # FUSE-T 1.2.7 官方安装包（必须校验；二进制不进 Git）：
 #   https://github.com/macos-fuse-t/fuse-t/releases/download/1.2.7/fuse-t-macos-installer-1.2.7.pkg
-# go-nfsv4 / libfuse.2.dylib 从该 pkg 解出，或来自本机已装的 FUSE-T 1.2.7。
+# go-nfsv4 / libfuse 从该 pkg 解出，或来自本机已装的 FUSE-T 1.2.7。
+# 1.2.7 包内 dylib 名为 libfuse-t-1.2.7.dylib（没有 libfuse.2.dylib；那是 macFUSE），
+# 解出后复制为 runtime/libfuse.2.dylib 供 ntfs-3g 的 @rpath。不要 brew install macfuse / fuse-t。
 #
 # ntfs-3g / mkntfs / ntfsfix / libntfs-3g.90.dylib：打包机上（仅当有 macOS bottle）
 # 经 prepare-runtime 改写 @rpath 后的捆绑副本，提交进 Git。homebrew/core 现为
@@ -14,7 +16,7 @@
 
 6a29c747e61a86a405a189efc3de42812d73147135f93a1bb0624c1e7b90e654  fuse-t-macos-installer-1.2.7.pkg
 76d9fd335f0c2007b7ac02bb424a4ae41dde3380daa1d7d510d9a7c9e5f534bb  go-nfsv4
-7f8284463379f48034e38913804920719fb2c13a42e04027533fd1d19ff8bb42  libfuse.2.dylib
+d1f0c160a941835a171133dbd58f9d5fe381b520be890f3843c573644cb17735  libfuse.2.dylib
 e7fe7fe296a231cfa9b5a8c950dfa79ae6c7c65d9eaebf6fd23c558374c5e3e6  ntfs-3g
 a129b41d307ddac41ba83ccf3efeb1da16b0d1ed8173885e54fb9c9e892c4642  mkntfs
 dfb5b2c409df598608d3e19c7c2cdd7f49ffb3ee1a919821625fa3d850e56606  ntfsfix

@@ -876,6 +876,14 @@ if ! /usr/bin/grep -q '/opt/homebrew/bin/ntfs-3g' "$ROOT/scripts/prepare-runtime
   echo "prepare-runtime must try /opt/homebrew/bin/ntfs-3g" >&2
   exit 1
 fi
+if ! /usr/bin/grep -q 'libfuse-t-' "$ROOT/scripts/prepare-runtime.sh"; then
+  echo "prepare-runtime must extract libfuse-t-*.dylib from the FUSE-T pkg" >&2
+  exit 1
+fi
+if /usr/bin/grep -nE 'FUSE_T_LIBFUSE="/usr/local/lib/libfuse.2.dylib"' "$ROOT/scripts/prepare-runtime.sh"; then
+  echo "prepare-runtime must not treat macFUSE /usr/local/lib/libfuse.2.dylib as FUSE-T" >&2
+  exit 1
+fi
 if ! /usr/bin/grep -q 'ntfs3g_base_opts' "$HELPER"; then
   echo "helper must build ntfs-3g -o via ntfs3g_base_opts" >&2
   exit 1

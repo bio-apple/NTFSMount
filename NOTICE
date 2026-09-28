@@ -18,7 +18,7 @@ NTFS 读写（NTFSMount）许可拆分
    - ntfs-3g / mkntfs / ntfsfix / libntfs-3g：**2026.7.7**（`ntfs-3g --version` → ntfs-3g 2026.7.7 external FUSE 29）
    - 上游源码（对应 tag，不要用 HEAD）：https://github.com/tuxera/ntfs-3g/tree/2026.7.7
    - Homebrew formula 仅作复现参考（会漂移）：https://github.com/Homebrew/homebrew-core/blob/master/Formula/n/ntfs-3g.rb
-   - libfuse.2.dylib：**2.9.9**（FUSE library version；来自 FUSE-T **1.2.7** pkg）
+   - libfuse.2.dylib：来自 FUSE-T **1.2.7** pkg 内的 `libfuse-t-1.2.7.dylib`（包内无 `libfuse.2.dylib`）
    - libfuse 上游：https://github.com/macos-fuse-t/libfuse  
 
    若你收到的是已打包的 DMG/.app 而非 Git  checkout，包内另有 `源码.txt` 指向上述仓库；GPL 组件的完整对应源码以上游与 [runtime/versions.txt](./runtime/versions.txt) 记录为准。
