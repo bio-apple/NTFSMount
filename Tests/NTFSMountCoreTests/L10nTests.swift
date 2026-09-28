@@ -220,7 +220,7 @@ final class L10nTests: XCTestCase {
       "format.confirmExtra", "format.confirmTitle", "forceUnmount.title", "forceUnmount.body",
       "forceUnmount.action", "forceUnmount.occupiers", "repairEnv.title", "repairEnv.body", "repairEnv.action",
       "repairEnv.working", "repairEnv.summary", "repairEnv.summaryBusy", "repairEnv.summaryNone",
-      "repairEnv.helperRestarted", "repairEnv.failed", "menu.repairEnv",
+      "repairEnv.helperRestarted", "repairEnv.failed", "repairEnv.doneTitle", "menu.repairEnv",
       "diskStatus.mountMode", "diskStatus.mountRW", "diskStatus.mountRO", "diskStatus.used",
       "diskStatus.encryption", "diskStatus.encryptionHint", "diskStatus.encryptionNone",
       "diskStatus.journal", "diskStatus.journalUnknown", "diskStatus.journalDirty",

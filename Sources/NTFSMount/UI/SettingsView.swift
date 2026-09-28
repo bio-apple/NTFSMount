@@ -6,8 +6,6 @@ struct SettingsView: View {
   @ObservedObject var store: VolumeStore
   @State private var logText = AppLog.tail()
   @State private var fdaStatus = FullDiskAccess.Status.unknown
-  @State private var notarized = false
-  @State private var developerID = false
 
   var body: some View {
     // Constrain ScrollView to the detail viewport so macOS can scroll instead of clipping.
@@ -139,11 +137,7 @@ struct SettingsView: View {
                 .font(.headline)
               Text(UpdateCopy.settingsAboutLine)
                 .font(.callout)
-              Text(notarized
-                ? L10n.t("settings.notarized")
-                : (developerID
-                  ? L10n.t("settings.signedNotNotarized")
-                  : L10n.t("settings.adHoc")))
+              Text(signingCaption)
                 .font(.caption)
                 .foregroundStyle(.secondary)
               HStack {
@@ -217,12 +211,6 @@ struct SettingsView: View {
       logText = AppLog.tail()
       fdaStatus = FullDiskAccess.probe()
     }
-    .task {
-      let notary = await Task.detached(priority: .utility) { SigningStatus.isNotarized }.value
-      let dev = await Task.detached(priority: .utility) { SigningStatus.isDeveloperID }.value
-      notarized = notary
-      developerID = dev
-    }
   }
 
   private var helperStatus: String {
@@ -232,7 +220,13 @@ struct SettingsView: View {
     return L10n.t("helper.statusOK")
   }
 
+  private var signingCaption: String {
+    if SigningStatus.isNotarized { return L10n.t("settings.notarized") }
+    if SigningStatus.isDeveloperID { return L10n.t("settings.signedNotNotarized") }
+    return L10n.t("settings.adHoc")
+  }
+
   private var helperInstallHint: String {
-    notarized ? L10n.t("helper.hintNotarized") : L10n.t("helper.hintAdHoc")
+    SigningStatus.isNotarized ? L10n.t("helper.hintNotarized") : L10n.t("helper.hintAdHoc")
   }
 }

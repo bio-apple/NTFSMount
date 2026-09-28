@@ -464,6 +464,8 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "repairEnv.failed" = "マウント環境を修復できませんでした。";
 
+"repairEnv.doneTitle" = "マウント環境を修復しました";
+
 "diagnose.alertTitle" = "環境診断";
 
 "diagnose.checking" = "同梱コンポーネントとヘルパーを確認しています…";

@@ -8,16 +8,17 @@ struct MenuRoot: View {
   var body: some View {
     Button(L10n.t("menu.openWindow")) { store.showMainWindow() }
       .keyboardShortcut("o")
+      .disabled(store.firstLaunchSetupBusy)
     if !store.helperInstalled || !Privileged.daemonReady {
       Button(store.helperInstallBusy ? L10n.t("installing") : L10n.t("menu.installHelper")) {
         Task { _ = await store.installHelper() }
       }
-      .disabled(store.helperInstallBusy)
+      .disabled(store.helperInstallBusy || store.firstLaunchSetupBusy)
     } else if Privileged.helperNeedsUpdate {
       Button(store.helperInstallBusy ? L10n.t("installing") : L10n.t("menu.updateHelper")) {
         Task { _ = await store.installHelper() }
       }
-      .disabled(store.helperInstallBusy)
+      .disabled(store.helperInstallBusy || store.firstLaunchSetupBusy)
     }
     Divider()
     if store.volumes.isEmpty {
@@ -41,26 +42,26 @@ struct MenuRoot: View {
             Button(L10n.t("menu.fixDirty")) {
               Task { await store.confirmDirtyFix(vol) }
             }
-            .disabled(store.busyId != nil)
+            .disabled(store.busyId != nil || store.firstLaunchSetupBusy)
           }
           if !vol.isWritableFuse {
             Button(vol.isInternal ? L10n.t("menu.mountWritableInternal") : L10n.t("menu.mountWritable")) {
               Task { await store.mount(vol) }
             }
-            .disabled(store.busyId != nil || !store.canMountWritable(vol))
+            .disabled(store.busyId != nil || !store.canMountWritable(vol) || store.firstLaunchSetupBusy)
             .help(store.helperInstalled ? store.writableMountHelp(vol) : L10n.t("menu.needHelper"))
           }
           Button(L10n.t("menu.openFinder")) {
             NSWorkspace.shared.open(URL(fileURLWithPath: vol.expectedMountPoint))
           }
-          .disabled(vol.mountPoint.isEmpty)
+          .disabled(vol.mountPoint.isEmpty || store.firstLaunchSetupBusy)
           Divider()
           Button(L10n.t("menu.unmount")) { Task { await store.unmount(vol) } }
-            .disabled(vol.mountPoint.isEmpty || store.busyId != nil)
+            .disabled(vol.mountPoint.isEmpty || store.busyId != nil || store.firstLaunchSetupBusy)
             .help(VolumeActionCopy.unmountHelp)
           if !vol.isInternal {
             Button(L10n.t("menu.eject")) { Task { await store.eject(vol) } }
-              .disabled(store.busyId != nil)
+              .disabled(store.busyId != nil || store.firstLaunchSetupBusy)
               .help(VolumeActionCopy.ejectHelp)
           }
         } label: {
@@ -73,12 +74,14 @@ struct MenuRoot: View {
           }
           .help(MenuBarTooltip.card(vol))
         }
+        .disabled(store.firstLaunchSetupBusy)
       }
       Divider()
       Button(L10n.t("menu.mountAll")) { store.mountAll() }
         .keyboardShortcut("m")
         .disabled(
-          !store.helperInstalled
+          store.firstLaunchSetupBusy
+            || !store.helperInstalled
             || store.volumes.filter({ !$0.isInternal }).allSatisfy(\.isWritableFuse)
             || store.busyId != nil
         )
@@ -91,18 +94,24 @@ struct MenuRoot: View {
           Button(L10n.format("menu.formatItem", disk.name, disk.fsHint, disk.sizeLabel), role: .destructive) {
             store.confirmFormat(disk)
           }
-          .disabled(store.busyId != nil)
+          .disabled(store.busyId != nil || store.firstLaunchSetupBusy)
           .help(disk.encryptionWarning ?? L10n.t("menu.eraseWholeDisk"))
         }
       }
+      .disabled(store.firstLaunchSetupBusy)
     }
     Divider()
     Button(L10n.t("menu.refresh")) { store.refresh() }
       .keyboardShortcut("r")
+      .disabled(store.firstLaunchSetupBusy)
     Button(L10n.t("menu.diagnose")) { EnvironmentDiagnosePresenter.present(store: store) }
+      .disabled(store.firstLaunchSetupBusy)
     Button(L10n.t("menu.exportDiagnose")) { EnvironmentDiagnosePresenter.exportReport(store: store) }
+      .disabled(store.firstLaunchSetupBusy)
     Button(L10n.t("menu.settings")) { store.showSettings() }
+      .disabled(store.firstLaunchSetupBusy)
     Button(AppVersion.menuTitle()) { store.showAbout() }
+      .disabled(store.firstLaunchSetupBusy)
     if !store.message.isEmpty {
       Text(store.message)
         .font(.caption)

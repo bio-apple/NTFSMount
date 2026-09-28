@@ -464,6 +464,8 @@ Return 即同意。不同意請點「結束」。";
 
 "repairEnv.failed" = "未能修復掛載環境。";
 
+"repairEnv.doneTitle" = "掛載環境已修復";
+
 "diagnose.alertTitle" = "環境診斷";
 
 "diagnose.checking" = "正在檢查內附元件與掛載助手…";

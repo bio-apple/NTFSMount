@@ -42,6 +42,12 @@ final class AutoMountPolicyTests: XCTestCase {
     XCTAssertFalse(AutoMountPolicy.shouldAutoInstallHelper(daemonReady: true))
   }
 
+  func testFirstLaunchSetupRunsOnceAfterLegal() {
+    XCTAssertTrue(AutoMountPolicy.shouldRunFirstLaunchSetup(alreadyFinished: false, legalAccepted: true))
+    XCTAssertFalse(AutoMountPolicy.shouldRunFirstLaunchSetup(alreadyFinished: true, legalAccepted: true))
+    XCTAssertFalse(AutoMountPolicy.shouldRunFirstLaunchSetup(alreadyFinished: false, legalAccepted: false))
+  }
+
   func testHelperMountsUnmountedExternalWithoutRequiringStillMounted() {
     XCTAssertTrue(
       AutoMountPolicy.helperShouldMount(isInternal: false, isOurFuse: false, isWritable: false),

@@ -11,6 +11,20 @@ enum EnvironmentDiagnosePresenter {
   }
 
   @MainActor
+  static func presentAndWait(store: VolumeStore) async {
+    await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+      DiagnoseWindowController.shared.show(store: store) {
+        cont.resume()
+      }
+    }
+  }
+
+  @MainActor
+  static func refreshActions() {
+    DiagnoseWindowController.shared.refreshActions()
+  }
+
+  @MainActor
   static func exportReport(store: VolumeStore) {
     DiagnoseWindowController.shared.exportReport(store: store)
   }
@@ -38,9 +52,13 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
   private var report = ""
   private var lastSnap: DiagnoseSnapshot?
   private var generation = 0
+  private var pendingFinish: [() -> Void] = []
 
-  func show(store: VolumeStore) {
+  func show(store: VolumeStore, whenFinished: (() -> Void)? = nil) {
     self.store = store
+    if let whenFinished {
+      pendingFinish.append(whenFinished)
+    }
     if window == nil {
       buildWindow()
     }
@@ -48,11 +66,23 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     window?.makeKeyAndOrderFront(nil)
     if !running && !installing && !repairing && !exporting {
       start()
+    } else if !running {
+      flushFinish()
+    }
+  }
+
+  func refreshActions() {
+    guard window != nil else { return }
+    if let snap = lastSnap {
+      updateActions(snap)
+    } else {
+      updateRepairButton()
     }
   }
 
   func windowWillClose(_ notification: Notification) {
     running = false
+    flushFinish()
     DispatchQueue.main.async {
       let othersVisible = NSApp.windows.contains { $0.isVisible && $0 != self.window }
       if !othersVisible && !AppIdentity.bool(forKey: AppIdentity.Defaults.showDock, default: true) {
@@ -93,8 +123,15 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
         self.copyButton?.isEnabled = true
         self.exportButton?.isEnabled = true
         self.updateActions(snap)
+        self.flushFinish()
       }
     }
+  }
+
+  private func flushFinish() {
+    let callbacks = pendingFinish
+    pendingFinish = []
+    callbacks.forEach { $0() }
   }
 
   private func updateActions(_ snap: DiagnoseSnapshot) {
@@ -111,7 +148,8 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     guard helperOffer else { return }
     let update = Privileged.helperOfferIsUpdate
     installButton?.title = L10n.t(update ? "diagnose.updateHelper" : "diagnose.installHelper")
-    installButton?.isEnabled = !(store?.helperInstallBusy ?? false) && !installing
+    let setupLocked = store?.firstLaunchSetupBusy == true
+    installButton?.isEnabled = !(store?.helperInstallBusy ?? false) && !installing && !setupLocked
   }
 
   private func setHint(_ text: String?) {
@@ -132,6 +170,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
       && !exporting
       && !(store?.helperInstallBusy ?? false)
       && store?.busyId == nil
+      && store?.firstLaunchSetupBusy != true
   }
 
   private func setInstallVisible(_ visible: Bool) {

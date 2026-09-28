@@ -464,6 +464,8 @@
 
 "repairEnv.failed" = "未能修复挂载环境。";
 
+"repairEnv.doneTitle" = "挂载环境已修复";
+
 "diagnose.alertTitle" = "环境诊断";
 
 "diagnose.checking" = "正在检查捆绑组件与挂载助手…";

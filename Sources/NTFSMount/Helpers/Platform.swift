@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import NTFSMountCore
+import Security
 import os
 
 enum PlatformGate {
@@ -34,43 +35,38 @@ enum PlatformGate {
 }
 
 enum SigningStatus {
-  static var isDeveloperID: Bool {
-    guard let codesign = CommandPath.find("codesign") else { return false }
-    let result = capture(executable: codesign, arguments: ["-dv", "--verbose=4", Bundle.main.bundlePath])
-    return result.stderr.contains("Developer ID Application")
+  private struct Facts {
+    var developerID = false
+    var notarized = false
   }
 
-  static var isNotarized: Bool {
-    guard let spctl = CommandPath.find("spctl") else { return false }
-    let result = capture(
-      executable: spctl,
-      arguments: ["--assess", "--type", "execute", "-v", Bundle.main.bundlePath]
-    )
-    return result.status == 0 && result.stderr.lowercased().contains("notarized")
-  }
+  private static let facts = load()
 
-  /// `Process.waitUntilExit` on the main thread runs the run loop. That re-enters SwiftUI
-  /// and aborts (AttributeGraph precondition) when called from a view body.
-  private static func capture(executable: String, arguments: [String]) -> (status: Int32, stderr: String) {
-    let proc = Process()
-    proc.executableURL = URL(fileURLWithPath: executable)
-    proc.arguments = arguments
-    let err = Pipe()
-    proc.standardOutput = Pipe()
-    proc.standardError = err
-    do {
-      try proc.run()
-    } catch {
-      return (1, "")
+  static var isDeveloperID: Bool { facts.developerID }
+  static var isNotarized: Bool { facts.notarized }
+
+  /// Read the signature in-process. Spawning codesign/spctl and waiting on the main
+  /// thread runs the run loop, re-enters SwiftUI, and aborts the settings window.
+  private static func load() -> Facts {
+    var staticCode: SecStaticCode?
+    let created = SecStaticCodeCreateWithPath(Bundle.main.bundleURL as CFURL, [], &staticCode)
+    guard created == errSecSuccess, let staticCode else { return Facts() }
+    var info: CFDictionary?
+    let copyFlags = SecCSFlags(rawValue: kSecCSSigningInformation)
+    let copied = SecCodeCopySigningInformation(staticCode, copyFlags, &info)
+    guard copied == errSecSuccess, let dict = info as NSDictionary? else { return Facts() }
+
+    let flagValue = (dict[kSecCodeInfoFlags] as? NSNumber)?.uint32Value ?? 0
+    let adHoc = flagValue & 0x0002 != 0
+    var facts = Facts()
+    if !adHoc, let certs = dict[kSecCodeInfoCertificates] as? [SecCertificate], let leaf = certs.first {
+      var commonName: CFString?
+      if SecCertificateCopyCommonName(leaf, &commonName) == errSecSuccess, let name = commonName as String? {
+        facts.developerID = name.contains("Developer ID Application")
+      }
     }
-    let wait = { proc.waitUntilExit() }
-    if Thread.isMainThread {
-      DispatchQueue.global(qos: .userInitiated).sync(execute: wait)
-    } else {
-      wait()
-    }
-    let text = String(data: err.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-    return (proc.terminationStatus, text)
+    facts.notarized = facts.developerID && dict[kSecCodeInfoStapledNotarizationTicket] != nil
+    return facts
   }
 }
 

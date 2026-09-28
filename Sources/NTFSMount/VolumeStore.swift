@@ -37,6 +37,8 @@ final class VolumeStore: ObservableObject {
     default: true
   )
   @Published var openSettings = false
+  /// First open: diagnose then repair. Other menu actions stay disabled until the result alert closes.
+  @Published var firstLaunchSetupBusy = false
   @Published var driverVersionLine: String = Ntfs3gVersion.settingsChecking
   @Published var driverVersionUntested = false
 
@@ -95,9 +97,7 @@ final class VolumeStore: ObservableObject {
       PlatformGate.enforceOrTerminate()
       LegalGate.confirmOrTerminate()
       self?.presentWindowOnFirstLaunch()
-      self?.installHelperOnFirstLaunch()
-      self?.enableAutoMountDefault()
-      self?.checkGitHubReleaseUpdateIfNeeded()
+      self?.startSessionAfterLegal()
     }
   }
 
@@ -111,6 +111,59 @@ final class VolumeStore: ObservableObject {
     guard !UserDefaults.standard.bool(forKey: key) else { return }
     UserDefaults.standard.set(true, forKey: key)
     showMainWindow()
+  }
+
+  /// After legal consent: first open diagnoses then repairs. Later opens only install a missing helper.
+  func startSessionAfterLegal() {
+    guard LegalGate.hasAcceptedLegal else { return }
+    let finished = UserDefaults.standard.bool(forKey: AppIdentity.Defaults.didFinishFirstLaunchSetup)
+    if AutoMountPolicy.shouldRunFirstLaunchSetup(alreadyFinished: finished, legalAccepted: true) {
+      Task { [weak self] in
+        await self?.runFirstLaunchSetup()
+        self?.checkGitHubReleaseUpdateIfNeeded()
+      }
+      return
+    }
+    installHelperOnFirstLaunch()
+    enableAutoMountDefault()
+    checkGitHubReleaseUpdateIfNeeded()
+  }
+
+  /// Diagnose, install the helper if needed, repair, then show the result. Menu stays locked.
+  func runFirstLaunchSetup() async {
+    firstLaunchSetupBusy = true
+    setMessage(L10n.t("diagnose.checking"))
+    await EnvironmentDiagnosePresenter.presentAndWait(store: self)
+    if AutoMountPolicy.shouldAutoInstallHelper(daemonReady: Privileged.daemonReady) {
+      _ = await installHelper()
+    }
+    guard helperInstalled else {
+      let text = L10n.t("error.helperMissing")
+      setMessage(text)
+      presentRepairFinished(Privileged.Outcome(ok: false, text: text))
+      firstLaunchSetupBusy = false
+      EnvironmentDiagnosePresenter.refreshActions()
+      return
+    }
+    let outcome = await repairMountEnvironment()
+    UserDefaults.standard.set(true, forKey: AppIdentity.Defaults.didFinishFirstLaunchSetup)
+    presentRepairFinished(outcome)
+    firstLaunchSetupBusy = false
+    EnvironmentDiagnosePresenter.refreshActions()
+    enableAutoMountDefault()
+  }
+
+  func presentRepairFinished(_ outcome: Privileged.Outcome) {
+    NSApp.activate(ignoringOtherApps: true)
+    let alert = NSAlert()
+    alert.alertStyle = outcome.ok ? .informational : .warning
+    alert.messageText = outcome.ok ? L10n.t("repairEnv.doneTitle") : L10n.t("repairEnv.failed")
+    let detail = outcome.text.trimmingCharacters(in: .whitespacesAndNewlines)
+    if !detail.isEmpty, detail != alert.messageText {
+      alert.informativeText = detail
+    }
+    alert.addButton(withTitle: L10n.t("ok.gotIt"))
+    alert.runModal()
   }
 
   /// After the legal dialog: install the mount helper when its socket is missing.

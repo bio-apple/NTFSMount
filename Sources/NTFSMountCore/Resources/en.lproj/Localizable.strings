@@ -464,6 +464,8 @@ Return means you agree. Click “Quit” if you do not.";
 
 "repairEnv.failed" = "Could not repair the mount environment.";
 
+"repairEnv.doneTitle" = "Mount environment repaired";
+
 "diagnose.alertTitle" = "Environment Diagnose";
 
 "diagnose.checking" = "Checking bundled components and helper…";

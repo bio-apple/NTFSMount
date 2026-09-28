@@ -56,6 +56,11 @@ public enum AutoMountPolicy {
     !daemonReady
   }
 
+  /// First open after install: diagnose, then repair once. A stored finish flag skips it.
+  public static func shouldRunFirstLaunchSetup(alreadyFinished: Bool, legalAccepted: Bool) -> Bool {
+    legalAccepted && !alreadyFinished
+  }
+
   /// Toggle stays off until helper is installed, legal copy is accepted, and the writable stamp exists.
   public static func shouldAutoEnable(
     helperInstalled: Bool,
