@@ -45,6 +45,7 @@ final class VolumeStore: ObservableObject {
   private var mountAllPumping = false
   private var lastAdvice: [String: VolumeHealth.MountAdvice] = [:]
   private var lastHelperText: [String: String] = [:]
+  private var lastProbeKind: [String: VolumeHealth.ProbeKind] = [:]
   private var volumeMessages: [String: String] = [:]
   private var lastFailedCmd: [String: String] = [:]
   private var refreshRunning = false
@@ -132,6 +133,17 @@ final class VolumeStore: ObservableObject {
       isWritableFuse: vol.isWritableFuse,
       isReadOnlyMounted: vol.isReadOnlyMounted,
       lastAdvice: lastAdvice[vol.id]
+    )
+  }
+
+  func diskStatusRows(_ vol: NTFSVolume) -> [DiskStatus.Row] {
+    DiskStatus.rows(
+      volume: vol,
+      probeKind: lastProbeKind[vol.id],
+      lastAdvice: lastAdvice[vol.id],
+      helperText: lastHelperText[vol.id] ?? "",
+      hasEncryptionHint: vol.hasEncryptionHint
+        || encryptedDisks.contains(where: { $0.id == vol.id })
     )
   }
 
@@ -224,10 +236,7 @@ final class VolumeStore: ObservableObject {
   }
 
   private func installFailureMessage(_ raw: String) -> String {
-    let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-    if trimmed.isEmpty { return L10n.t("error.helperInstallFailed") }
-    if trimmed.count <= 600 { return trimmed }
-    return String(trimmed.prefix(600)) + "…"
+    UserFacingError.message(from: raw, logPath: AppLog.url.path)
   }
 
   private func waitForHelperSocketThenFinishInstall(
@@ -279,6 +288,68 @@ final class VolumeStore: ObservableObject {
     makeCancelDefault(alert)
     guard alert.runModal() == .alertSecondButtonReturn else { return }
     uninstallHelper()
+  }
+
+  @discardableResult
+  func confirmRepairMountEnvironment(then completion: ((Privileged.Outcome) -> Void)? = nil) -> Bool {
+    if !helperInstalled {
+      let text = L10n.t("error.helperMissing")
+      setMessage(text)
+      completion?(Privileged.Outcome(ok: false, text: text))
+      return false
+    }
+    NSApp.activate(ignoringOtherApps: true)
+    let alert = NSAlert()
+    alert.alertStyle = .warning
+    alert.messageText = RepairMountCopy.title()
+    alert.informativeText = RepairMountCopy.body()
+    alert.addButton(withTitle: RepairMountCopy.cancelTitle)
+    alert.addButton(withTitle: RepairMountCopy.actionTitle)
+    makeCancelDefault(alert)
+    guard alert.runModal() == .alertSecondButtonReturn else { return false }
+    repairMountEnvironment(then: completion)
+    return true
+  }
+
+  func repairMountEnvironment(then completion: ((Privileged.Outcome) -> Void)? = nil) {
+    if busyId != nil { return }
+    busyId = "repair"
+    setMessage(L10n.t("repairEnv.working"))
+    DispatchQueue.global(qos: .userInitiated).async {
+      if Privileged.helperNeedsUpdate {
+        let shown = L10n.t("privileged.mismatch")
+        DispatchQueue.main.async {
+          self.busyId = nil
+          self.setMessage(shown)
+          completion?(Privileged.Outcome(ok: false, text: shown))
+        }
+        return
+      }
+      var helper = Privileged.run("repair-env")
+      var restarted = false
+      if Privileged.systemHelperInstalled {
+        if !helper.ok {
+          _ = Privileged.restartHelper()
+          if Privileged.daemonReady {
+            helper = Privileged.run("repair-env")
+          }
+        }
+        restarted = Privileged.restartHelper().ok
+      }
+      let shown = RepairMountCopy.userMessage(
+        helperText: helper.text,
+        helperOK: helper.ok,
+        helperRestarted: restarted
+      )
+      DispatchQueue.main.async {
+        self.busyId = nil
+        self.helperInstalled = Privileged.systemHelperInstalled
+        AppLog.append("repair-env\n\(helper.text)\n\(shown)")
+        self.setMessage(shown)
+        self.refresh()
+        completion?(Privileged.Outcome(ok: helper.ok, text: shown))
+      }
+    }
   }
 
   func showAbout() {
@@ -352,6 +423,7 @@ final class VolumeStore: ObservableObject {
     autoMountAttempted.formIntersection(ids)
     lastAdvice = lastAdvice.filter { ids.contains($0.key) }
     lastHelperText = lastHelperText.filter { ids.contains($0.key) }
+    lastProbeKind = lastProbeKind.filter { ids.contains($0.key) }
     volumeMessages = volumeMessages.filter { ids.contains($0.key) }
     lastFailedCmd = lastFailedCmd.filter { ids.contains($0.key) }
     for vol in volumes where vol.isWritableFuse {
@@ -399,7 +471,7 @@ final class VolumeStore: ObservableObject {
       if !fixResult.ok {
         DispatchQueue.main.async {
           self.busyId = nil
-          self.lastHelperText[vol.id] = fixResult.text
+          self.rememberHealthOutput(vol.id, fixResult.text)
           if VolumeHealth.looksDirtyOrHibernated(fixResult.text) {
             self.lastAdvice[vol.id] = .readOnlyDirty
           }
@@ -411,16 +483,19 @@ final class VolumeStore: ObservableObject {
       DispatchQueue.main.async {
         self.busyId = nil
         self.lastAdvice[vol.id] = VolumeHealth.advice(for: mountResult.text, success: mountResult.ok)
-        self.lastHelperText[vol.id] = mountResult.text
+        self.rememberHealthOutput(vol.id, mountResult.text)
         self.finishVolume(vol, cmd: "mount", result: mountResult, openFinder: true)
       }
     }
   }
 
   func mount(_ vol: NTFSVolume, openFinder: Bool = true, fromAutoMount: Bool = false) {
-    if vol.isInternal, !confirmInternalMount(vol) {
-      if fromAutoMount { markAutoMountFinished(vol.id, userRefused: true, helperReturned: false) }
-      return
+    if vol.isInternal {
+      if fromAutoMount {
+        markAutoMountFinished(vol.id, userRefused: true, helperReturned: false)
+        return
+      }
+      if !confirmInternalMount(vol) { return }
     }
     if !LegalGate.confirmWritable() {
       if fromAutoMount { markAutoMountFinished(vol.id, userRefused: true, helperReturned: false) }
@@ -444,7 +519,13 @@ final class VolumeStore: ObservableObject {
     DispatchQueue.global(qos: .userInitiated).async {
       let probe = Privileged.run("probe", vol.id)
       DispatchQueue.main.async {
-        self.lastHelperText[vol.id] = probe.text
+        self.rememberHealthOutput(vol.id, probe.text, fromProbe: true)
+        if !probe.ok {
+          self.busyId = nil
+          self.finishVolume(vol, cmd: "mount", result: probe, openFinder: false)
+          self.restoreSystemMount(vol)
+          return
+        }
         let kind = VolumeHealth.probeKind(from: probe.text)
         if kind == .hibernated || kind == .dirty || kind == .corrupt {
           self.lastAdvice[vol.id] = .readOnlyDirty
@@ -726,15 +807,19 @@ final class VolumeStore: ObservableObject {
   }
 
   func mountDefaultWritableIfNeeded() {
-    guard autoMount, helperInstalled, !Privileged.helperNeedsUpdate else { return }
-    guard FileManager.default.fileExists(atPath: AppIdentity.writableStampURL.path) else { return }
+    guard AutoMountPolicy.mayAttempt(
+      autoMountEnabled: autoMount,
+      helperReady: helperInstalled && !Privileged.helperNeedsUpdate,
+      legalAccepted: LegalGate.hasAcceptedLegal
+    ) else { return }
     for vol in volumes {
       if AutoMountPolicy.isEligible(
         isInternal: vol.isInternal,
         isWritableFuse: vol.isWritableFuse,
         userSkippedUnmount: skippedUnmount.contains(vol.id),
         alreadyAttempted: autoMountAttempted.contains(vol.id)
-      ), !autoMountQueue.contains(vol.id) {
+      ), AutoMountPolicy.allowsWritableAttempt(lastProbeKind[vol.id] ?? .unknown),
+         !autoMountQueue.contains(vol.id) {
         autoMountQueue.append(vol.id)
       }
     }
@@ -763,6 +848,12 @@ final class VolumeStore: ObservableObject {
 
   func toggleAutoMount() {
     let turningOff = autoMount
+    if !turningOff {
+      guard helperInstalled, !Privileged.helperNeedsUpdate else { return }
+      guard LegalGate.hasAcceptedLegal else { return }
+      if !LegalGate.confirmWritable() { return }
+      if !confirmDriverIfNeeded() { return }
+    }
     let cmd = turningOff ? "disable-automount" : "enable-automount"
     busyId = "automount"
     setMessage("")
@@ -782,21 +873,27 @@ final class VolumeStore: ObservableObject {
     }
   }
 
-  private func run(_ cmd: String, _ vol: NTFSVolume, openFinder: Bool = false, fromAutoMount: Bool = false) {
+  private func run(
+    _ cmd: String,
+    _ vol: NTFSVolume,
+    openFinder: Bool = false,
+    fromAutoMount: Bool = false,
+    extra: [String] = []
+  ) {
     busyId = vol.id
     setMessage("", volumeId: vol.id)
     DispatchQueue.global(qos: .userInitiated).async {
-      let result = Privileged.run(cmd, vol.id)
+      let result = Privileged.run(cmd, vol.id, extra: extra)
       DispatchQueue.main.async {
         self.busyId = nil
         if cmd == "mount" {
           self.lastAdvice[vol.id] = VolumeHealth.advice(for: result.text, success: result.ok)
-          self.lastHelperText[vol.id] = result.text
+          self.rememberHealthOutput(vol.id, result.text)
         }
         if fromAutoMount {
           self.markAutoMountFinished(vol.id, userRefused: false, helperReturned: true)
         }
-        self.finishVolume(vol, cmd: cmd, result: result, openFinder: openFinder)
+        self.finishVolume(vol, cmd: cmd, result: result, openFinder: openFinder, extra: extra)
       }
     }
   }
@@ -805,7 +902,8 @@ final class VolumeStore: ObservableObject {
     _ vol: NTFSVolume,
     cmd: String,
     result: Privileged.Outcome,
-    openFinder: Bool
+    openFinder: Bool,
+    extra: [String] = []
   ) {
     let shown = display(result.text)
     setMessage(shown, volumeId: vol.id)
@@ -815,6 +913,14 @@ final class VolumeStore: ObservableObject {
       lastFailedCmd[vol.id] = cmd
     }
     refresh()
+    if !result.ok,
+       cmd == "unmount",
+       !extra.contains("force"),
+       UserFacingError.kind(from: result.text) == .diskBusy,
+       confirmForceUnmount(vol) {
+      run("unmount", vol, extra: ["force"])
+      return
+    }
     if result.ok, cmd == "mount", openFinder {
       NSWorkspace.shared.open(URL(fileURLWithPath: vol.expectedMountPoint))
     } else if !result.ok, cmd == "mount", VolumeHealth.looksLikeKextOrFSKitBlock(result.text) {
@@ -822,6 +928,27 @@ final class VolumeStore: ObservableObject {
     }
     advanceMountAll(after: vol.id)
     if autoMountPumping == false { pumpAutoMount() }
+  }
+
+  private func confirmForceUnmount(_ vol: NTFSVolume) -> Bool {
+    NSApp.activate(ignoringOtherApps: true)
+    let alert = NSAlert()
+    alert.alertStyle = .critical
+    alert.messageText = ForceUnmountCopy.title(volumeName: vol.name)
+    alert.informativeText = ForceUnmountCopy.body(volumeName: vol.name)
+    alert.addButton(withTitle: ForceUnmountCopy.cancelTitle)
+    alert.addButton(withTitle: ForceUnmountCopy.forceTitle)
+    makeCancelDefault(alert)
+    return alert.runModal() == .alertSecondButtonReturn
+  }
+
+  /// Probe always records classify (including unknown). Mount/fix keep a known kind so "OK rw" does not wipe it.
+  private func rememberHealthOutput(_ id: String, _ text: String, fromProbe: Bool = false) {
+    lastHelperText[id] = text
+    let kind = VolumeHealth.probeKind(from: text)
+    if fromProbe || kind != .unknown {
+      lastProbeKind[id] = kind
+    }
   }
 
   private func setMessage(_ text: String, volumeId: String? = nil) {

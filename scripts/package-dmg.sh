@@ -37,7 +37,7 @@ trap cleanup EXIT
 /bin/cp "$ROOT/docs/DISTRIBUTION.md" "$STAGE/DISTRIBUTION.md"
 printf '%s\n' "源码: https://github.com/bio-apple/NTFSMount" > "$STAGE/源码.txt"
 /bin/cat > "$STAGE/使用说明.txt" <<'EOF'
-NTFS 读写（NTFSMount）v1.2.1
+NTFS 读写（NTFSMount）v1.0.0
 直发，不上 Mac App Store。个人使用预发布。
 
 仅 Apple Silicon（M 芯片）与 macOS 13.0+。不支持 Intel Mac。

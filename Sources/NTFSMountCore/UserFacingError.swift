@@ -49,40 +49,87 @@ public enum UserFacingError {
   public static func message(from raw: String, logPath: String? = nil, locale: Locale? = nil) -> String {
     let t = raw.trimmingCharacters(in: .whitespacesAndNewlines)
     if t.isEmpty { return L10n.t("error.empty", locale: locale) }
-    switch kind(from: t) {
+    let kind = kind(from: t)
+    let mapped: String
+    switch kind {
     case .canceled:
-      return L10n.t("error.canceled", locale: locale)
+      mapped = L10n.t("error.canceled", locale: locale)
     case .helperInstallFailed:
-      return L10n.t("error.helperInstallFailed", locale: locale)
+      mapped = L10n.t("error.helperInstallFailed", locale: locale)
     case .helperMissing:
-      return L10n.t("error.helperMissing", locale: locale)
+      mapped = L10n.t("error.helperMissing", locale: locale)
     case .missingGoNfsv4:
-      return L10n.t("error.missingGoNfsv4", locale: locale)
+      mapped = L10n.t("error.missingGoNfsv4", locale: locale)
     case .missingBinary:
-      return L10n.t("error.missingBinary", locale: locale)
+      mapped = L10n.t("error.missingBinary", locale: locale)
     case .adminDenied:
-      return L10n.t("error.adminDenied", locale: locale)
+      mapped = L10n.t("error.adminDenied", locale: locale)
     case .helperNeedsUpdate:
-      return L10n.t("error.helperNeedsUpdate", locale: locale)
+      mapped = L10n.t("error.helperNeedsUpdate", locale: locale)
     case .diskBusy:
       if t.contains("磁盘正被占用") {
         if t.hasPrefix("error:") {
-          return String(t.dropFirst(6)).trimmingCharacters(in: .whitespaces)
+          mapped = String(t.dropFirst(6)).trimmingCharacters(in: .whitespaces)
+        } else {
+          mapped = t
         }
-        return t
+      } else {
+        mapped = L10n.t("error.diskBusy", locale: locale)
       }
-      return L10n.t("error.diskBusy", locale: locale)
     case .other:
       if t.hasPrefix("error:") {
-        return String(t.dropFirst(6)).trimmingCharacters(in: .whitespaces)
-      }
-      if t.count > 180 {
+        mapped = String(t.dropFirst(6)).trimmingCharacters(in: .whitespaces)
+      } else if t.count > 180 {
         if let logPath {
-          return L10n.format("error.failedWithLog", logPath, locale: locale)
+          mapped = L10n.format("error.failedWithLog", logPath, locale: locale)
+        } else {
+          mapped = L10n.t("error.failedLog", locale: locale)
         }
-        return L10n.t("error.failedLog", locale: locale)
+      } else {
+        mapped = t
       }
-      return t
+    }
+    return withoutHanIfNeeded(mapped, kind: kind, logPath: logPath, locale: locale)
+  }
+
+  /// Helper stderr may be Chinese; never show Han in English/Japanese UI.
+  private static func withoutHanIfNeeded(
+    _ text: String,
+    kind: Kind,
+    logPath: String?,
+    locale: Locale?
+  ) -> String {
+    guard !prefersChinese(locale), containsHan(text) else { return text }
+    let kept = text.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+      .map(String.init)
+      .filter { line in
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        return !trimmed.isEmpty && !containsHan(trimmed)
+      }
+    if !kept.isEmpty { return kept.joined(separator: "\n") }
+    switch kind {
+    case .diskBusy:
+      return L10n.t("error.diskBusy", locale: locale)
+    case .other:
+      if let logPath {
+        return L10n.format("error.failedWithLog", logPath, locale: locale)
+      }
+      return L10n.t("error.failedLog", locale: locale)
+    default:
+      return text
+    }
+  }
+
+  private static func prefersChinese(_ locale: Locale?) -> Bool {
+    switch L10n.languageCode(for: locale) {
+    case "zh-Hans", "zh-Hant": return true
+    default: return false
+    }
+  }
+
+  private static func containsHan(_ s: String) -> Bool {
+    s.unicodeScalars.contains { scalar in
+      (0x3400...0x9FFF).contains(scalar.value) || (0xF900...0xFAFF).contains(scalar.value)
     }
   }
 

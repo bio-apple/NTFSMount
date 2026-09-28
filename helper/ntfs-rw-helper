@@ -1,11 +1,11 @@
 #!/bin/bash
 # Privileged helper: ntfs-3g over bundled FUSE-T userspace.
 # 本仓库源码（bash），不是第三方预编译二进制。构建时 codesign + SHA-256。
-# 命令: mount|unmount|eject|format|fix|probe|automount|enable-automount|disable-automount
+# 命令: mount|unmount|eject|format|fix|probe|automount|enable-automount|disable-automount|repair-env
 # 全局旗标: --verbose（可在子命令前或后）
 set -euo pipefail
 
-HELPER_VERSION=9
+HELPER_VERSION=10
 
 # 不写死 /bin vs /usr/bin；不搜 PATH（root 下可被劫持）。
 resolve_cmd() {
@@ -23,6 +23,8 @@ DISKUTIL="$(resolve_cmd diskutil)"
 MOUNT="$(resolve_cmd mount)"
 UMOUNT="$(resolve_cmd umount)"
 PKILL="$(resolve_cmd pkill)"
+PGREP="$(resolve_cmd pgrep)"
+KILL="$(resolve_cmd kill)"
 LSOF="$(resolve_cmd lsof)"
 LAUNCHCTL="$(resolve_cmd launchctl)"
 OSASCRIPT="$(resolve_cmd osascript)"
@@ -30,6 +32,8 @@ OSASCRIPT="$(resolve_cmd osascript)"
 # umount(8) 支持 --，卸载挂载点时使用。
 
 VERBOSE=0
+# 仅 do_unmount … force（UI 确认后）可置 1。probe / automount / mount / eject / repair-env 不得置位。
+ALLOW_FORCE=0
 CURRENT_IDENT="-"
 CURRENT_CMD="-"
 LOG_FILE=""
@@ -229,6 +233,19 @@ vlog() {
   if [[ -n "$LOG_FILE" ]]; then
     { printf '%s\n' "$(log_ts) ${CURRENT_IDENT:--} $* - -" >>"$LOG_FILE"; } 2>/dev/null || true
   fi
+}
+
+# 强制卸载必须写进 ntfsmount.log 与 helperd 日志，不得静默。
+log_force_warning() {
+  local target="$1"
+  local reason="${2:-user-confirmed force unmount}"
+  local line
+  line="$(log_ts) WARNING force unmount used disk=${CURRENT_IDENT:--} target=${target} cmd=${CURRENT_CMD:--} reason=${reason}"
+  printf '%s\n' "$line" >&2
+  if [[ -n "$LOG_FILE" ]]; then
+    { printf '%s\n' "$line" >>"$LOG_FILE"; } 2>/dev/null || true
+  fi
+  { printf '%s\n' "$line" >>/Library/Logs/ntfsmount-helperd.log; } 2>/dev/null || true
 }
 
 on_exit() {
@@ -584,12 +601,42 @@ occupiers_for_mp() {
   printf '%s' "$names" | /usr/bin/tr '\n' ',' | /usr/bin/sed -e 's/,$//' -e 's/,/, /g'
 }
 
-busy_eject_message() {
+busy_volume_message() {
   local who="$1"
+  local hint="${2:-请关闭访达窗口/文件后重试}"
   if [[ -n "$who" ]]; then
-    printf '磁盘正被占用：%s。请关闭访达窗口/文件后点推出' "$who"
+    printf '磁盘正被占用：%s。%s' "$who" "$hint"
   else
-    printf '磁盘正被占用：请关闭访达窗口/文件后点推出'
+    printf '磁盘正被占用：%s' "$hint"
+  fi
+}
+
+busy_eject_message() {
+  busy_volume_message "$1" "请关闭访达窗口/文件后点推出"
+}
+
+busy_unmount_message() {
+  busy_volume_message "$1" "请关闭访达窗口/文件后点卸载"
+}
+
+# 默认 diskutil unmount（独立 argv，可含空格/中文）。force 仅 ALLOW_FORCE=1。
+# 挂载点路径失败时再试 umount --（从不 -f）。
+try_unmount_target() {
+  local target="$1"
+  [[ -n "$target" ]] || return 1
+  if [[ "${ALLOW_FORCE}" -eq 1 ]]; then
+    log_force_warning "$target"
+    vlog "$DISKUTIL" unmount force "$target"
+    "$DISKUTIL" unmount force "$target" >/dev/null 2>&1 && return 0
+    return 1
+  fi
+  vlog "$DISKUTIL" unmount "$target"
+  "$DISKUTIL" unmount "$target" >/dev/null 2>&1 && return 0
+  if [[ "$target" == /* ]]; then
+    vlog "$UMOUNT" -- "$target"
+    "$UMOUNT" -- "$target" >/dev/null 2>&1
+  else
+    return 1
   fi
 }
 
@@ -608,10 +655,7 @@ unmount_numbered_leftovers() {
     }
     case "$line" in
       "/dev/${ident} on "*)
-        vlog "$UMOUNT" -f -- "$mp"
-        "$UMOUNT" -f -- "$mp" >/dev/null 2>&1 || true
-        vlog "$DISKUTIL" unmount force "$mp"
-        "$DISKUTIL" unmount force "$mp" >/dev/null 2>&1 || true
+        try_unmount_target "$mp" || true
         ;;
     esac
     if [[ -z "$(mount_line "$mp")" && -d "$mp" ]]; then
@@ -626,30 +670,29 @@ unmount_any() {
   name="$(volume_name "$ident")"
   mp="$(volume_mount_point "$name")"
   kill_ntfs3g "$ident"
-  vlog "$DISKUTIL" unmount force "$ident"
-  "$DISKUTIL" unmount force "$ident" >/dev/null 2>&1 || true
-  vlog "$DISKUTIL" unmount force "/dev/$ident"
-  "$DISKUTIL" unmount force "/dev/$ident" >/dev/null 2>&1 || true
+  try_unmount_target "$ident" || true
+  try_unmount_target "/dev/$ident" || true
   while IFS= read -r mp; do
     [[ -n "$mp" ]] || continue
-    vlog "$UMOUNT" -f -- "$mp"
-    "$UMOUNT" -f -- "$mp" >/dev/null 2>&1 || true
-    vlog "$DISKUTIL" unmount force "$mp"
-    "$DISKUTIL" unmount force "$mp" >/dev/null 2>&1 || true
+    try_unmount_target "$mp" || true
   done < <(dev_mount_points "$ident")
   mp="$(volume_mount_point "$name")"
-  vlog "$UMOUNT" -f -- "$mp"
-  "$UMOUNT" -f -- "$mp" >/dev/null 2>&1 || true
+  try_unmount_target "$mp" || true
   unmount_numbered_leftovers "$ident" "$name"
   local i
   for i in 1 2 3 4 5; do
-    if [[ -z "$(mount_line "$mp")" ]] && [[ -z "$("$MOUNT" | /usr/bin/awk -v d="/dev/${ident}" '$1 == d && $2 == "on" { print; exit }')" ]]; then
-      break
+    if ! volume_still_mounted "$ident"; then
+      return 0
     fi
-    "$UMOUNT" -f -- "$mp" >/dev/null 2>&1 || true
+    try_unmount_target "$ident" || true
+    try_unmount_target "$mp" || true
     unmount_numbered_leftovers "$ident" "$name"
     sleep 0.2
   done
+  if volume_still_mounted "$ident"; then
+    return 1
+  fi
+  return 0
 }
 
 # diskutil MountPoint 为空，且 mount(1) 无该设备或 /Volumes/name。
@@ -671,18 +714,23 @@ volume_still_mounted() {
   [[ -n "$("$MOUNT" | /usr/bin/awk -v d="/dev/${ident}" '$1 == d && $2 == "on" { print; exit }')" ]]
 }
 
-# 挂载前必须卸干净（含系统只读与 leftover Name 1）；仍占用则重试几次后失败，不启动 ntfs-3g。
+# 挂载前必须卸干净（含系统只读与 leftover Name 1）；仍占用则失败，不 -f、不启动 ntfs-3g。
 ensure_unmounted() {
   local ident="$1"
-  local i
+  local i name mp occupiers
   for i in 1 2 3 4 5; do
-    unmount_any "$ident"
+    unmount_any "$ident" || true
     if ! volume_still_mounted "$ident"; then
       return 0
     fi
     sleep 0.4
   done
-  die "卷宗仍被占用，无法挂载"
+  name="$(volume_name "$ident")"
+  if ! mp="$(plist_mount_point "$ident")"; then
+    mp="$(volume_mount_point "$name")"
+  fi
+  occupiers="$(occupiers_for_mp "$mp")"
+  die "$(busy_volume_message "$occupiers")"
 }
 
 can_write() {
@@ -885,9 +933,24 @@ do_mount() {
 
 do_unmount() {
   local ident="$1"
+  local mode="${2:-}"
   CURRENT_IDENT="$ident"
   valid_id "$ident" || die "非法设备: $ident"
-  unmount_any "$ident"
+  if [[ "$mode" == "force" ]]; then
+    ALLOW_FORCE=1
+  elif [[ -n "$mode" ]]; then
+    die "非法卸载参数: $mode"
+  fi
+  unmount_any "$ident" || true
+  if volume_still_mounted "$ident"; then
+    local name mp occupiers
+    name="$(volume_name "$ident")"
+    if ! mp="$(plist_mount_point "$ident")"; then
+      mp="$(volume_mount_point "$name")"
+    fi
+    occupiers="$(occupiers_for_mp "$mp")"
+    die "$(busy_unmount_message "$occupiers")"
+  fi
   echo "ok unmounted $ident"
 }
 
@@ -903,15 +966,10 @@ do_eject() {
     mp="$(volume_mount_point "$name")"
   fi
 
-  # 先释放本卷 FUSE（ntfs-3g / go-nfsv4），再 umount 挂载点，最后才 diskutil eject 整盘。
+  # 先释放本卷 FUSE（ntfs-3g / go-nfsv4），再优雅卸载挂载点，最后才 diskutil eject 整盘。
+  # 占用中不得 force-pop；失败把 busy 交给 UI。
   kill_ntfs3g "$ident"
-  if [[ -n "$mp" ]]; then
-    vlog "$UMOUNT" -f -- "$mp"
-    "$UMOUNT" -f -- "$mp" >/dev/null 2>&1 || true
-    vlog "$DISKUTIL" unmount force "$mp"
-    "$DISKUTIL" unmount force "$mp" >/dev/null 2>&1 || true
-  fi
-  unmount_any "$ident"
+  unmount_any "$ident" || true
   if ! volume_still_mounted "$ident"; then
     still=0
   fi
@@ -926,12 +984,7 @@ do_eject() {
     else
       kill_ntfs3g "$ident"
     fi
-    if [[ -n "$mp" ]]; then
-      vlog "$UMOUNT" -f -- "$mp"
-      "$UMOUNT" -f -- "$mp" >/dev/null 2>&1 || true
-      vlog "$DISKUTIL" unmount force "$mp"
-      "$DISKUTIL" unmount force "$mp" >/dev/null 2>&1 || true
-    fi
+    unmount_any "$ident" || true
     sleep 0.5
     if ! volume_still_mounted "$ident"; then
       still=0
@@ -1100,8 +1153,12 @@ do_format() {
 
   export PATH="${NTFS3G_DIR}:/usr/bin:/bin:/usr/sbin:/sbin"
   kill_ntfs3g_whole "$ident"
-  vlog "$DISKUTIL" unmountDisk force "$ident"
-  "$DISKUTIL" unmountDisk force "$ident" >/dev/null 2>&1 || true
+  vlog "$DISKUTIL" unmountDisk "$ident"
+  if ! "$DISKUTIL" unmountDisk "$ident" >/dev/null 2>&1; then
+    log_force_warning "$ident" "format unmountDisk after user confirm"
+    vlog "$DISKUTIL" unmountDisk force "$ident"
+    "$DISKUTIL" unmountDisk force "$ident" >/dev/null 2>&1 || true
+  fi
 
   local out rc part dev
   set +e
@@ -1111,8 +1168,12 @@ do_format() {
   set -e
   [[ $rc -eq 0 ]] || die "分区失败: $out"
 
-  vlog "$DISKUTIL" unmountDisk force "$ident"
-  "$DISKUTIL" unmountDisk force "$ident" >/dev/null 2>&1 || true
+  vlog "$DISKUTIL" unmountDisk "$ident"
+  if ! "$DISKUTIL" unmountDisk "$ident" >/dev/null 2>&1; then
+    log_force_warning "$ident" "format unmountDisk before mkntfs"
+    vlog "$DISKUTIL" unmountDisk force "$ident"
+    "$DISKUTIL" unmountDisk force "$ident" >/dev/null 2>&1 || true
+  fi
   part="$(data_partition "$ident")"
   valid_id "$part" || die "找不到数据分区: $ident"
   # macOS /dev/rdisk* is a character device; mkntfs needs a block device.
@@ -1273,6 +1334,314 @@ do_disable_automount() {
   echo "ok automount disabled"
 }
 
+# 本应用捆绑的 ntfs-3g / go-nfsv4（app bundle、sealed support、dev runtime）。
+# 不匹配 Homebrew / 系统 FUSE-T / 其它 App。
+is_ntfsmount_runtime_path() {
+  local p="$1" dir macos nfs
+  [[ -n "$p" && "$p" == /* ]] || return 1
+  case "$p" in
+    *"/NTFSMount.app/Contents/MacOS/ntfs-3g"|*"/NTFSMount.app/Contents/MacOS/go-nfsv4") return 0 ;;
+  esac
+  if [[ "$p" == "/Library/Application Support/NTFSMount" ||
+        "$p" == "/Library/Application Support/NTFSMount/"* ]]; then
+    return 0
+  fi
+  if [[ -n "$NTFS3G" && "$p" == "$NTFS3G" ]]; then
+    return 0
+  fi
+  nfs="$(resolve_nfs_srv || true)"
+  if [[ -n "$nfs" && "$p" == "$nfs" ]]; then
+    return 0
+  fi
+  if [[ -n "$NTFS3G_DIR" ]]; then
+    if [[ "$p" == "${NTFS3G_DIR}/ntfs-3g" || "$p" == "${NTFS3G_DIR}/go-nfsv4" ]]; then
+      return 0
+    fi
+  fi
+  for dir in "${BUNDLE_DIRS[@]+"${BUNDLE_DIRS[@]}"}"; do
+    if [[ "$p" == "${dir}/ntfs-3g" || "$p" == "${dir}/go-nfsv4" ]]; then
+      return 0
+    fi
+  done
+  macos="$(installed_app_macos || true)"
+  if [[ -n "$macos" ]]; then
+    if [[ "$p" == "${macos}/ntfs-3g" || "$p" == "${macos}/go-nfsv4" ]]; then
+      return 0
+    fi
+  fi
+  return 1
+}
+
+installed_app_macos() {
+  local f="/Library/Application Support/NTFSMount/app.path" app
+  [[ -f "$f" ]] || return 1
+  app="$(/bin/cat "$f" 2>/dev/null || true)"
+  app="${app%%$'\n'*}"
+  [[ -n "$app" && -d "${app}/Contents/MacOS" ]] || return 1
+  printf '%s' "${app}/Contents/MacOS"
+}
+
+is_repair_mount_point() {
+  local mp="$1"
+  [[ "$mp" == /Volumes/* ]] || return 1
+  [[ "$mp" != "/Volumes" ]] || return 1
+  [[ "$mp" != "/" ]] || return 1
+  [[ "$mp" != /System/* && "$mp" != /Users/* && "$mp" != /private/* ]] || return 1
+  return 0
+}
+
+is_localhost_nfs_source() {
+  local src="$1"
+  [[ -n "$src" ]] || return 1
+  if [[ "$src" == 127.0.0.1:* || "$src" == localhost:* ||
+        "$src" == "::1:"* || "$src" == "[::1]:"* ||
+        "$src" == "nfs://127.0.0.1/"* || "$src" == "nfs://localhost/"* ]]; then
+    return 0
+  fi
+  return 1
+}
+
+line_looks_like_our_backend() {
+  local line="$1"
+  [[ -n "$line" ]] || return 1
+  printf '%s\n' "$line" | /usr/bin/grep -qiE 'ntfs-3g|fuse-t|fuset| \(nfs,|\(nfs,'
+}
+
+is_localhost_nfs_line() {
+  local line="$1" src
+  [[ -n "$line" ]] || return 1
+  printf '%s\n' "$line" | /usr/bin/grep -qiE ' \(nfs,|\(nfs,' || return 1
+  src="$(printf '%s\n' "$line" | /usr/bin/awk '{ print $1 }')"
+  is_localhost_nfs_source "$src"
+}
+
+pid_exe_path() {
+  local pid="$1"
+  [[ "$pid" =~ ^[0-9]+$ ]] || return 1
+  "$LSOF" -p "$pid" -a -d txt -Fn 2>/dev/null | /usr/bin/awk '/^n\// { print substr($0, 2); exit }'
+}
+
+list_candidate_fuse_procs() {
+  {
+    "$PGREP" -lf -- ntfs-3g 2>/dev/null || true
+    "$PGREP" -lf -- go-nfsv4 2>/dev/null || true
+  } | /usr/bin/awk 'NF >= 2 && $1 ~ /^[0-9]+$/ && !seen[$1]++ { print }'
+}
+
+proc_is_our_fuse() {
+  local cmd="$1" exe="$2"
+  printf '%s' "$cmd" | /usr/bin/grep -qiE 'ntfs-3g|go-nfsv4' || return 1
+  printf '%s' "$cmd" | /usr/bin/grep -qiE 'ntfs-rw-helper|ntfsmount-helperd' && return 1
+  if is_ntfsmount_runtime_path "$exe"; then
+    return 0
+  fi
+  is_ntfsmount_runtime_path "${cmd%% *}"
+}
+
+our_fuse_pids_for_ident() {
+  local ident="$1" name="$2"
+  local needle qname pid cmd exe
+  needle="$(ntfs3g_pkill_needle "$ident")"
+  qname="$(regex_escape "$name")"
+  while IFS= read -r pid cmd; do
+    [[ -n "$pid" ]] || continue
+    exe="$(pid_exe_path "$pid" || true)"
+    proc_is_our_fuse "$cmd" "$exe" || continue
+    if printf '%s' "$cmd" | /usr/bin/grep -qE -- "$needle"; then
+      printf '%s\n' "$pid"
+      continue
+    fi
+    if [[ -n "$qname" ]] && printf '%s' "$cmd" | /usr/bin/grep -qE -- "go-nfsv4 .*--volname ${qname}( |$)"; then
+      printf '%s\n' "$pid"
+      continue
+    fi
+    if [[ -n "$qname" ]] && printf '%s' "$cmd" | /usr/bin/grep -qE -- "go-nfsv4 .* /Volumes/${qname}( |$)"; then
+      printf '%s\n' "$pid"
+    fi
+  done < <(list_candidate_fuse_procs)
+}
+
+has_foreign_fuse_pid_for_ident() {
+  local ident="$1" needle pid cmd exe
+  needle="$(ntfs3g_pkill_needle "$ident")"
+  while IFS= read -r pid cmd; do
+    [[ -n "$pid" ]] || continue
+    printf '%s' "$cmd" | /usr/bin/grep -qE -- "$needle" || continue
+    exe="$(pid_exe_path "$pid" || true)"
+    if proc_is_our_fuse "$cmd" "$exe"; then
+      continue
+    fi
+    if printf '%s' "$cmd" | /usr/bin/grep -qiE 'ntfs-3g|go-nfsv4'; then
+      return 0
+    fi
+  done < <(list_candidate_fuse_procs)
+  return 1
+}
+
+repair_has_numbered_leftover() {
+  local ident="$1" name="$2" n mp line
+  for n in 1 2 3; do
+    mp="$(volume_mount_point "$name" "$n")"
+    line="$(mount_line "$mp")"
+    [[ -n "$line" ]] || continue
+    case "$line" in
+      "/dev/${ident} on "*) return 0 ;;
+    esac
+    is_localhost_nfs_line "$line" && return 0
+  done
+  return 1
+}
+
+repair_should_unmount_ident() {
+  local ident="$1" mp="$2" name="$3" line
+  if [[ -n "$(our_fuse_pids_for_ident "$ident" "$name")" ]]; then
+    return 0
+  fi
+  if has_foreign_fuse_pid_for_ident "$ident"; then
+    return 1
+  fi
+  line="$(mount_line "$mp")"
+  if [[ -n "$line" ]] && line_looks_like_our_backend "$line"; then
+    return 0
+  fi
+  repair_has_numbered_leftover "$ident" "$name"
+}
+
+# 优雅卸载；不 kill、不 ALLOW_FORCE、不 umount -f。占用则失败给 UI。
+repair_graceful_unmount_ident() {
+  local ident="$1" mp="$2" name="$3" extra
+  try_unmount_target "$mp" || true
+  try_unmount_target "$ident" || true
+  try_unmount_target "/dev/$ident" || true
+  while IFS= read -r extra; do
+    [[ -n "$extra" ]] || continue
+    try_unmount_target "$extra" || true
+  done < <(dev_mount_points "$ident")
+  unmount_numbered_leftovers "$ident" "$name"
+  try_unmount_target "$mp" || true
+  if volume_still_mounted "$ident" || repair_has_numbered_leftover "$ident" "$name"; then
+    return 1
+  fi
+  return 0
+}
+
+repair_unmount_orphan_localhost_nfs() {
+  local line src mp n=0
+  while IFS= read -r line; do
+    [[ -n "$line" ]] || continue
+    is_localhost_nfs_line "$line" || continue
+    src="$(printf '%s\n' "$line" | /usr/bin/awk '{ print $1 }')"
+    mp="$(repair_mp_from_line "$line")"
+    is_repair_mount_point "$mp" || continue
+    if ! our_pid_owns_mount "$mp" "$line"; then
+      continue
+    fi
+    try_unmount_target "$mp" || true
+    if [[ -z "$(mount_line "$mp")" ]]; then
+      n=$((n + 1))
+    fi
+  done < <("$MOUNT")
+  printf '%s' "$n"
+}
+
+repair_mp_from_line() {
+  local line="$1"
+  printf '%s\n' "$line" | /usr/bin/awk '
+    $2 == "on" {
+      mp = ""
+      for (i = 3; i <= NF; i++) {
+        if ($i ~ /^\(/) break
+        mp = (mp == "" ? $i : mp " " $i)
+      }
+      if (mp != "") print mp
+      exit
+    }'
+}
+
+our_pid_owns_mount() {
+  local mp="$1" line="$2" pid cmd exe
+  while IFS= read -r pid cmd; do
+    [[ -n "$pid" ]] || continue
+    exe="$(pid_exe_path "$pid" || true)"
+    proc_is_our_fuse "$cmd" "$exe" || continue
+    if printf '%s' "$cmd" | /usr/bin/grep -F -q -- "$mp"; then
+      return 0
+    fi
+  done < <(list_candidate_fuse_procs)
+  return 1
+}
+
+list_our_fuse_pids() {
+  local pid cmd exe
+  while IFS= read -r pid cmd; do
+    [[ -n "$pid" ]] || continue
+    [[ "$pid" == "$$" || "$pid" == "$PPID" ]] && continue
+    exe="$(pid_exe_path "$pid" || true)"
+    proc_is_our_fuse "$cmd" "$exe" || continue
+    printf '%s\n' "$pid"
+  done < <(list_candidate_fuse_procs)
+}
+
+kill_our_pid() {
+  local pid="$1"
+  [[ "$pid" =~ ^[0-9]+$ ]] || return 1
+  [[ "$pid" == "$$" || "$pid" == "$PPID" || "$pid" == "1" ]] && return 1
+  "$KILL" -TERM "$pid" >/dev/null 2>&1 || true
+  sleep 0.2
+  if /bin/kill -0 "$pid" 2>/dev/null; then
+    "$KILL" -KILL "$pid" >/dev/null 2>&1 || true
+  fi
+}
+
+# 一键修复：只清理本应用的残留 FUSE/NFS 挂载与捆绑 ntfs-3g/go-nfsv4 进程。
+# 不重置 pf、不碰 vmnet、不 umount -f、不 diskutil unmount force、不修盘、不清 hiberfile。
+do_repair_env() {
+  CURRENT_IDENT="-"
+  CURRENT_CMD="repair-env"
+  local unmounted=0 killed=0 busy=0
+  local ident mp name skip=":"
+  local pid nfs_n
+
+  while IFS= read -r ident; do
+    [[ -n "$ident" ]] || continue
+    valid_id "$ident" || continue
+    is_ntfs "$ident" || continue
+    name="$(volume_name "$ident")"
+    if ! mp="$(plist_mount_point "$ident")"; then
+      mp="$(volume_mount_point "$name")"
+    fi
+    if ! repair_should_unmount_ident "$ident" "$mp" "$name"; then
+      continue
+    fi
+    if repair_graceful_unmount_ident "$ident" "$mp" "$name"; then
+      unmounted=$((unmounted + 1))
+      log_event "$ident" "repair-env-unmount" "0" "0"
+    else
+      busy=$((busy + 1))
+      echo "busy ${ident}" >&2
+      log_event "$ident" "repair-env-busy" "1" "0"
+      while IFS= read -r pid; do
+        [[ -n "$pid" ]] || continue
+        skip="${skip}${pid}:"
+      done < <(our_fuse_pids_for_ident "$ident" "$name")
+    fi
+  done < <(list_slice_idents)
+
+  nfs_n="$(repair_unmount_orphan_localhost_nfs)"
+  [[ "$nfs_n" =~ ^[0-9]+$ ]] || nfs_n=0
+  unmounted=$((unmounted + nfs_n))
+
+  while IFS= read -r pid; do
+    [[ -n "$pid" ]] || continue
+    printf '%s' "$skip" | /usr/bin/grep -q ":${pid}:" && continue
+    kill_our_pid "$pid"
+    killed=$((killed + 1))
+    log_event "-" "repair-env-kill-${pid}" "0" "0"
+  done < <(list_our_fuse_pids)
+
+  echo "ok repair-env unmounted=${unmounted} killed=${killed} busy=${busy}"
+}
+
 do_selftest() {
   if ! valid_id disk12s1; then
     die "selftest: disk12s1 应为合法"
@@ -1310,6 +1679,13 @@ do_selftest() {
   [[ "$mp" == "/Volumes/Seagate Expansion" ]] || die "selftest: Seagate Expansion 应为单一挂载点"
   mp="$(volume_mount_point "$name" 1)"
   [[ "$mp" == "/Volumes/Seagate Expansion 1" ]] || die "selftest: leftover 挂载点应保留空格"
+  name="移动硬盘"
+  mp="$(volume_mount_point "$name")"
+  [[ "$mp" == "/Volumes/移动硬盘" ]] || die "selftest: 中文卷名应为单一挂载点"
+  mp="$(volume_mount_point "$name" 1)"
+  [[ "$mp" == "/Volumes/移动硬盘 1" ]] || die "selftest: 中文 leftover 挂载点应保留空格"
+  [[ "$(fuse_opt_escape '移动,硬盘')" == '移动\,硬盘' ]] || die "selftest: CJK 卷名逗号应转义"
+  [[ "${ALLOW_FORCE}" -eq 0 ]] || die "selftest: ALLOW_FORCE 默认必须为 0"
   [[ "$(fuse_opt_escape 'Seagate, Expansion')" == 'Seagate\, Expansion' ]] || die "selftest: FUSE volname 逗号应转义"
   got="$(NTFS_LOCALE=zh_CN.UTF-8 ntfs3g_base_opts 'Seagate\, Expansion' 501 20)"
   [[ "$got" == *'volname=Seagate\, Expansion'* ]] || die "selftest: base 须含 volname"
@@ -1351,18 +1727,53 @@ do_selftest() {
   [[ "$(volume_state_from_text 'Volume is dirty. Windows is hibernated.')" == hiber ]] || die "selftest: hiber 优先于 dirty"
   [[ "$(classify_line_for_state dirty)" == "classify: volume is dirty" ]] || die "selftest: dirty classify 行"
   [[ "$(classify_line_for_state corrupt)" == "classify: volume may be corrupted" ]] || die "selftest: corrupt classify 行"
+  is_ntfsmount_runtime_path "/Applications/NTFSMount.app/Contents/MacOS/ntfs-3g" || die "selftest: bundle ntfs-3g 应算本应用"
+  is_ntfsmount_runtime_path "/Applications/NTFSMount.app/Contents/MacOS/go-nfsv4" || die "selftest: bundle go-nfsv4 应算本应用"
+  is_ntfsmount_runtime_path "/Library/Application Support/NTFSMount/ntfs-rw-helper" || die "selftest: sealed helper 路径应算本应用"
+  if is_ntfsmount_runtime_path "/usr/local/bin/ntfs-3g"; then
+    die "selftest: Homebrew ntfs-3g 不得算本应用"
+  fi
+  if is_ntfsmount_runtime_path "/opt/homebrew/bin/ntfs-3g"; then
+    die "selftest: Homebrew ntfs-3g 不得算本应用"
+  fi
+  if is_ntfsmount_runtime_path "/Library/Application Support/fuse-t/bin/go-nfsv4"; then
+    die "selftest: 系统 FUSE-T go-nfsv4 不得算本应用"
+  fi
+  is_localhost_nfs_source "127.0.0.1:/vol" || die "selftest: 127.0.0.1 NFS 应识别"
+  is_localhost_nfs_source "localhost:/vol" || die "selftest: localhost NFS 应识别"
+  if is_localhost_nfs_source "fileserver.local:/share"; then
+    die "selftest: 远程 NFS 不得当作本机残留"
+  fi
+  if is_localhost_nfs_source "192.168.1.5:/export"; then
+    die "selftest: 局域网 NFS 不得当作本机残留"
+  fi
+  is_repair_mount_point "/Volumes/My Passport" || die "selftest: /Volumes 挂载点应允许"
+  if is_repair_mount_point "/"; then
+    die "selftest: 根目录不得卸载"
+  fi
+  if is_repair_mount_point "/System/Volumes/Data"; then
+    die "selftest: 系统卷不得卸载"
+  fi
+  if is_repair_mount_point "/Users/name"; then
+    die "selftest: 用户目录不得卸载"
+  fi
+  is_localhost_nfs_line "127.0.0.1:/abc on /Volumes/Foo (nfs, nodev, nosuid)" || die "selftest: FUSE-T NFS 行应识别"
+  [[ "${ALLOW_FORCE}" -eq 0 ]] || die "selftest: repair 路径后 ALLOW_FORCE 仍须为 0"
   echo "ok selftest HELPER_VERSION=${HELPER_VERSION}"
 }
 
 usage() {
   cat <<'EOF'
-用法: ntfs-rw-helper [--verbose] <mount|unmount|eject|format|fix|probe|automount|enable-automount|disable-automount|version|selftest> [diskNsM|diskN] [label]
-示例: ntfs-rw-helper mount disk5s1
+用法: ntfs-rw-helper [--verbose] <mount|unmount|eject|format|fix|probe|automount|enable-automount|disable-automount|repair-env|version|selftest> [diskNsM|diskN] [label|force]
+  示例: ntfs-rw-helper mount disk5s1
       ntfs-rw-helper --verbose mount disk5s1
       ntfs-rw-helper probe disk5s1
+      ntfs-rw-helper unmount disk5s1
+      ntfs-rw-helper unmount disk5s1 force
       ntfs-rw-helper fix disk5s1
       ntfs-rw-helper format disk4 DATA
       ntfs-rw-helper enable-automount
+      ntfs-rw-helper repair-env
 EOF
 }
 
@@ -1387,7 +1798,7 @@ trap on_exit EXIT
 
 case "$cmd" in
   mount) do_mount "$id" ;;
-  unmount) do_unmount "$id" ;;
+  unmount) do_unmount "$id" "${POS[2]:-}" ;;
   eject) do_eject "$id" ;;
   format) do_format "$id" "${POS[2]:-NTFS}" ;;
   fix|ntfsfix) do_fix "$id" ;;
@@ -1395,6 +1806,7 @@ case "$cmd" in
   automount) do_automount ;;
   enable-automount) do_enable_automount ;;
   disable-automount) do_disable_automount ;;
+  repair-env) do_repair_env ;;
   version) echo "HELPER_VERSION=${HELPER_VERSION}" ;;
   selftest) do_selftest ;;
   -h|--help|help) usage ;;

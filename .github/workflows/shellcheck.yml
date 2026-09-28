@@ -1,7 +1,11 @@
 # ShellCheck：仓库内 bash（含 helper/ntfs-rw-helper、scripts/ntfsmount）。
-# 也可被 build.yml 以 workflow_call 调用，这样打 tag 出 DMG 前必须先过检查。
+# push/PR 独立跑，README badge 指向本文件；build.yml 以 workflow_call 调用，
+# 打 tag 出 DMG 前必须先过检查。
 name: ShellCheck
 on:
+  push:
+    branches: [main]
+  pull_request:
   workflow_call:
   workflow_dispatch:
 

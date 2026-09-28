@@ -39,7 +39,7 @@
 
 static const char *kAllowed[] = {
     "mount", "unmount", "eject", "format", "fix", "ntfsfix", "probe", "automount",
-    "enable-automount", "disable-automount", "version", "selftest",
+    "enable-automount", "disable-automount", "repair-env", "version", "selftest",
     NULL};
 
 static void die(const char *m) {

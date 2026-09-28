@@ -1,5 +1,7 @@
 #!/bin/bash
-# 为 DMG 写 SHA256 sidecar（`HASH  filename`）和 GitHub Release 正文片段。
+# 为 DMG 写 SHA256 sidecar（`HASH  filename`）和 GitHub Release 的校验附录。
+# 这不是完整 Release notes。GitHub Release 正文由 scripts/generate-release-notes.sh
+# 在 v* tag 上生成；docs/RELEASE_NOTES/<version>.md 只是可选覆盖。
 # 用法: write-dmg-sha256.sh <path-to-dmg>
 set -euo pipefail
 DMG="${1:?usage: write-dmg-sha256.sh <dmg>}"
@@ -23,6 +25,8 @@ HASH="$(/usr/bin/awk '{print $1; exit}' "$SIDECAR")"
 [[ ${#HASH} -eq 64 ]] || { echo "error: 无效 SHA256: $HASH" >&2; exit 1; }
 
 /bin/cat > "$NOTES" <<EOF
+## Verify the DMG
+
 $BASE
 SHA256:
 $HASH

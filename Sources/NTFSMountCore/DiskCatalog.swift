@@ -7,28 +7,28 @@ public protocol DiskCatalog {
   func fileSystemUsage(at path: String) -> (total: Int64, free: Int64)?
 }
 
-public struct LiveDiskCatalog: DiskCatalog {
+/// Raw diskutil / mount / statfs I/O. Production uses Process + CommandPath (system dirs only).
+public protocol DiskUtilClient {
+  func listPlistData() -> Data?
+  func infoPlistData(_ identifier: String) -> Data?
+  func mountOutput() -> String?
+  func fileSystemUsage(at path: String) -> (total: Int64, free: Int64)?
+}
+
+public struct ProcessDiskUtilClient: DiskUtilClient {
   public init() {}
 
-  public func listPlist() -> [String: Any]? {
-    diskutilPlist(["list", "-plist"])
+  public func listPlistData() -> Data? {
+    runDiskutil(["list", "-plist"])
   }
 
-  public func infoPlist(_ identifier: String) -> [String: Any]? {
-    diskutilPlist(["info", "-plist", identifier])
+  public func infoPlistData(_ identifier: String) -> Data? {
+    runDiskutil(["info", "-plist", identifier])
   }
 
-  public func fuseMountPoints() -> Set<String> {
-    guard let mount = CommandPath.find("mount") else { return [] }
-    let proc = Process()
-    proc.executableURL = URL(fileURLWithPath: mount)
-    proc.standardOutput = Pipe()
-    proc.standardError = Pipe()
-    try? proc.run()
-    proc.waitUntilExit()
-    let data = (proc.standardOutput as? Pipe)?.fileHandleForReading.readDataToEndOfFile() ?? Data()
-    let text = String(data: data, encoding: .utf8) ?? ""
-    return FuseMountLine.fuseMountPoints(fromMountOutput: text)
+  public func mountOutput() -> String? {
+    guard let mount = CommandPath.find("mount") else { return nil }
+    return runText(executable: mount)
   }
 
   public func fileSystemUsage(at path: String) -> (total: Int64, free: Int64)? {
@@ -38,26 +38,64 @@ public struct LiveDiskCatalog: DiskCatalog {
     else { return nil }
     return (total.int64Value, free.int64Value)
   }
+
+  private func runDiskutil(_ args: [String]) -> Data? {
+    guard let diskutil = CommandPath.find("diskutil") else { return nil }
+    return runData(executable: diskutil, arguments: args)
+  }
+
+  private func runText(executable: String) -> String? {
+    guard let data = runData(executable: executable, arguments: []) else { return nil }
+    return String(data: data, encoding: .utf8)
+  }
+
+  private func runData(executable: String, arguments: [String]) -> Data? {
+    let proc = Process()
+    proc.executableURL = URL(fileURLWithPath: executable)
+    proc.arguments = arguments
+    let out = Pipe()
+    proc.standardOutput = out
+    proc.standardError = Pipe()
+    do {
+      try proc.run()
+      proc.waitUntilExit()
+    } catch {
+      return nil
+    }
+    return out.fileHandleForReading.readDataToEndOfFile()
+  }
+}
+
+public struct LiveDiskCatalog: DiskCatalog {
+  private let client: DiskUtilClient
+
+  public init(client: DiskUtilClient = ProcessDiskUtilClient()) {
+    self.client = client
+  }
+
+  public func listPlist() -> [String: Any]? {
+    parsePlist(client.listPlistData())
+  }
+
+  public func infoPlist(_ identifier: String) -> [String: Any]? {
+    parsePlist(client.infoPlistData(identifier))
+  }
+
+  public func fuseMountPoints() -> Set<String> {
+    guard let text = client.mountOutput() else { return [] }
+    return FuseMountLine.fuseMountPoints(fromMountOutput: text)
+  }
+
+  public func fileSystemUsage(at path: String) -> (total: Int64, free: Int64)? {
+    client.fileSystemUsage(at: path)
+  }
 }
 
 public enum DiskCatalogs {
   public static var live: DiskCatalog = LiveDiskCatalog()
 }
 
-func diskutilPlist(_ args: [String]) -> [String: Any]? {
-  guard let diskutil = CommandPath.find("diskutil") else { return nil }
-  let proc = Process()
-  proc.executableURL = URL(fileURLWithPath: diskutil)
-  proc.arguments = args
-  let out = Pipe()
-  proc.standardOutput = out
-  proc.standardError = Pipe()
-  do {
-    try proc.run()
-    proc.waitUntilExit()
-  } catch {
-    return nil
-  }
-  let data = out.fileHandleForReading.readDataToEndOfFile()
+func parsePlist(_ data: Data?) -> [String: Any]? {
+  guard let data else { return nil }
   return (try? PropertyListSerialization.propertyList(from: data, options: [], format: nil)) as? [String: Any]
 }

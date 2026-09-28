@@ -33,6 +33,10 @@ struct MenuRoot: View {
     } else {
       ForEach(store.volumes) { vol in
         Menu {
+          ForEach(Array(store.diskStatusRows(vol).enumerated()), id: \.offset) { _, row in
+            Text(row.line)
+          }
+          Divider()
           if store.canOfferDirtyFix(vol) {
             Button(L10n.t("menu.fixDirty")) {
               store.confirmDirtyFix(vol)
@@ -90,6 +94,9 @@ struct MenuRoot: View {
     Button(L10n.t("menu.refresh")) { store.refresh() }
       .keyboardShortcut("r")
     Button(L10n.t("menu.diagnose")) { EnvironmentDiagnosePresenter.present(store: store) }
+    Button(L10n.t("menu.repairEnv")) { store.confirmRepairMountEnvironment() }
+      .disabled(store.busyId != nil || !store.helperInstalled)
+      .help(store.helperInstalled ? L10n.t("repairEnv.body") : L10n.t("error.helperMissing"))
     Button(L10n.t("menu.settings")) { store.showSettings() }
     if !store.message.isEmpty {
       Text(store.message)

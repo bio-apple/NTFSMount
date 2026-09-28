@@ -11,6 +11,8 @@ public struct NTFSVolume: Identifiable, Equatable, Sendable {
   public let mediaName: String
   public let usedBytes: Int64
   public let freeBytes: Int64
+  /// diskutil EncryptedDiskHint only — not a BitLocker lock state.
+  public let hasEncryptionHint: Bool
 
   public init(
     id: String,
@@ -22,7 +24,8 @@ public struct NTFSVolume: Identifiable, Equatable, Sendable {
     isInternal: Bool,
     mediaName: String,
     usedBytes: Int64,
-    freeBytes: Int64
+    freeBytes: Int64,
+    hasEncryptionHint: Bool = false
   ) {
     self.id = id
     self.name = name
@@ -34,6 +37,7 @@ public struct NTFSVolume: Identifiable, Equatable, Sendable {
     self.mediaName = mediaName
     self.usedBytes = usedBytes
     self.freeBytes = freeBytes
+    self.hasEncryptionHint = hasEncryptionHint
   }
 
   public var expectedMountPoint: String { mountPoint.isEmpty ? "/Volumes/\(name)" : mountPoint }
@@ -69,15 +73,22 @@ public struct NTFSVolume: Identifiable, Equatable, Sendable {
     guard let list = catalog.listPlist() else { return [] }
     let disks = list["AllDisksAndPartitions"] as? [[String: Any]] ?? []
     var ids: [String] = []
+    var contents: [String: String] = [:]
     for disk in disks {
       for part in disk["Partitions"] as? [[String: Any]] ?? [] {
         if let ident = part["DeviceIdentifier"] as? String {
           ids.append(ident)
+          if let content = part["Content"] as? String, !content.isEmpty {
+            contents[ident] = content
+          }
         }
       }
       if let ident = disk["DeviceIdentifier"] as? String,
          disk["Partitions"] == nil {
         ids.append(ident)
+        if let content = disk["Content"] as? String, !content.isEmpty {
+          contents[ident] = content
+        }
       }
     }
 
@@ -112,6 +123,10 @@ public struct NTFSVolume: Identifiable, Equatable, Sendable {
       let isInternalDisk = (info["Internal"] as? Bool == true)
         || (info["BusProtocol"] as? String == "Disk Image")
         || (info["BusProtocol"] as? String == "Apple Fabric")
+      let content = contents[ident]
+        ?? (info["Content"] as? String)
+        ?? ""
+      let hasEncryptionHint = EncryptedDiskHint.warning(from: info, content: content) != nil
       out.append(
         NTFSVolume(
           id: ident,
@@ -123,7 +138,8 @@ public struct NTFSVolume: Identifiable, Equatable, Sendable {
           isInternal: isInternalDisk,
           mediaName: media,
           usedBytes: used,
-          freeBytes: free
+          freeBytes: free,
+          hasEncryptionHint: hasEncryptionHint
         )
       )
     }

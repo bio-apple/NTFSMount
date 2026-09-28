@@ -181,6 +181,12 @@ Return means you agree. Click “Quit” if you do not.";
 
 "format.action" = "Erase and Format";
 
+"forceUnmount.title" = "Force unmount “%@”?";
+
+"forceUnmount.body" = "Could not gracefully unmount “%@”. The disk may still be in use by Finder or another program. Force unmount can lose unsaved data or damage the volume.\nClose windows and files on this disk first. Force unmount anyway?";
+
+"forceUnmount.action" = "Force Unmount";
+
 "format.confirmTitle" = "Erase “%@” and format as NTFS?";
 
 "format.confirmExtra" = "This deletes every file on the disk and cannot be undone.\nIn “Type the current name” below, enter “%@” exactly. “New volume name” is the name after formatting.";
@@ -223,7 +229,9 @@ Return means you agree. Click “Quit” if you do not.";
 
 "settings.autoMount" = "Auto-mount external NTFS when inserted";
 
-"settings.autoMountNote" = "After inserting an external NTFS disk, try writable mount; skip internal disks.";
+"settings.autoMountNote" = "When on, inserting a healthy external NTFS disk mounts it writable. Dirty or hibernated volumes stay read-only (no auto-repair, no hiberfile clear). Internal disks are skipped. You can turn this off here.";
+
+"settings.autoMountNeedHelper" = "Install or update the mount helper before turning on auto-mount.";
 
 "settings.appearance" = "Appearance & Startup";
 
@@ -388,6 +396,26 @@ Return means you agree. Click “Quit” if you do not.";
 
 "menu.diagnose" = "Diagnose Environment…";
 
+"menu.repairEnv" = "Repair Mount Environment…";
+
+"repairEnv.title" = "Repair Mount Environment?";
+
+"repairEnv.body" = "This will unmount leftover NTFS/FUSE/NFS mounts created by this app, stop leftover ntfs-3g / go-nfsv4 processes that belong to this app, then restart the mount helper.\nIt will not reset the firewall (pf) or change VMware networking. Busy disks are unmounted gracefully only — never force-unmounted.";
+
+"repairEnv.action" = "Repair";
+
+"repairEnv.working" = "Repairing mount environment…";
+
+"repairEnv.summary" = "Unmounted %d leftover mount(s) and stopped %d leftover process(es).";
+
+"repairEnv.summaryBusy" = "Unmounted %d leftover mount(s) and stopped %d leftover process(es). %d disk(s) are still busy and were not force-unmounted. Close Finder windows/files and try again.";
+
+"repairEnv.summaryNone" = "No leftover mounts or processes to clean.";
+
+"repairEnv.helperRestarted" = "Mount helper restarted.";
+
+"repairEnv.failed" = "Could not repair the mount environment.";
+
 "diagnose.alertTitle" = "Environment Diagnose";
 
 "diagnose.checking" = "Checking bundled components and helper…";
@@ -514,3 +542,31 @@ Return means you agree. Click “Quit” if you do not.";
 "settings.checkNow" = "Check for Updates…";
 
 "settings.autoCheckUpdatesNote" = "This build is not notarized. Download updates from GitHub Releases.";
+
+"diskStatus.line" = "%@: %@";
+
+"diskStatus.mountMode" = "Mount Mode";
+
+"diskStatus.mountRW" = "Read/Write";
+
+"diskStatus.mountRO" = "Read-only";
+
+"diskStatus.used" = "Used";
+
+"diskStatus.encryption" = "BitLocker";
+
+"diskStatus.encryptionHint" = "Possibly encrypted";
+
+"diskStatus.encryptionNone" = "No encryption hint";
+
+"diskStatus.journal" = "Dirty Journal";
+
+"diskStatus.journalUnknown" = "Unknown";
+
+"diskStatus.journalDirty" = "Dirty volume";
+
+"diskStatus.journalHibernated" = "Hibernate";
+
+"diskStatus.journalCorrupt" = "Possibly corrupt";
+
+"diskStatus.journalClean" = "No dirty flag";

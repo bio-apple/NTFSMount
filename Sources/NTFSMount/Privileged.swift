@@ -186,6 +186,19 @@ enum Privileged {
     }
   }
 
+  /// Restart the LaunchDaemon after a repair. Does not change firewall rules.
+  @discardableResult
+  static func restartHelper() -> Outcome {
+    guard systemHelperInstalled else {
+      return Outcome(ok: false, text: L10n.t("privileged.notFound"))
+    }
+    kickstartUntilSocket()
+    if daemonReady {
+      return Outcome(ok: true, text: "ok helper-restarted")
+    }
+    return Outcome(ok: false, text: L10n.t("privileged.noResponse"))
+  }
+
   private static func removeLegacySudoers() -> Outcome {
     guard let rm = CommandPath.find("rm") else {
       return Outcome(ok: false, text: L10n.t("privileged.commFailed"))

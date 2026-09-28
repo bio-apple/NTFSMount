@@ -231,7 +231,192 @@ if ! /usr/bin/grep -q 'helper_automount_should_run 0 0 0' "$HELPER"; then
   echo "selftest must cover unmounted automount eligibility" >&2
   exit 1
 fi
+
+# 优雅卸载：umount -f 不得再出现。diskutil unmount force 仅 try_unmount_target（ALLOW_FORCE）与 format。
+# 注释里写「不 umount -f」不算调用。
+if /usr/bin/awk '
+  /^[[:space:]]*#/ { next }
+  /\$UMOUNT"[[:space:]]+-f|"\$UMOUNT" -f|[[:space:]]umount[[:space:]]+-f/ { found=1 }
+  END { exit found ? 0 : 1 }
+' "$HELPER"; then
+  echo "helper must not call umount -f; use diskutil unmount / unmount force" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'ALLOW_FORCE=0' "$HELPER"; then
+  echo "helper ALLOW_FORCE must default to 0" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'log_force_warning' "$HELPER"; then
+  echo "helper must log WARNING when force unmount is used" >&2
+  exit 1
+fi
+if ! /usr/bin/awk '
+  $0 ~ /^try_unmount_target\(\)/ { inh=1 }
+  inh && $0 ~ /^[a-z_]+\(\)/ && $0 !~ /^try_unmount_target\(\)/ { inh=0 }
+  inh && /DISKUTIL" unmount force/ { found=1 }
+  END { exit found ? 0 : 1 }
+' "$HELPER"; then
+  echo "try_unmount_target must be the volume force-unmount gate" >&2
+  exit 1
+fi
+for fn in do_automount do_probe do_mount ensure_unmounted do_eject probe_volume_state do_repair_env; do
+  if /usr/bin/awk -v fn="$fn" '
+    $0 ~ "^" fn "\\(\\)" { inh=1 }
+    inh && $0 ~ /^[a-z_]+\(\)/ && index($0, fn "(") != 1 { inh=0 }
+    inh && $0 !~ /^[[:space:]]*#/ && /ALLOW_FORCE=1|unmount force|unmountDisk force/ { found=1 }
+    END { exit found ? 0 : 1 }
+  ' "$HELPER"; then
+    echo "$fn must not enable force unmount" >&2
+    exit 1
+  fi
+done
+if ! /usr/bin/awk '
+  $0 ~ /^do_unmount\(\)/ { inh=1 }
+  inh && $0 ~ /^[a-z_]+\(\)/ && $0 !~ /^do_unmount\(\)/ { inh=0 }
+  inh && /mode" == "force"/ { found=1 }
+  END { exit found ? 0 : 1 }
+' "$HELPER"; then
+  echo "do_unmount must set ALLOW_FORCE only when the extra arg is force" >&2
+  exit 1
+fi
 STORE="$ROOT/Sources/NTFSMount/VolumeStore.swift"
+if ! /usr/bin/grep -q 'confirmForceUnmount' "$STORE"; then
+  echo "VolumeStore must confirm force unmount (Cancel default) before extra force" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'extra: \["force"\]' "$STORE"; then
+  echo "VolumeStore must send unmount force only as an explicit extra arg" >&2
+  exit 1
+fi
+if /usr/bin/grep -nE 'run\("probe".*force|run\("automount".*force|run\("mount".*force|run\("eject".*force|run\("fix".*force|run\("repair-env".*force' "$STORE"; then
+  echo "probe/automount/mount/eject/fix/repair-env must not send force" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q '!probe.ok' "$STORE"; then
+  echo "probeThenMount must fail closed when probe cannot unmount" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'restoreSystemMount' "$STORE"; then
+  echo "VolumeStore must restore the system mount after a cancelled/failed probe" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'static let forceUnmount' "$ROOT/Sources/NTFSMountCore/AlertDefaultPolicy.swift"; then
+  echo "force unmount confirm must use Cancel-default policy" >&2
+  exit 1
+fi
+if ! /usr/bin/awk '
+  $0 ~ /func confirmForceUnmount\(/ { inh=1 }
+  inh && $0 ~ /^  (private )?func / && $0 !~ /func confirmForceUnmount\(/ { inh=0 }
+  inh && /makeCancelDefault/ { found=1 }
+  END { exit found ? 0 : 1 }
+' "$STORE"; then
+  echo "confirmForceUnmount must make Cancel the default button" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'repair-env' "$HELPERD_C"; then
+  echo "helperd must allow repair-env" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'do_repair_env' "$HELPER"; then
+  echo "helper must implement do_repair_env" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'repair-env) do_repair_env' "$HELPER"; then
+  echo "helper must dispatch repair-env" >&2
+  exit 1
+fi
+if /usr/bin/awk '
+  $0 ~ /^do_repair_env\(\)/ { inh=1 }
+  inh && $0 ~ /^[a-z_]+\(\)/ && $0 !~ /^do_repair_env\(\)/ { inh=0 }
+  inh && $0 !~ /^[[:space:]]*#/ && /pfctl|\/etc\/pf\.conf|vmnet|ALLOW_FORCE=1|unmount force|unmountDisk force|umount[[:space:]]+-f|remove_hiberfile|repairVolume/ { found=1 }
+  END { exit found ? 0 : 1 }
+' "$HELPER"; then
+  echo "do_repair_env must not reset pf, recycle vmnet, force unmount, clear hiberfile, or repairVolume" >&2
+  exit 1
+fi
+if /usr/bin/grep -nE 'pfctl|/etc/pf.conf|vmnet' "$STORE" \
+    "$ROOT/Sources/NTFSMount/Privileged.swift" \
+    "$ROOT/Sources/NTFSMount/UI/DiagnoseAlert.swift" \
+    "$ROOT/Sources/NTFSMount/UI/MenuRoot.swift" \
+    "$ROOT/Sources/NTFSMountCore/FormatPolicy.swift"; then
+  echo "repair UI/helper client must not call pfctl or vmnet" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'confirmRepairMountEnvironment' "$STORE"; then
+  echo "VolumeStore must confirm Repair Mount Environment" >&2
+  exit 1
+fi
+if ! /usr/bin/awk '
+  $0 ~ /func confirmRepairMountEnvironment\(/ { inh=1 }
+  inh && $0 ~ /^  (private )?func / && $0 !~ /func confirmRepairMountEnvironment\(/ { inh=0 }
+  inh && /makeCancelDefault/ { found=1 }
+  END { exit found ? 0 : 1 }
+' "$STORE"; then
+  echo "confirmRepairMountEnvironment must make Cancel the default button" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'Privileged.run("repair-env"' "$STORE"; then
+  echo "VolumeStore must run helper repair-env" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'restartHelper' "$STORE"; then
+  echo "VolumeStore must restart the helper after repair-env" >&2
+  exit 1
+fi
+if /usr/bin/awk '
+  $0 ~ /func repairMountEnvironment\(/ { inh=1 }
+  inh && $0 ~ /^  func / && $0 !~ /func repairMountEnvironment\(/ { inh=0 }
+  inh && /confirmForceUnmount|extra: \["force"\]|umount -f|pfctl|vmnet/ { found=1 }
+  END { exit found ? 0 : 1 }
+' "$STORE"; then
+  echo "repairMountEnvironment must not force unmount, reset pf, or recycle vmnet" >&2
+  exit 1
+fi
+if /usr/bin/grep -nE '修复挂载|未能修复挂载|正在修复挂载' \
+    "$STORE" \
+    "$ROOT/Sources/NTFSMount/UI/DiagnoseAlert.swift" \
+    "$ROOT/Sources/NTFSMount/UI/MenuRoot.swift" \
+    "$ROOT/Sources/NTFSMountCore/FormatPolicy.swift"; then
+  echo "repair UI copy must go through L10n, not Chinese literals" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'RepairMountCopy.userMessage' "$STORE"; then
+  echo "VolumeStore must surface repair results via RepairMountCopy.userMessage" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'static let repairMount' "$ROOT/Sources/NTFSMountCore/AlertDefaultPolicy.swift"; then
+  echo "repair confirm must use Cancel-default policy" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'menu.repairEnv' "$ROOT/Sources/NTFSMount/UI/MenuRoot.swift"; then
+  echo "menu must offer Repair Mount Environment" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'menu.repairEnv' "$ROOT/Sources/NTFSMount/UI/DiagnoseAlert.swift"; then
+  echo "diagnose window must offer Repair Mount Environment" >&2
+  exit 1
+fi
+for loc in en zh-Hans zh-Hant ja; do
+  strings="$ROOT/Sources/NTFSMountCore/Resources/${loc}.lproj/Localizable.strings"
+  for key in menu.repairEnv repairEnv.title repairEnv.body repairEnv.action repairEnv.working repairEnv.summary repairEnv.summaryBusy repairEnv.summaryNone repairEnv.helperRestarted repairEnv.failed; do
+    /usr/bin/grep -q "\"$key\"" "$strings" || {
+      echo "missing $key in $loc Localizable.strings" >&2
+      exit 1
+    }
+  done
+done
+if ! /usr/bin/grep -q '"menu.repairEnv"' "$ROOT/Resources/Localizable.xcstrings"; then
+  echo "xcstrings must include menu.repairEnv" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'volume_mount_point "$name"' "$HELPER"; then
+  echo "helper volume_mount_point must keep the volume name as one argument" >&2
+  exit 1
+fi
+if /usr/bin/grep -nE 'DISKUTIL[[:space:]]+unmount[[:space:]]+/Volumes/' "$HELPER" "$ROOT"/Sources/NTFSMount/*.swift "$ROOT"/Sources/NTFSMount/Helpers/*.swift "$ROOT"/Sources/NTFSMountCore/*.swift; then
+  echo "must not concatenate unquoted /Volumes/name into diskutil" >&2
+  exit 1
+fi
 if ! /usr/bin/grep -q 'Privileged.run("probe"' "$STORE"; then
   echo "VolumeStore must probe volume health before writable mount" >&2
   exit 1
@@ -285,6 +470,46 @@ if ! /usr/bin/grep -q 'shouldAutoEnable' "$STORE"; then
   echo "enableAutoMountDefault must stay off until helper+legal+writable stamp" >&2
   exit 1
 fi
+if ! /usr/bin/awk '
+  $0 ~ /func mountDefaultWritableIfNeeded\(/ { inh=1 }
+  $0 ~ /func pumpAutoMount\(/ { inh=0 }
+  inh && /mayAttempt/ { found=1 }
+  END { exit found ? 0 : 1 }
+' "$STORE"; then
+  echo "mountDefaultWritableIfNeeded must consult AutoMountPolicy.mayAttempt (no mount before legal consent)" >&2
+  exit 1
+fi
+if ! /usr/bin/awk '
+  $0 ~ /func mountDefaultWritableIfNeeded\(/ { inh=1 }
+  $0 ~ /func pumpAutoMount\(/ { inh=0 }
+  inh && /allowsWritableAttempt/ { found=1 }
+  END { exit found ? 0 : 1 }
+' "$STORE"; then
+  echo "mountDefaultWritableIfNeeded must consult allowsWritableAttempt so dirty/hiber skip RW auto-mount" >&2
+  exit 1
+fi
+SETTINGS="$ROOT/Sources/NTFSMount/UI/SettingsView.swift"
+if ! /usr/bin/grep -q 'L10n.t("settings.autoMount")' "$SETTINGS"; then
+  echo "settings auto-mount toggle must use L10n.t(\"settings.autoMount\")" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'L10n.t("settings.autoMountNote")' "$SETTINGS"; then
+  echo "settings auto-mount note must use L10n.t(\"settings.autoMountNote\")" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'L10n.t("settings.autoMountNeedHelper")' "$SETTINGS"; then
+  echo "settings auto-mount helper hint must use L10n.t(\"settings.autoMountNeedHelper\")" >&2
+  exit 1
+fi
+for lang in en zh-Hans zh-Hant ja; do
+  strings="$ROOT/Sources/NTFSMountCore/Resources/${lang}.lproj/Localizable.strings"
+  for key in settings.autoMount settings.autoMountNote settings.autoMountNeedHelper; do
+    if ! /usr/bin/grep -q "\"$key\"" "$strings"; then
+      echo "missing $key in $lang Localizable.strings" >&2
+      exit 1
+    fi
+  done
+done
 
 # 命令位不得出现未加引号的 /Volumes/$name（"My Passport" 会切成两个 argv）
 if /usr/bin/grep -nE '(^|[^"=$])/Volumes/\$name' "$HELPER"; then
@@ -304,7 +529,7 @@ out="$("$HELPER" selftest)"
 echo "$out"
 [[ "$out" == ok\ selftest* ]] || { echo "selftest failed" >&2; exit 1; }
 ver="$("$HELPER" version)"
-[[ "$ver" == HELPER_VERSION=9 ]] || { echo "version mismatch: $ver" >&2; exit 1; }
+[[ "$ver" == HELPER_VERSION=10 ]] || { echo "version mismatch: $ver" >&2; exit 1; }
 
 # shellcheck disable=SC2016 # literal $(whoami) payload the helper must reject
 for bad in 'disk12s1;whoami' 'disk 12s1' '../disk1s1' 'disk5s1$(whoami)' 'disk4;id' 'mount'; do
@@ -330,6 +555,14 @@ for bad in 'disk12s1;whoami' 'disk 12s1' '../disk1s1' 'disk5s1$(whoami)' 'disk4;
   fi
   if "$HELPER" eject "$bad" >/dev/null 2>&1; then
     echo "eject should reject: $bad" >&2
+    exit 1
+  fi
+  if "$HELPER" unmount "$bad" >/dev/null 2>&1; then
+    echo "unmount should reject: $bad" >&2
+    exit 1
+  fi
+  if "$HELPER" unmount "$bad" force >/dev/null 2>&1; then
+    echo "unmount force should reject: $bad" >&2
     exit 1
   fi
 done
@@ -549,8 +782,8 @@ if ! /usr/bin/grep -q '无需关闭 SIP' "$CHECK_DEPS"; then
   echo "check-fuse-deps must say FUSE-T does not require lowering SIP" >&2
   exit 1
 fi
-if ! /usr/bin/grep -q 'check-fuse-deps.sh' "$ROOT/README.md"; then
-  echo "README.md must document check-fuse-deps.sh" >&2
+if ! /usr/bin/grep -q 'check-fuse-deps.sh' "$ROOT/docs/DEVELOPMENT.md"; then
+  echo "docs/DEVELOPMENT.md must document check-fuse-deps.sh" >&2
   exit 1
 fi
 if /usr/bin/grep -nE '请执行：.*brew install macfuse|推荐.*brew install macfuse' "$ROOT/README.md"; then

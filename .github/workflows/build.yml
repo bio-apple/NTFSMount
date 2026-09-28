@@ -109,6 +109,12 @@ jobs:
         run: bash scripts/ci-import-signing.sh
       - name: Install ntfs-3g for bundled runtime
         run: brew install ntfs-3g
+      - name: Prepare runtime
+        run: bash scripts/prepare-runtime.sh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify runtime SHA256
+        run: bash scripts/check-runtime-sha256.sh
       - name: Build app
         run: bash scripts/build.sh
         env:
@@ -137,6 +143,21 @@ jobs:
     needs: [lint, test, security, build, shellcheck]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Generate release notes
+        run: |
+          set -euo pipefail
+          ver="${GITHUB_REF_NAME#v}"
+          notes="/tmp/ntfsmount-RELEASE_NOTES.md"
+          if [[ -f "docs/RELEASE_NOTES/${ver}.md" ]] && bash scripts/check-release-notes.sh "$ver"; then
+            /bin/cp "docs/RELEASE_NOTES/${ver}.md" "$notes"
+            echo "using hand-written docs/RELEASE_NOTES/${ver}.md"
+          else
+            bash scripts/generate-release-notes.sh "$GITHUB_REF_NAME" -o "$notes"
+            bash scripts/check-release-notes.sh --file "$notes"
+            echo "using generated notes from git log"
+          fi
       - name: Import Developer ID
         env:
           APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
@@ -155,6 +176,7 @@ jobs:
           set -euo pipefail
           brew install ntfs-3g
           bash scripts/prepare-runtime.sh
+          bash scripts/check-runtime-sha256.sh
           bash scripts/package-dmg.sh
           app=""
           [[ -d dist/NTFSMount.app ]] && app=dist/NTFSMount.app
@@ -176,6 +198,8 @@ jobs:
               fi
             fi
             echo
+            /bin/cat /tmp/ntfsmount-RELEASE_NOTES.md
+            echo
             /bin/cat dist/NTFSMount.dmg.release-notes.md
           } > "$notes"
           assets=(dist/NTFSMount.dmg)
@@ -191,17 +215,10 @@ jobs:
           fi
           if gh release view "${GITHUB_REF_NAME}" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload "${GITHUB_REF_NAME}" --repo "$GITHUB_REPOSITORY" "${assets[@]}" --clobber
-            if [[ "$official" == "1" ]]; then
-              gh release edit "${GITHUB_REF_NAME}" --repo "$GITHUB_REPOSITORY" --title "$title" --notes-file "$notes" --latest
-            else
-              gh release edit "${GITHUB_REF_NAME}" --repo "$GITHUB_REPOSITORY" --title "$title" --notes-file "$notes" --prerelease
-            fi
-          elif [[ "$official" == "1" ]]; then
-            gh release create "${GITHUB_REF_NAME}" --repo "$GITHUB_REPOSITORY" \
-              --title "$title" --notes-file "$notes" "${assets[@]}"
+            gh release edit "${GITHUB_REF_NAME}" --repo "$GITHUB_REPOSITORY" --title "$title" --notes-file "$notes" --latest
           else
             gh release create "${GITHUB_REF_NAME}" --repo "$GITHUB_REPOSITORY" \
-              --prerelease --title "$title" --notes-file "$notes" "${assets[@]}"
+              --title "$title" --notes-file "$notes" "${assets[@]}"
           fi
       - name: Delete signing keychain
         if: always()
@@ -218,6 +235,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Attach DMG SHA256 to the GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -235,13 +254,33 @@ jobs:
           gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" "$work/NTFSMount.dmg.sha256" --clobber
           hash="$(/usr/bin/awk '{print $1; exit}' "$work/NTFSMount.dmg.sha256")"
           body="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body --jq .body)"
-          if printf '%s\n' "$body" | /usr/bin/grep -q "$hash"; then
-            echo "Release body already contains SHA256"
+          ver="${TAG#v}"
+          changelog="docs/RELEASE_NOTES/${ver}.md"
+          notes_src=""
+          if [[ -f "$changelog" ]] && bash scripts/check-release-notes.sh "$ver"; then
+            notes_src="$changelog"
+          fi
+          if ! printf '%s\n' "$body" | /usr/bin/grep -Fq "Helper: reinstall required?"; then
+            if [[ -z "$notes_src" ]]; then
+              notes_src="$work/generated-notes.md"
+              bash scripts/generate-release-notes.sh "$TAG" -o "$notes_src"
+              bash scripts/check-release-notes.sh --file "$notes_src"
+            fi
+          fi
+          if printf '%s\n' "$body" | /usr/bin/grep -q "$hash" && printf '%s\n' "$body" | /usr/bin/grep -Fq "Helper: reinstall required?"; then
+            echo "Release body already contains changelog and SHA256"
           else
             {
               printf '%s\n' "$body"
-              echo
-              /bin/cat "$work/NTFSMount.dmg.release-notes.md"
+              if ! printf '%s\n' "$body" | /usr/bin/grep -Fq "Helper: reinstall required?"; then
+                [[ -n "$notes_src" && -f "$notes_src" ]] || { echo "error: no release notes for $TAG" >&2; exit 1; }
+                echo
+                /bin/cat "$notes_src"
+              fi
+              if ! printf '%s\n' "$body" | /usr/bin/grep -q "$hash"; then
+                echo
+                /bin/cat "$work/NTFSMount.dmg.release-notes.md"
+              fi
             } > "$work/release-body.md"
             gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes-file "$work/release-body.md"
           fi

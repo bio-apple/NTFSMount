@@ -11,6 +11,8 @@ public enum AlertDefaultPolicy: Equatable, Sendable {
   public static let format = Self.cancelDefault
   public static let ntfsfix = Self.cancelDefault
   public static let writableConfirm = Self.cancelDefault
+  public static let forceUnmount = Self.cancelDefault
+  public static let repairMount = Self.cancelDefault
 
   public static let returnKeyEquivalent = "\r"
   public static let emptyKeyEquivalent = ""

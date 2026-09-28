@@ -1,9 +1,11 @@
 import Foundation
 
 /// In-app strings follow macOS preferred languages: en*, zh-Hans, zh-Hant, ja.
-/// Anything else falls back to Simplified Chinese.
+/// Unsupported system languages fall back to Simplified Chinese.
+/// Missing keys fall back to English so English (and Japanese) UI never shows 简体中文.
 public enum L10n {
   public static let fallbackLanguage = "zh-Hans"
+  public static let catalogFallbackLanguage = "en"
   public static let supportedLanguages = ["en", "zh-Hans", "zh-Hant", "ja"]
 
   public static func languageCode(for locale: Locale? = nil) -> String {
@@ -30,7 +32,7 @@ public enum L10n {
   public static func t(_ key: String, locale: Locale? = nil) -> String {
     let lang = languageCode(for: locale)
     if let value = lookup(key, language: lang) { return value }
-    if lang != fallbackLanguage, let value = lookup(key, language: fallbackLanguage) {
+    if lang != catalogFallbackLanguage, let value = lookup(key, language: catalogFallbackLanguage) {
       return value
     }
     return key

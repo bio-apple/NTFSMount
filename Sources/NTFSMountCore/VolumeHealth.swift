@@ -144,6 +144,39 @@ public enum VolumeHealth {
     return L10n.t("status.unmounted", locale: locale)
   }
 
+  /// Dirty Journal field: probe/classify only. Unknown until probe; never invent Yes/No.
+  public static func journalLabel(
+    probeKind: ProbeKind?,
+    lastAdvice: MountAdvice?,
+    helperText: String,
+    locale: Locale? = nil
+  ) -> String {
+    if let probeKind {
+      switch probeKind {
+      case .healthy:
+        return L10n.t("diskStatus.journalClean", locale: locale)
+      case .dirty:
+        return L10n.t("diskStatus.journalDirty", locale: locale)
+      case .hibernated:
+        return L10n.t("diskStatus.journalHibernated", locale: locale)
+      case .corrupt:
+        return L10n.t("diskStatus.journalCorrupt", locale: locale)
+      case .unknown:
+        break
+      }
+    }
+    if lastAdvice == .readOnlyDirty {
+      if looksHibernated(helperText) {
+        return L10n.t("diskStatus.journalHibernated", locale: locale)
+      }
+      if looksDirty(helperText) {
+        return L10n.t("diskStatus.journalDirty", locale: locale)
+      }
+      return L10n.t("status.roDirty", locale: locale)
+    }
+    return L10n.t("diskStatus.journalUnknown", locale: locale)
+  }
+
   /// 挂载前健康对话框文案。回车默认「以只读挂载」。
   public enum PreMountCopy {
     public static var dirtyTitle: String { L10n.t("premount.dirtyTitle") }

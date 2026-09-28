@@ -19,9 +19,16 @@ struct SettingsView: View {
               set: { _ in store.toggleAutoMount() }
             ))
             .disabled(store.busyId != nil || !store.helperInstalled || Privileged.helperNeedsUpdate)
+            if !store.helperInstalled || Privileged.helperNeedsUpdate {
+              Text(L10n.t("settings.autoMountNeedHelper"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            }
             Text(L10n.t("settings.autoMountNote"))
               .font(.caption)
               .foregroundStyle(.secondary)
+              .fixedSize(horizontal: false, vertical: true)
           }
           .padding(8)
         }

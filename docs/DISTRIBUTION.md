@@ -1,8 +1,36 @@
 # 分发状态 · Distribution status
 
-**当前公开渠道仅限 GitHub pre-release，供个人使用；在取得 FUSE-T 书面许可并公证之前，这不是可再分发的产品。**
+> **Do not ship or sell until you have a written FUSE-T license and Developer ID notarization.**
+
+本文不是法律意见。混合许可下的二进制分发是否合规 **需律师确认**。条款摘要见 [NOTICE](../NOTICE) 与 [THIRD_PARTY_LICENSES.md](../THIRD_PARTY_LICENSES.md)；不要把本文件当成对 FUSE-T 或 GPL 的授权解释。
+
+**当前公开渠道为 GitHub Release（个人使用，未公证）。在取得 FUSE-T 书面许可并公证之前，这不是可再分发的产品。**
 
 直发应用，不上 Mac App Store。仅支持 Apple Silicon（M 芯片）与 macOS 13.0+，**不支持 Intel Mac（x86_64）**；构建为 arm64，不要做 Intel / 通用二进制。下面两项在打正式对外包之前必须完成；未完成时只宜个人使用或标成预发布。
+
+## Component licenses · 组件许可
+
+| Component | License (as documented in-repo) |
+| --- | --- |
+| NTFSMount Swift / helper scripts | GPL-2.0-or-later ([LICENSE](../LICENSE)) |
+| Bundled ntfs-3g / mkntfs / ntfsfix / libntfs-3g | GPL-2.0 |
+| `libfuse.2.dylib` | LGPL-2.1 |
+| Sparkle.framework | MIT |
+| FUSE-T `go-nfsv4` | **Not GPL.** NOTICE: personal / non-commercial use by default; commercial use or bundling with commercial software requires a commercial license from the FUSE-T authors ([fuse-t.org](https://www.fuse-t.org/)). |
+
+NOTICE quotes FUSE-T: *“Free for non-commercial use”* and *“For commercial use or/and bundling with commercial software the software vendor has to obtain a commercial license from the FUSE-T authors.”* `go-nfsv4` is excluded from the repo’s GPL grant.
+
+Shipping a prebuilt `.app` / DMG that mixes GPL ntfs-3g, LGPL libfuse, MIT Sparkle, and non-GPL `go-nfsv4` is **not confirmed compliant**. **需律师确认.**
+
+## Self-compile vs prebuilt DMG · 自行编译与预编译 DMG
+
+Compiling from this Git tree and downloading a GitHub DMG are different distribution acts. The repo LICENSE covers this project’s Swift/helper sources (GPL-2.0-or-later) and does **not** make the bundled `go-nfsv4` binary GPL. A prebuilt DMG that already contains `go-nfsv4` is a binary redistribution of FUSE-T’s NFS server; GitHub Releases marked pre-release are **not** a commercial distribution grant (NOTICE). Do not tell users the DMG is “the same license as the repo.” **需律师确认.**
+
+## Commercialization · 商业化
+
+Before shipping or selling as a product: written FUSE-T commercial / bundling license; Developer ID Application signing **and** notarization; do not sell, third-party-mirror, or put this on the Mac App Store while those are missing. GPL obligations for ntfs-3g (corresponding source, notices) still apply if you distribute those binaries. Set `FUSE_T_REDISTRIBUTION_OK=1` only after written FUSE-T permission **and** notarization. **需律师确认.**
+
+Contact: https://www.fuse-t.org/
 
 ## 1. Apple 公证 · Notarization
 
@@ -62,9 +90,9 @@ NOTARY_PROFILE='notarytool-profile' \
 | `APPLE_API_ISSUER` | Issuer ID（UUID） |
 | `APPLE_API_KEY` | AuthKey_*.p8 全文 |
 | `NOTARY_PROFILE` | 可选。Actions 上通常无效（没有你的钥匙串 profile）；本机打包才用 |
-| `FUSE_T_REDISTRIBUTION_OK` | **仓库变量**（`vars.`，不是 secret）。仅在已公证 **且** 已有 FUSE-T 书面许可时设为 `1`，Release 才可当 Latest |
+| `FUSE_T_REDISTRIBUTION_OK` | **仓库变量**（`vars.`，不是 secret）。仅在已公证 **且** 已有 FUSE-T 书面许可时设为 `1`，才可当产品再分发 |
 
-本机仍可用 `NOTARY_PROFILE`。证书与 API Key 齐了才会 `notarytool submit`；缺一则仍发布 **pre-release**（未公证）。只有公证成功 **且** 仓库变量 `FUSE_T_REDISTRIBUTION_OK=1` 时才创建非预发布（可成为 Latest）。未取得 FUSE-T 书面许可不要设该变量。公开 Latest 必须同时：已公证 **并且** FUSE-T 许可证允许再分发。
+本机仍可用 `NOTARY_PROFILE`。证书与 API Key 齐了才会 `notarytool submit`；缺一则仍是未公证个人使用包。未取得 FUSE-T 书面许可不要设 `FUSE_T_REDISTRIBUTION_OK`。GitHub Latest 可以指向这份个人使用 DMG；当作产品再分发仍须公证 **并且** FUSE-T 许可证允许。
 
 ```bash
 git tag v0.1.0
@@ -77,8 +105,8 @@ git push origin v0.1.0
 
 - 联系：https://www.fuse-t.org/
 - 取得书面授权后：`FUSE_T_REDISTRIBUTION_OK=1 ./scripts/package-dmg.sh`，并把本文件此节改为「已授权」。
-- 未设置该变量时，DMG 带「个人使用说明」，GitHub Release **必须**标为 pre-release；**不要**把该包当作 GitHub Latest，也禁止第三方镜像。
-- **公开 Latest 仅当已公证并且 FUSE-T 许可证允许再分发**（仓库变量 `vars.FUSE_T_REDISTRIBUTION_OK=1`）。缺一不可。
+- 未设置该变量时，DMG 带「个人使用说明」。GitHub Latest 可以指向这份个人使用包（README 的 `/releases/latest/download/NTFSMount.dmg`），**不要**把它当成可再分发或可销售的产品，也禁止第三方镜像。
+- **当作产品对外再分发**仅当已公证并且 FUSE-T 许可证允许再分发（仓库变量 `vars.FUSE_T_REDISTRIBUTION_OK=1`）。缺一不可。
 - 正式对外下载页必须同时完成 Developer ID 公证与 FUSE-T 书面授权。许可证拆分见仓库根目录 [NOTICE](../NOTICE)。
 
 macFUSE / osxfuse 依赖内核扩展；macOS 11+ 与 Apple Silicon 常需降低 SIP。本项目用 FUSE-T（用户态 NFS/WebDAV），不改用 kext。开发机检查：`./scripts/check-fuse-deps.sh`（不要 `brew install macfuse`）。在取得可再分发的用户态后端或 FUSE-T 授权之前，**不把本应用当作可商用产品对外销售**。
@@ -91,7 +119,7 @@ macFUSE / osxfuse 依赖内核扩展；macOS 11+ 与 Apple Silicon 常需降低 
 
 持续提权走 `SMAppService` + LaunchDaemon（Cocoa 原生平权）。`osascript` 的 `do shell script … with administrator privileges` **只用于一次性安装/卸载**（ad-hoc 回退）。助手装好后，挂载、卸载、格式化只经 Unix socket，不再弹管理员密码。不引入 `AuthorizationServices` 平行 API。
 
-`helper/ntfs-rw-helper` 是本仓库维护的 **bash 源码**（不是第三方预编译二进制，`HELPER_VERSION=9`）。`scripts/build.sh` 计算 SHA-256 写入 `Contents/Resources/ntfs-rw-helper.sha256`，并对脚本与 `ntfsmount-helperd` 做 codesign。运行时用该哈希对照 `helper.stamp` / UserDefaults，不匹配则拒绝执行并提示更新助手。`.app` 内同时放入 `LICENSE`、`NOTICE`、`THIRD_PARTY_LICENSES.md`、`DISTRIBUTION.md`。
+`helper/ntfs-rw-helper` 是本仓库维护的 **bash 源码**（不是第三方预编译二进制，`HELPER_VERSION=10`）。`scripts/build.sh` 计算 SHA-256 写入 `Contents/Resources/ntfs-rw-helper.sha256`，并对脚本与 `ntfsmount-helperd` 做 codesign。运行时用该哈希对照 `helper.stamp` / UserDefaults，不匹配则拒绝执行并提示更新助手。`.app` 内同时放入 `LICENSE`、`NOTICE`、`THIRD_PARTY_LICENSES.md`、`DISTRIBUTION.md`。
 
 IPC：**v2** 长度前缀（单参最长 1024、最多 32 个参数），旧守护进程回「协议错误」时回退 v1。format / fix / ntfsfix 等待 **600 秒**并发送 NUL 心跳；其它命令 180 秒。本进程对 daemon 的调用串行化。读完 argv 后若客户端已断开则 **不 exec**。
 
@@ -104,7 +132,7 @@ IPC：**v2** 长度前缀（单参最长 1024、最多 32 个参数），旧守�
 - `dist/NTFSMount.dmg.sha256`（`HASH  NTFSMount.dmg`）
 - `dist/NTFSMount.dmg.release-notes.md`（可贴进 Release 正文）
 
-创建 GitHub Release 时附上 DMG 与 sidecar，并把片段贴进正文。用户校验：
+创建 GitHub Release 时附上 DMG 与 sidecar，并把 SHA256 片段贴进正文。推 `v*` tag 时 CI 用 `scripts/generate-release-notes.sh` 从 git log 生成 What’s new / Fixes / Breaking / Helper reinstall / Old config（手写 [RELEASE_NOTES_TEMPLATE.md](./RELEASE_NOTES_TEMPLATE.md) 为可选覆盖）。用户校验：
 
 ```bash
 shasum -a 256 NTFSMount.dmg

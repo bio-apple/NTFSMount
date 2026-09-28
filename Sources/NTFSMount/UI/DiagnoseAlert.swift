@@ -2,7 +2,7 @@ import AppKit
 import NTFSMountCore
 
 /// Scrollable diagnose window. Scan is read-only (never installs). After the report,
-/// the user can choose to install the mount helper via the same `installHelper()` flow.
+/// the user can repair leftover NTFSMount mounts or install the mount helper.
 enum EnvironmentDiagnosePresenter {
   @MainActor
   static func present(store: VolumeStore) {
@@ -18,6 +18,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
   private var textView: NSTextView?
   private var spinner: NSProgressIndicator?
   private var copyButton: NSButton?
+  private var repairButton: NSButton?
   private var installButton: NSButton?
   private var hintField: NSTextField?
   private var hintCollapse: NSLayoutConstraint?
@@ -25,6 +26,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
   private weak var store: VolumeStore?
   private var running = false
   private var installing = false
+  private var repairing = false
   private var report = ""
   private var lastSnap: DiagnoseSnapshot?
   private var generation = 0
@@ -36,7 +38,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     }
     Privileged.prepareForAdminPrompt()
     window?.makeKeyAndOrderFront(nil)
-    if !running && !installing {
+    if !running && !installing && !repairing {
       start()
     }
   }
@@ -56,6 +58,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     let token = generation
     running = true
     installing = false
+    repairing = false
     report = ""
     setBody(L10n.t("diagnose.checking"))
     spinner?.startAnimation(nil)
@@ -63,6 +66,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     copyButton?.isEnabled = false
     setHint(nil)
     setInstallVisible(false)
+    updateRepairButton()
     DispatchQueue.global(qos: .userInitiated).async { [weak self] in
       let snap = EnvironmentDiagnoseRunner.snapshot()
       let lines = EnvironmentDiagnose.lines(from: snap)
@@ -92,6 +96,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     let helperOffer = EnvironmentDiagnose.helperNeedsInstall(snap)
       || Privileged.helperNeedsUpdate
     setInstallVisible(helperOffer)
+    updateRepairButton()
     guard helperOffer else { return }
     let update = Privileged.helperOfferIsUpdate
     installButton?.title = L10n.t(update ? "diagnose.updateHelper" : "diagnose.installHelper")
@@ -103,6 +108,18 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     hintField?.stringValue = text ?? ""
     hintField?.isHidden = !show
     hintCollapse?.isActive = !show
+  }
+
+  private func updateRepairButton() {
+    guard let repair = repairButton else { return }
+    repair.title = repairing ? L10n.t("repairEnv.working") : L10n.t("menu.repairEnv")
+    let helperReady = store?.helperInstalled == true
+    repair.isEnabled = helperReady
+      && !repairing
+      && !running
+      && !installing
+      && !(store?.helperInstallBusy ?? false)
+      && store?.busyId == nil
   }
 
   private func setInstallVisible(_ visible: Bool) {
@@ -150,19 +167,64 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     }
   }
 
-  private func showInstallFailure(_ detail: String) {
+  @objc private func repairEnv() {
+    guard !repairing, !installing, !running else { return }
+    guard let store else { return }
+    Privileged.prepareForAdminPrompt()
+    window?.makeKeyAndOrderFront(nil)
+    let started = store.confirmRepairMountEnvironment { [weak self] outcome in
+      guard let self else { return }
+      self.repairing = false
+      guard self.window?.isVisible == true else { return }
+      if outcome.ok {
+        self.start()
+      } else {
+        self.showRepairResult(outcome.text)
+        if let snap = self.lastSnap {
+          self.updateActions(snap)
+        } else {
+          self.updateRepairButton()
+        }
+      }
+    }
+    guard started else {
+      updateRepairButton()
+      return
+    }
+    repairing = true
+    updateRepairButton()
+    spinner?.startAnimation(nil)
+    spinner?.isHidden = false
+  }
+
+  private func showRepairResult(_ detail: String) {
     let trimmed = detail.trimmingCharacters(in: .whitespacesAndNewlines)
-    let logs = AppLog.tail(40)
-    var block = "\n\n—— \(L10n.t("diagnose.installFailed")) ——\n"
+    var block = "\n\n—— \(L10n.t("repairEnv.failed")) ——\n"
     if !trimmed.isEmpty {
       block += trimmed + "\n"
+    }
+    let body = report.isEmpty ? block.trimmingCharacters(in: .whitespacesAndNewlines) : report + block
+    report = body
+    setBody(body)
+    copyButton?.isEnabled = true
+    spinner?.stopAnimation(nil)
+    spinner?.isHidden = true
+    setHint(trimmed.split(whereSeparator: \.isNewline).first.map(String.init))
+  }
+
+  private func showInstallFailure(_ detail: String) {
+    let shown = UserFacingError.message(from: detail, logPath: AppLog.url.path)
+    let logs = AppLog.tail(40)
+    var block = "\n\n—— \(L10n.t("diagnose.installFailed")) ——\n"
+    if !shown.isEmpty {
+      block += shown + "\n"
     }
     block += "\n\(AppLog.url.path)\n\(logs)"
     let body = report.isEmpty ? block.trimmingCharacters(in: .whitespacesAndNewlines) : report + block
     report = body
     setBody(body)
     copyButton?.isEnabled = true
-    let hint = trimmed.split(whereSeparator: \.isNewline).first.map(String.init)
+    let hint = shown.split(whereSeparator: \.isNewline).first.map(String.init)
     setHint(hint)
   }
 
@@ -217,6 +279,13 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     copy.bezelStyle = .rounded
     copy.isEnabled = false
 
+    let repair = NSButton(
+      title: L10n.t("menu.repairEnv"),
+      target: self,
+      action: #selector(repairEnv)
+    )
+    repair.bezelStyle = .rounded
+
     let install = NSButton(
       title: L10n.t("diagnose.installHelper"),
       target: self,
@@ -233,7 +302,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     spacer.setContentHuggingPriority(.fittingSizeCompression, for: .horizontal)
     spacer.setContentCompressionResistancePriority(.fittingSizeCompression, for: .horizontal)
 
-    let row = NSStackView(views: [copy, install, spacer, close])
+    let row = NSStackView(views: [copy, repair, install, spacer, close])
     row.orientation = .horizontal
     row.alignment = .centerY
     row.spacing = 12
@@ -268,6 +337,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     self.textView = text
     self.spinner = spinner
     self.copyButton = copy
+    self.repairButton = repair
     self.installButton = install
     self.hintField = hint
     self.hintCollapse = hintCollapse

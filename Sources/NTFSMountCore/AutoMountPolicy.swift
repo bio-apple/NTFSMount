@@ -42,6 +42,15 @@ public enum AutoMountPolicy {
     }
   }
 
+  /// App-side pump: never mount before legal consent, even if the automount plist already exists.
+  public static func mayAttempt(
+    autoMountEnabled: Bool,
+    helperReady: Bool,
+    legalAccepted: Bool
+  ) -> Bool {
+    autoMountEnabled && helperReady && legalAccepted
+  }
+
   /// Toggle stays off until helper is installed, legal copy is accepted, and the writable stamp exists.
   public static func shouldAutoEnable(
     helperInstalled: Bool,

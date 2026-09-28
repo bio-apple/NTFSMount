@@ -181,6 +181,12 @@
 
 "format.action" = "抹掉并格式化";
 
+"forceUnmount.title" = "强制卸载「%@」？";
+
+"forceUnmount.body" = "无法优雅卸载「%@」。磁盘可能仍被访达或其他程序占用。强制卸载可能导致未写入的数据丢失或磁盘损坏。\n请先关闭该磁盘上的窗口和文件。确定仍要强制卸载吗？";
+
+"forceUnmount.action" = "强制卸载";
+
 "format.confirmTitle" = "抹掉「%@」并格式化为 NTFS？";
 
 "format.confirmExtra" = "将删除盘上全部文件，且无法恢复。\n请在下方「输入当前名称」原样输入「%@」；「新卷名」为格式化后的名称。";
@@ -223,7 +229,9 @@
 
 "settings.autoMount" = "插入时自动挂载外置 NTFS";
 
-"settings.autoMountNote" = "插入外置 NTFS 磁盘后尝试以可写方式挂载；跳过内置磁盘。";
+"settings.autoMountNote" = "打开后，插入健康的外置 NTFS 会自动以可写方式挂载。脏盘或 Windows 休眠保持只读（不会自动修复或清除休眠文件）。内置盘不自动可写。可随时在此关闭。";
+
+"settings.autoMountNeedHelper" = "请先安装或更新挂载助手，然后才能打开自动挂载。";
 
 "settings.appearance" = "外观与启动";
 
@@ -388,6 +396,26 @@
 
 "menu.diagnose" = "诊断环境…";
 
+"menu.repairEnv" = "修复挂载环境…";
+
+"repairEnv.title" = "修复挂载环境？";
+
+"repairEnv.body" = "将卸载本应用留下的 NTFS/FUSE/NFS 挂载（含异常残留），并结束本应用的 ntfs-3g / go-nfsv4 残留进程，然后重启挂载助手。\n不会重置防火墙（pf），也不会改动 VMware 网络。占用中的磁盘只会尝试正常卸载，不会强制卸载。";
+
+"repairEnv.action" = "修复";
+
+"repairEnv.working" = "正在修复挂载环境…";
+
+"repairEnv.summary" = "已卸载 %d 个残留挂载，结束 %d 个残留进程。";
+
+"repairEnv.summaryBusy" = "已卸载 %d 个残留挂载，结束 %d 个残留进程。另有 %d 个磁盘正被占用，未强制卸载。请关闭访达窗口/文件后重试。";
+
+"repairEnv.summaryNone" = "没有需要清理的残留挂载或进程。";
+
+"repairEnv.helperRestarted" = "挂载助手已重启。";
+
+"repairEnv.failed" = "未能修复挂载环境。";
+
 "diagnose.alertTitle" = "环境诊断";
 
 "diagnose.checking" = "正在检查捆绑组件与挂载助手…";
@@ -514,3 +542,31 @@
 "settings.checkNow" = "检查更新…";
 
 "settings.autoCheckUpdatesNote" = "当前构建未公证。请到 GitHub Releases 手动下载。";
+
+"diskStatus.line" = "%@  %@";
+
+"diskStatus.mountMode" = "挂载模式";
+
+"diskStatus.mountRW" = "可读写";
+
+"diskStatus.mountRO" = "只读";
+
+"diskStatus.used" = "已用";
+
+"diskStatus.encryption" = "BitLocker";
+
+"diskStatus.encryptionHint" = "可能加密";
+
+"diskStatus.encryptionNone" = "未见加密线索";
+
+"diskStatus.journal" = "脏日志";
+
+"diskStatus.journalUnknown" = "未知";
+
+"diskStatus.journalDirty" = "脏卷";
+
+"diskStatus.journalHibernated" = "休眠";
+
+"diskStatus.journalCorrupt" = "可能损坏";
+
+"diskStatus.journalClean" = "未见脏卷标记";

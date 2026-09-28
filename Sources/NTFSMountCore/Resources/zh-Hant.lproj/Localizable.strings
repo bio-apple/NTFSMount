@@ -181,6 +181,12 @@ Return 即同意。不同意請點「結束」。";
 
 "format.action" = "抹掉並格式化";
 
+"forceUnmount.title" = "強制卸載「%@」？";
+
+"forceUnmount.body" = "無法正常卸載「%@」。磁碟可能仍被 Finder 或其他程式占用。強制卸載可能導致未寫入的資料遺失或磁碟損壞。\n請先關閉該磁碟上的視窗和檔案。仍要強制卸載嗎？";
+
+"forceUnmount.action" = "強制卸載";
+
 "format.confirmTitle" = "抹掉「%@」並格式化為 NTFS？";
 
 "format.confirmExtra" = "將刪除碟上全部檔案，且無法復原。\n請在下方「輸入目前名稱」原樣輸入「%@」；「新卷名」為格式化後的名稱。";
@@ -223,7 +229,9 @@ Return 即同意。不同意請點「結束」。";
 
 "settings.autoMount" = "插入時自動掛載外接 NTFS";
 
-"settings.autoMountNote" = "插入外接 NTFS 磁碟後嘗試以可寫方式掛載；略過內建磁碟。";
+"settings.autoMountNote" = "打開後，插入健康的外接 NTFS 會自動以可寫方式掛載。髒盤或 Windows 休眠保持唯讀（不會自動修復或清除休眠檔）。內建磁碟不自動可寫。可隨時在此關閉。";
+
+"settings.autoMountNeedHelper" = "請先安裝或更新掛載助手，然後才能打開自動掛載。";
 
 "settings.appearance" = "外觀與啟動";
 
@@ -388,6 +396,26 @@ Return 即同意。不同意請點「結束」。";
 
 "menu.diagnose" = "診斷環境…";
 
+"menu.repairEnv" = "修復掛載環境…";
+
+"repairEnv.title" = "修復掛載環境？";
+
+"repairEnv.body" = "將卸載本 App 留下的 NTFS/FUSE/NFS 掛載（含異常殘留），並結束本 App 的 ntfs-3g / go-nfsv4 殘留行程，然後重啟掛載助手。\n不會重設防火牆（pf），也不會改動 VMware 網路。占用中的磁碟只會嘗試正常卸載，不會強制卸載。";
+
+"repairEnv.action" = "修復";
+
+"repairEnv.working" = "正在修復掛載環境…";
+
+"repairEnv.summary" = "已卸載 %d 個殘留掛載，結束 %d 個殘留行程。";
+
+"repairEnv.summaryBusy" = "已卸載 %d 個殘留掛載，結束 %d 個殘留行程。另有 %d 個磁碟正被占用，未強制卸載。請關閉 Finder 視窗/檔案後重試。";
+
+"repairEnv.summaryNone" = "沒有需要清理的殘留掛載或行程。";
+
+"repairEnv.helperRestarted" = "掛載助手已重啟。";
+
+"repairEnv.failed" = "未能修復掛載環境。";
+
 "diagnose.alertTitle" = "環境診斷";
 
 "diagnose.checking" = "正在檢查內附元件與掛載助手…";
@@ -514,3 +542,31 @@ Return 即同意。不同意請點「結束」。";
 "settings.checkNow" = "檢查更新…";
 
 "settings.autoCheckUpdatesNote" = "目前建置未公證。請到 GitHub Releases 手動下載。";
+
+"diskStatus.line" = "%@  %@";
+
+"diskStatus.mountMode" = "掛載模式";
+
+"diskStatus.mountRW" = "可讀寫";
+
+"diskStatus.mountRO" = "唯讀";
+
+"diskStatus.used" = "已用";
+
+"diskStatus.encryption" = "BitLocker";
+
+"diskStatus.encryptionHint" = "可能加密";
+
+"diskStatus.encryptionNone" = "未見加密線索";
+
+"diskStatus.journal" = "髒日誌";
+
+"diskStatus.journalUnknown" = "未知";
+
+"diskStatus.journalDirty" = "髒卷";
+
+"diskStatus.journalHibernated" = "休眠";
+
+"diskStatus.journalCorrupt" = "可能損壞";
+
+"diskStatus.journalClean" = "未見髒卷標記";

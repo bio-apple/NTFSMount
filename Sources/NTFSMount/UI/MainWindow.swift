@@ -386,17 +386,13 @@ private struct VolumeDetailView: View {
 
   private var properties: some View {
     Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 20, verticalSpacing: 8) {
-      GridRow {
-        Text(L10n.t("window.capacity"))
-          .foregroundStyle(.secondary)
-          .gridColumnAlignment(.trailing)
-        Text(vol.sizeLabel)
-      }
-      GridRow {
-        Text(L10n.t("window.filesystem"))
-          .foregroundStyle(.secondary)
-          .gridColumnAlignment(.trailing)
-        Text("NTFS")
+      ForEach(store.diskStatusRows(vol)) { row in
+        GridRow {
+          Text(row.label)
+            .foregroundStyle(.secondary)
+            .gridColumnAlignment(.trailing)
+          Text(row.value)
+        }
       }
       GridRow {
         Text(L10n.t("window.device"))

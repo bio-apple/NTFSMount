@@ -181,6 +181,12 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "format.action" = "消去してフォーマット";
 
+"forceUnmount.title" = "「%@」を強制アンマウントしますか？";
+
+"forceUnmount.body" = "「%@」を通常アンマウントできませんでした。Finder や他のアプリが使用中の可能性があります。強制アンマウントは未書き込みデータの損失やディスク損傷の原因になります。\n先にこのディスクのウィンドウとファイルを閉じてください。それでも強制アンマウントしますか？";
+
+"forceUnmount.action" = "強制アンマウント";
+
 "format.confirmTitle" = "「%@」を消去して NTFS にフォーマットしますか？";
 
 "format.confirmExtra" = "ディスク上のすべてのファイルが削除され、元に戻せません。\n下の「現在の名前を入力」に「%@」をそのまま入力してください。「新しいボリューム名」はフォーマット後の名前です。";
@@ -223,7 +229,9 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "settings.autoMount" = "接続時に外付け NTFS を自動マウント";
 
-"settings.autoMountNote" = "外付け NTFS ディスクを接続すると、書き込み可能なマウントを試みます。内蔵ディスクは対象外です。";
+"settings.autoMountNote" = "オンにすると、健全な外付け NTFS を接続したとき自動で書き込み可能にマウントします。ダーティや休止状態のボリュームは読み取り専用のままです（自動修復や hiberfile の削除はしません）。内蔵ディスクは対象外です。いつでもここでオフにできます。";
+
+"settings.autoMountNeedHelper" = "自動マウントをオンにする前に、マウントヘルパーをインストールまたは更新してください。";
 
 "settings.appearance" = "外観と起動";
 
@@ -388,6 +396,26 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "menu.diagnose" = "環境診断…";
 
+"menu.repairEnv" = "マウント環境を修復…";
+
+"repairEnv.title" = "マウント環境を修復しますか？";
+
+"repairEnv.body" = "このアプリが残した NTFS/FUSE/NFS マウント（異常な残留を含む）をアンマウントし、このアプリの ntfs-3g / go-nfsv4 残留プロセスを終了してから、マウントヘルパーを再起動します。\nファイアウォール（pf）はリセットせず、VMware のネットワークも変更しません。使用中のディスクは通常のアンマウントのみで、強制アンマウントはしません。";
+
+"repairEnv.action" = "修復";
+
+"repairEnv.working" = "マウント環境を修復しています…";
+
+"repairEnv.summary" = "残留マウント %d 件をアンマウントし、残留プロセス %d 件を終了しました。";
+
+"repairEnv.summaryBusy" = "残留マウント %d 件をアンマウントし、残留プロセス %d 件を終了しました。使用中のディスクが %d 件あり、強制アンマウントはしていません。Finder のウィンドウとファイルを閉じてから再試行してください。";
+
+"repairEnv.summaryNone" = "掃除する残留マウントやプロセスはありません。";
+
+"repairEnv.helperRestarted" = "マウントヘルパーを再起動しました。";
+
+"repairEnv.failed" = "マウント環境を修復できませんでした。";
+
 "diagnose.alertTitle" = "環境診断";
 
 "diagnose.checking" = "同梱コンポーネントとヘルパーを確認しています…";
@@ -514,3 +542,31 @@ Return で同意します。同意しない場合は「終了」を押してく�
 "settings.checkNow" = "更新を確認…";
 
 "settings.autoCheckUpdatesNote" = "このビルドは未公証です。更新は GitHub Releases から手動でダウンロードしてください。";
+
+"diskStatus.line" = "%@  %@";
+
+"diskStatus.mountMode" = "マウントモード";
+
+"diskStatus.mountRW" = "読み書き可";
+
+"diskStatus.mountRO" = "読み取り専用";
+
+"diskStatus.used" = "使用済み";
+
+"diskStatus.encryption" = "BitLocker";
+
+"diskStatus.encryptionHint" = "暗号化の可能性あり";
+
+"diskStatus.encryptionNone" = "暗号化の手がかりなし";
+
+"diskStatus.journal" = "ダーティジャーナル";
+
+"diskStatus.journalUnknown" = "不明";
+
+"diskStatus.journalDirty" = "ダーティボリューム";
+
+"diskStatus.journalHibernated" = "休止";
+
+"diskStatus.journalCorrupt" = "破損の可能性";
+
+"diskStatus.journalClean" = "ダーティフラグなし";
