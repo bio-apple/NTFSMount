@@ -988,6 +988,35 @@
         }
       }
     },
+    "menu.about": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关于 %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "關於 %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このアプリについて（%@）"
+          }
+        }
+      }
+    },
     "menu.quitApp": {
       "extractionState": "manual",
       "localizations": {
@@ -3797,6 +3826,35 @@
           "stringUnit": {
             "state": "translated",
             "value": "このビルドは未公証です（Gatekeeper にブロックされることがあります）。Control クリック → 開く。または「システム設定 → プライバシーとセキュリティ」で「このまま開く」。"
+          }
+        }
+      }
+    },
+    "about.version": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "版本 %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "版本 %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "バージョン %@"
           }
         }
       }

@@ -94,6 +94,8 @@ struct SettingsView: View {
 
         GroupBox(L10n.t("settings.aboutPrivacy")) {
           VStack(alignment: .leading, spacing: 8) {
+            Text(AppVersion.line())
+              .font(.headline)
             Text(UpdateCopy.settingsAboutLine)
               .font(.callout)
             Text(SigningStatus.isNotarized

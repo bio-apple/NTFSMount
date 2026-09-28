@@ -20,6 +20,7 @@ Version-number reset of the current personal-use tree. Includes the 1.2.1 featur
 - GitHub issue template, CONTRIBUTING, DEVELOPMENT, changelog, and generated release-notes scripts.
 - CI runtime SHA256 check and structured release notes on `v*` tags.
 - README download points at GitHub Latest (`NTFSMount.dmg`). In-app Sparkle stays off until notarized.
+- About, Settings, and the menu-bar About item show `CFBundleShortVersionString` (1.0.0) via L10n.
 
 ### Fixed
 
@@ -48,7 +49,7 @@ Version-number reset of the current personal-use tree. Includes the 1.2.1 featur
 - **Helper stamp:** `/Library/Application Support/NTFSMount/helper.stamp` and `allowed.cdhash` must be rewritten by the helper installer (bundled SHA changed). `lastHelperSHA` updates after a successful install.
 - **Leftover sudoers:** `/etc/sudoers.d/ntfs-rw` and `/usr/local/sbin/ntfs-rw-helper` are treated as stale. Install / update / uninstall helper deletes them. Do not keep NOPASSWD leftovers.
 
-Published GitHub asset (`v1.0.0`) SHA256: `cec437a30cbda9ef0ed25f947cd2ebdc22ae88527218a168abeb1cd40ac69e4a` `NTFSMount.dmg`.
+Published GitHub asset (`v1.0.0`) SHA256: `d4699aee3a724bc41b39561dd1e2a77a2ec13b3a04b0210598640c5a5241cd27` `NTFSMount.dmg`.
 
 ## [1.2.1] - 2026-09-28
 

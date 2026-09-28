@@ -359,7 +359,7 @@ final class VolumeStore: ObservableObject {
     let signingLine = SigningStatus.isNotarized
       ? L10n.t("about.notarized")
       : L10n.t("about.unnotarized")
-    alert.informativeText = UpdateCopy.aboutPrivacy(
+    alert.informativeText = AppVersion.line() + "\n\n" + UpdateCopy.aboutPrivacy(
       logPath: AppLog.url.path,
       sourceURL: AppIdentity.sourceURL,
       signingLine: signingLine

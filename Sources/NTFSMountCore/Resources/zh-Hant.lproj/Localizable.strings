@@ -83,6 +83,8 @@ Return 即同意。不同意請點「結束」。";
 
 "menu.settings" = "設定…";
 
+"menu.about" = "關於 %@";
+
 "menu.quitApp" = "結束 NTFS 讀寫";
 
 "menu.mountAllHelp" = "掛載所有外接 NTFS";
@@ -300,6 +302,8 @@ Return 即同意。不同意請點「結束」。";
 "alert.uninstallBody" = "將刪除特權守護程式和插入時自動掛載。App 仍留在「應用程式」裡。";
 
 "alert.uninstall" = "解除安裝助手";
+
+"about.version" = "版本 %@";
 
 "about.body" = "直發 App，不上 Mac App Store。\n\n隱私權：預設不連網、不收集帳號或通訊錄。目前建置未公證。請到 GitHub Releases 手動下載。紀錄只寫在本機：\n%@\n解除安裝後該紀錄仍會留在本機。\n\n原始碼與授權：%@\n內附 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 僅供個人使用；作為產品散佈須向 FUSE-T 取得許可。\n\n寫入 NTFS 有損壞資料的風險，請先備份。\n\n%@";
 

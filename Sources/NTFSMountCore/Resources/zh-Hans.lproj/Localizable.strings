@@ -83,6 +83,8 @@
 
 "menu.settings" = "设置…";
 
+"menu.about" = "关于 %@";
+
 "menu.quitApp" = "退出 NTFS 读写";
 
 "menu.mountAllHelp" = "挂载所有外置 NTFS";
@@ -300,6 +302,8 @@
 "alert.uninstallBody" = "将删除特权守护进程和插入时自动挂载。应用仍留在「应用程序」里。";
 
 "alert.uninstall" = "卸载助手";
+
+"about.version" = "版本 %@";
 
 "about.body" = "直发应用，不上 Mac App Store。\n\n隐私：默认不联网、不收集账户或通讯录。当前构建未公证。请到 GitHub Releases 手动下载。日志只写在本机：\n%@\n卸载应用后该日志仍会留在本机。\n\n源码与许可证：%@\n捆绑 ntfs-3g / mkntfs（GPL-2.0）以及 FUSE-T 的 go-nfsv4。go-nfsv4 仅供个人使用；作为产品分发须向 FUSE-T 取得许可。\n\n写 NTFS 有损坏数据的风险，请先备份。\n\n%@";
 
