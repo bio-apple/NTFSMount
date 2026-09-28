@@ -37,31 +37,31 @@ trap cleanup EXIT
 /bin/cp "$ROOT/docs/DISTRIBUTION.md" "$STAGE/DISTRIBUTION.md"
 printf '%s\n' "源码: https://github.com/bio-apple/NTFSMount" > "$STAGE/源码.txt"
 /bin/cat > "$STAGE/使用说明.txt" <<'EOF'
-NTFS 读写（NTFSMount，直发，不上 Mac App Store）
+NTFS 读写（NTFSMount）v1.2.1
+直发，不上 Mac App Store。个人使用预发布。
 
-仅支持 Apple Silicon（M 芯片）与 macOS 13.0+。不支持 Intel Mac（x86_64），请勿在 Intel Mac 上安装。
+仅 Apple Silicon（M 芯片）与 macOS 13.0+。不支持 Intel Mac。
 
 安装
 1. 把 NTFS 读写拖到右边的「应用程序」
-2. 打开后菜单栏显示 NTFS，并出现主窗口
-3. 首次只有一个确认框：备份、个人使用、未公证说明。回车是「同意并继续」，Esc 为「退出」
-4. 在窗口点「安装…」。未公证包会要管理员密码；已公证包优先系统服务授权
-   升级后若提示「更新挂载助手」，再输入一次密码
-5. 若系统提示无法验证开发者：按住 Control 点应用 → 打开；或「系统设置 → 隐私与安全性」点「仍要打开」。仍被隔离时：
+2. 打开后菜单栏显示 NTFS。关掉窗口后图标还在；从程序坞退出才会消失
+3. 悬停菜单栏图标可看到磁盘状态，不必打开窗口
+4. 首次只有一个确认框。回车「同意并继续」，Esc「退出」
+5. 在窗口点「安装…」。未公证包会要管理员密码
+6. 若无法验证开发者：Control-click → 打开；或「系统设置 → 隐私与安全性」→ 仍要打开。仍被隔离：
    xattr -d com.apple.quarantine /Applications/NTFSMount.app
 
 读写
-1. 插入外置 NTFS 硬盘。第一次可写挂载会再确认一次「已备份」
-2. 默认以可写方式挂载（内置盘 / Boot Camp 不会自动挂）
+1. 插入外置 NTFS。第一次可写挂载会再确认「已备份」
+2. 子菜单「以可写方式挂载」。内置盘 / Boot Camp 不会自动挂
 3. 用完点「推出（可安全拔出）」，等盘消失后再拔线
-4. 自动挂载、登录时打开、程序坞、助手、更新与日志：窗口左侧「设置」。菜单「检查更新…」随时可用；「自动检查更新」默认关闭，打开后会访问 GitHub。
+4. 自动挂载、登录、程序坞、助手：窗口「设置」。菜单「检查更新…」会访问 GitHub；自动检查默认关
 
 格式化
-点「格式化为 NTFS…」可把外置整盘抹掉并做成 NTFS。
-必须输入当前卷名确认。内置盘不能格式化。
+根菜单「抹掉整盘为 NTFS…」（不在每块盘的子菜单里）。必须输入当前卷名。回车默认取消。内置盘不能格式化。
 
 卸载助手：设置 → 卸载助手
-完全卸载：仓库中的 ./uninstall.sh（只删 NTFSMount；不碰系统级 FUSE-T / MacFUSE）
+完全卸载：仓库 ./uninstall.sh（只删 NTFSMount；不碰系统级 FUSE-T / MacFUSE）
 EOF
 
 if [[ "${FUSE_T_REDISTRIBUTION_OK:-}" != "1" ]]; then

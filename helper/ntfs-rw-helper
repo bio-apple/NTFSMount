@@ -5,7 +5,7 @@
 # 全局旗标: --verbose（可在子命令前或后）
 set -euo pipefail
 
-HELPER_VERSION=8
+HELPER_VERSION=9
 
 DISKUTIL="/usr/sbin/diskutil"
 MOUNT="/sbin/mount"
@@ -377,7 +377,7 @@ volume_name() {
   printf '%s' "$name"
 }
 
-# Volume names often contain spaces ("My Passport"). Always one path argument.
+# Volume names often contain spaces ("My Passport" / "Seagate Expansion"). Always one path argument.
 volume_mount_point() {
   local name="$1"
   local n="${2:-}"
@@ -386,6 +386,67 @@ volume_mount_point() {
   else
     printf '%s' "/Volumes/${name}"
   fi
+}
+
+# Prefer diskutil's MountPoint (handles spaces); fall back to /Volumes/<VolumeName>.
+plist_mount_point() {
+  local ident="$1" mp
+  vlog "$DISKUTIL" info -plist "$ident"
+  mp="$("$DISKUTIL" info -plist "$ident" 2>/dev/null | /usr/bin/plutil -extract MountPoint raw - 2>/dev/null || true)"
+  if [[ -n "$mp" && "$mp" != "null" ]]; then
+    printf '%s' "$mp"
+    return 0
+  fi
+  return 1
+}
+
+# diskutil list 行末字段是 diskNsM，与卷名空格无关。禁止 ls /Volumes 或按目录名 for-in。
+# Windows_NTFS 行优先（建议写法）；其它切片仍列出，再用 info -plist 判断是否 NTFS。
+list_slice_idents() {
+  local disk="${1:-}" out
+  if [[ -n "$disk" ]]; then
+    vlog "$DISKUTIL" list "$disk"
+    out="$("$DISKUTIL" list "$disk" 2>/dev/null || true)"
+  else
+    vlog "$DISKUTIL" list
+    out="$("$DISKUTIL" list 2>/dev/null || true)"
+  fi
+  printf '%s\n' "$out" | /usr/bin/awk '
+    /Windows_NTFS/ && $NF ~ /^disk[0-9]+s[0-9]+$/ { print $NF; next }
+    /^[[:space:]]+[0-9]+:/ && $NF ~ /^disk[0-9]+s[0-9]+$/ { print $NF }
+  ' | /usr/bin/awk 'NF && !seen[$0]++'
+}
+
+# FUSE -o 用逗号分隔；卷名里的逗号必须转义，空格可保留（整段 -o 已加引号）。
+fuse_opt_escape() {
+  printf '%s' "$1" | /usr/bin/sed -e 's/\\/\\\\/g' -e 's/,/\\,/g'
+}
+
+# ntfs-3g locale= 必须是本机已装的 *.UTF-8，否则 CJK 文件名乱码。
+# 默认 zh_CN.UTF-8；可用 NTFS_LOCALE 覆盖。macOS FUSE 卷名键是 volname，不是 volume_name。
+ntfs3g_locale() {
+  local want="${NTFS_LOCALE:-zh_CN.UTF-8}"
+  if [[ -n "${NTFS_LOCALE:-}" ]]; then
+    printf '%s' "$want"
+    return 0
+  fi
+  if /usr/bin/locale -a 2>/dev/null | /usr/bin/grep -qxF "$want"; then
+    printf '%s' "$want"
+    return 0
+  fi
+  if /usr/bin/locale -a 2>/dev/null | /usr/bin/grep -qxF 'en_US.UTF-8'; then
+    printf '%s' 'en_US.UTF-8'
+    return 0
+  fi
+  printf '%s' "$want"
+}
+
+# 权限：allow_other + 当前登录用户 uid/gid，避免 root 挂上后普通用户写不了。
+# 字符集：locale=*.UTF-8。Finder xattr：auto_xattr。macOS：local + volname。
+ntfs3g_base_opts() {
+  local volesc="$1" uid="$2" gid="$3"
+  printf 'volname=%s,local,allow_other,auto_xattr,uid=%s,gid=%s,locale=%s' \
+    "$volesc" "$uid" "$gid" "$(ntfs3g_locale)"
 }
 
 # pkill -f is a regex; escape so "Data (1)" / "My.Passport" cannot match another volume.
@@ -440,7 +501,7 @@ is_our_fuse_mount() {
   local line
   line="$(mount_line "$mp")"
   [[ -n "$line" ]] || return 1
-  echo "$line" | /usr/bin/grep -qiE 'macfuse|osxfuse|fuse-t|fuset|ntfs-3g| fuse,| \(nfs,|smbfs'
+  printf '%s\n' "$line" | /usr/bin/grep -qiE 'macfuse|osxfuse|fuse-t|fuset|ntfs-3g| fuse,| \(nfs,|smbfs'
 }
 
 # 该 diskNsM 当前所有挂载点（含 /Volumes/Name 1）。
@@ -489,7 +550,7 @@ kill_ntfs3g_whole() {
     valid_id "$part" || continue
     [[ "$part" == "${ident}s"* ]] || continue
     kill_ntfs3g "$part"
-  done < <("$DISKUTIL" list "$ident" 2>/dev/null | /usr/bin/awk '$NF ~ /^disk[0-9]+s[0-9]+$/ { print $NF }')
+  done < <(list_slice_idents "$ident")
 }
 
 occupiers_for_mp() {
@@ -691,12 +752,15 @@ do_mount() {
   [[ -f "${NTFS3G_DIR}/libfuse.2.dylib" ]] || die "找不到捆绑的 libfuse.2.dylib。请把 NTFSMount.app 重新装到 /Applications"
   [[ -f "${NTFS3G_DIR}/libntfs-3g.90.dylib" ]] || die "找不到捆绑的 libntfs-3g。请把 NTFSMount.app 重新装到 /Applications"
 
-  local name mp uid gid
+  local name mp uid gid volesc base
   name="$(volume_name "$ident")"
-  mp="$(volume_mount_point "$name")"
+  if ! mp="$(plist_mount_point "$ident")"; then
+    mp="$(volume_mount_point "$name")"
+  fi
   read -r uid gid <<<"$(console_ids)"
 
-  local base="volname=${name},local,allow_other,uid=${uid},gid=${gid}"
+  volesc="$(fuse_opt_escape "$name")"
+  base="$(ntfs3g_base_opts "$volesc" "$uid" "$gid")"
   # 默认不用 force/remove_hiberfile，避免静默毁掉 Windows 休眠会话。
   local rw_attempts=(
     "backend=nfs"
@@ -815,8 +879,7 @@ do_eject() {
 
   local name mp whole occupiers i still=1 eject_out eject_rc
   name="$(volume_name "$ident")"
-  mp="$("$DISKUTIL" info -plist "$ident" 2>/dev/null | /usr/bin/plutil -extract MountPoint raw - 2>/dev/null || true)"
-  if [[ -z "$mp" || "$mp" == "null" ]]; then
+  if ! mp="$(plist_mount_point "$ident")"; then
     mp="$(volume_mount_point "$name")"
   fi
 
@@ -882,8 +945,16 @@ do_eject() {
 }
 
 data_partition() {
-  vlog "$DISKUTIL" list "$1"
-  "$DISKUTIL" list "$1" | /usr/bin/awk '/EFI/{next} $NF ~ /^disk[0-9]+s[0-9]+$/ { p=$NF } END { print p }'
+  local p="" ident content
+  while IFS= read -r ident; do
+    [[ -n "$ident" ]] || continue
+    content="$("$DISKUTIL" info -plist "$ident" 2>/dev/null | /usr/bin/plutil -extract Content raw - 2>/dev/null || true)"
+    case "$content" in
+      EFI|C12A7328-F81F-11D2-BA4B-00A0C93EC93B) continue ;;
+    esac
+    p="$ident"
+  done < <(list_slice_idents "$1")
+  printf '%s' "$p"
 }
 
 refuse_format_target() {
@@ -1106,7 +1177,6 @@ helper_automount_should_run() {
 
 do_automount() {
   local ident name mp our=0 wr=0 internal=0
-  vlog "$DISKUTIL" list
   while IFS= read -r ident; do
     [[ -n "$ident" ]] || continue
     valid_id "$ident" || continue
@@ -1114,7 +1184,9 @@ do_automount() {
     internal=0
     is_auto_safe_target "$ident" || internal=1
     name="$(volume_name "$ident")"
-    mp="$(volume_mount_point "$name")"
+    if ! mp="$(plist_mount_point "$ident")"; then
+      mp="$(volume_mount_point "$name")"
+    fi
     our=0
     wr=0
     is_our_fuse_mount "$mp" && our=1
@@ -1132,7 +1204,7 @@ do_automount() {
     fi
     CURRENT_IDENT="$ident"
     ( do_mount "$ident" ) || echo "automount skip $ident" >&2
-  done < <("$DISKUTIL" list | /usr/bin/awk '$NF ~ /^disk[0-9]+s[0-9]+$/ { print $NF }')
+  done < <(list_slice_idents)
   echo "ok automount"
 }
 
@@ -1209,14 +1281,27 @@ do_selftest() {
   if valid_whole 'disk4;id'; then
     die "selftest: 整盘注入应拒绝"
   fi
-  local mp name
+  local mp name needle sample got
   name="My Passport"
   mp="$(volume_mount_point "$name")"
   [[ "$mp" == "/Volumes/My Passport" ]] || die "selftest: 带空格卷名应为单一挂载点"
+  name="Seagate Expansion"
+  mp="$(volume_mount_point "$name")"
+  [[ "$mp" == "/Volumes/Seagate Expansion" ]] || die "selftest: Seagate Expansion 应为单一挂载点"
   mp="$(volume_mount_point "$name" 1)"
-  [[ "$mp" == "/Volumes/My Passport 1" ]] || die "selftest: leftover 挂载点应保留空格"
+  [[ "$mp" == "/Volumes/Seagate Expansion 1" ]] || die "selftest: leftover 挂载点应保留空格"
+  [[ "$(fuse_opt_escape 'Seagate, Expansion')" == 'Seagate\, Expansion' ]] || die "selftest: FUSE volname 逗号应转义"
+  got="$(NTFS_LOCALE=zh_CN.UTF-8 ntfs3g_base_opts 'Seagate\, Expansion' 501 20)"
+  [[ "$got" == *'volname=Seagate\, Expansion'* ]] || die "selftest: base 须含 volname"
+  [[ "$got" == *',local,'* ]] || die "selftest: base 须含 local"
+  [[ "$got" == *',allow_other,'* ]] || die "selftest: base 须含 allow_other"
+  [[ "$got" == *',auto_xattr,'* ]] || die "selftest: base 须含 auto_xattr"
+  [[ "$got" == *',uid=501,gid=20,'* ]] || die "selftest: base 须把卷属主设为登录用户"
+  [[ "$got" == *',locale=zh_CN.UTF-8' ]] || die "selftest: base 须含 UTF-8 locale"
+  sample='   1: Windows_NTFS Seagate Expansion     1.0 TB     disk7s1'
+  got="$(printf '%s\n' "$sample" | /usr/bin/awk '/Windows_NTFS/ && $NF ~ /^disk[0-9]+s[0-9]+$/ { print $NF }')"
+  [[ "$got" == disk7s1 ]] || die "selftest: diskutil list 末字段在卷名有空格时仍是 diskNsM"
   [[ "$(regex_escape 'Data (1)')" == 'Data \(1\)' ]] || die "selftest: pkill 卷名应转义正则"
-  local needle sample
   needle="$(ntfs3g_pkill_needle disk4)"
   [[ "$needle" == "ntfs-3g /dev/disk4 " ]] || die "selftest: pkill needle 须带尾随空格"
   sample="ntfs-3g /dev/disk4 /Volumes/X"

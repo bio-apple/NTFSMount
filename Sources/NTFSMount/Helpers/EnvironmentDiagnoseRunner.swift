@@ -188,10 +188,24 @@ enum EnvironmentDiagnoseRunner {
     snap.sysextMacFuse = sysextMacFuseStatus()
   }
 
+  static func brewExecutable() -> String? {
+    let fm = FileManager.default
+    var dirs: [String] = []
+    if let path = ProcessInfo.processInfo.environment["PATH"] {
+      dirs.append(contentsOf: path.split(separator: ":").map(String.init))
+    }
+    dirs.append(contentsOf: ["/opt/homebrew/bin", "/usr/local/bin"])
+    var seen = Set<String>()
+    for dir in dirs {
+      guard seen.insert(dir).inserted else { continue }
+      let candidate = (dir as NSString).appendingPathComponent("brew")
+      if fm.isExecutableFile(atPath: candidate) { return candidate }
+    }
+    return nil
+  }
+
   static func brewMacFuseStatus() -> String {
-    let brew = ["/opt/homebrew/bin/brew", "/usr/local/bin/brew"]
-      .first { FileManager.default.isExecutableFile(atPath: $0) }
-    guard let brew else { return "brew_missing" }
+    guard let brew = Self.brewExecutable() else { return "brew_missing" }
     let cap = runCapture(brew, ["list", "macfuse"], timeout: 3)
     return cap.status == 0 ? "present" : "absent"
   }

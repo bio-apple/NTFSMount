@@ -228,7 +228,7 @@ private struct EmptyVolumeView: View {
       }
 
       VStack(spacing: 12) {
-        Image(systemName: "externaldrive.badge.questionmark")
+        Image(systemName: "externaldrive")
           .font(.system(size: 48))
           .symbolRenderingMode(.hierarchical)
           .foregroundStyle(.secondary)
@@ -239,6 +239,11 @@ private struct EmptyVolumeView: View {
           .foregroundStyle(.secondary)
           .multilineTextAlignment(.center)
           .frame(maxWidth: 360)
+        Text(L10n.t("window.emptyHint"))
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .multilineTextAlignment(.center)
+          .frame(maxWidth: 400)
 
         if !store.encryptedDisks.isEmpty {
           VStack(alignment: .leading, spacing: 6) {
@@ -389,6 +394,27 @@ private struct VolumeDetailView: View {
           .foregroundStyle(.secondary)
           .gridColumnAlignment(.trailing)
         Text("NTFS")
+      }
+      GridRow {
+        Text(L10n.t("window.device"))
+          .foregroundStyle(.secondary)
+          .gridColumnAlignment(.trailing)
+        Text(vol.id)
+          .textSelection(.enabled)
+      }
+      if !vol.mediaName.isEmpty {
+        GridRow {
+          Text(L10n.t("window.media"))
+            .foregroundStyle(.secondary)
+            .gridColumnAlignment(.trailing)
+          Text(vol.mediaName)
+        }
+      }
+      GridRow {
+        Text(L10n.t("window.usage"))
+          .foregroundStyle(.secondary)
+          .gridColumnAlignment(.trailing)
+        Text(vol.mountPoint.isEmpty ? L10n.t("window.usageAfterMount") : vol.usageLine)
       }
     }
     .font(.body)

@@ -75,7 +75,7 @@ Return 即同意。不同意請點「結束」。";
 
 "menu.eject" = "推出（可安全拔除）";
 
-"menu.formatNTFS" = "格式化為 NTFS…";
+"menu.formatNTFS" = "抹掉整碟為 NTFS…";
 
 "menu.mountAll" = "全部以可寫方式掛載";
 
@@ -123,6 +123,8 @@ Return 即同意。不同意請點「結束」。";
 
 "window.emptySubtitle" = "插入 Windows 格式的行動碟後會出現在左側。";
 
+"window.emptyHint" = "關閉視窗後，選單列的 NTFS 圖示仍會保留。要取下磁碟請用「推出」。若希望圖示繼續顯示，請不要從 Dock 結束。";
+
 "window.encryptedLine" = "%@（%@）：%@";
 
 "window.otherDisks" = "其他行動碟可以格式化為 NTFS：";
@@ -132,6 +134,14 @@ Return 即同意。不同意請點「結束」。";
 "window.capacity" = "容量";
 
 "window.filesystem" = "檔案系統";
+
+"window.device" = "裝置";
+
+"window.media" = "媒體";
+
+"window.usage" = "用量";
+
+"window.usageAfterMount" = "掛載後可見";
 
 "window.used" = "已用 %@";
 
@@ -191,6 +201,10 @@ Return 即同意。不同意請點「結束」。";
 
 "format.newName" = "新卷名：";
 
+"format.confirmAccessibility" = "用於確認的目前卷名";
+
+"format.newNameAccessibility" = "新卷名";
+
 "format.unformatted" = "未格式化";
 
 "encrypted.message" = "可能加密，勿寫入／勿格式化。macOS 無法確認 BitLocker；未見線索不是陰性證明。";
@@ -201,7 +215,7 @@ Return 即同意。不同意請點「結束」。";
 
 "settings.autoMount" = "插入時自動掛載外接 NTFS";
 
-"settings.autoMountNote" = "預設關閉，直到已安裝助手、同意條款並確認過可寫風險。內建碟與 Boot Camp 不會自動掛載。自動掛載仍非 v1.2.0 賣點（Issue #1）。";
+"settings.autoMountNote" = "插入外接 NTFS 磁碟後嘗試以可寫方式掛載；略過內建磁碟。";
 
 "settings.appearance" = "外觀與啟動";
 
@@ -220,6 +234,8 @@ Return 即同意。不同意請點「結束」。";
 "settings.uninstall" = "解除安裝助手…";
 
 "settings.compat" = "相容性";
+
+"settings.advanced" = "進階";
 
 "settings.log" = "紀錄";
 
@@ -251,7 +267,7 @@ Return 即同意。不同意請點「結束」。";
 
 "helper.hintAdHoc" = "未公證套件無法穩定使用系統服務，安裝助手會要求管理員密碼。";
 
-"helper.privilegeHint" = "掛載助手以 root 執行，可以掛載、卸載、格式化外接碟。管理員密碼只用於一次性安裝，不會儲存。Unix socket 權限為 0666，便於本 App 以一般使用者連線；守護程式用安裝時寫入的 CDHash 校驗呼叫方，並只執行 /Library/Application Support/NTFSMount/ 下 root 所有的助手副本。不寫 sudoers。解除安裝：上面的「解除安裝助手」，或倉庫 uninstall.sh。紀錄在 ~/Library/Logs/ntfsmount.log，解除安裝後仍會留在本機。";
+"helper.privilegeHint" = "掛載助手可以掛載、卸載、格式化外接碟。管理員密碼只用於一次性安裝，不會儲存。";
 
 "alert.updateHelperTitle" = "更新掛載助手";
 
@@ -364,6 +380,8 @@ Return 即同意。不同意請點「結束」。";
 
 "diagnose.alertTitle" = "環境診斷";
 
+"diagnose.checking" = "正在檢查內附元件與掛載助手…";
+
 "diagnose.copy" = "複製結果";
 
 "diagnose.openLog" = "打開紀錄";
@@ -469,7 +487,7 @@ Return 即同意。不同意請點「結束」。";
 
 "update.checkNow" = "檢查更新…";
 
-"update.autoCheckNote" = "預設關閉。打開前不會造訪網路。打開後會定期向 GitHub 上的 Sparkle appcast 查詢新版本（目前指向 pre-release v1.2.0 資產，不是 GitHub Latest）。發現更新後可一鍵安裝，不會靜默安裝。目前建置為 ad-hoc、未公證；更新信任靠 Sparkle EdDSA 簽名，不是 Developer ID。";
+"update.autoCheckNote" = "預設關閉。打開後會連線 GitHub 檢查是否有新版本。";
 
 "update.settingsAboutLine" = "NTFS 讀寫（NTFSMount）· 直發，不上 Mac App Store。預設不連網；打開「自動檢查更新」或「檢查更新…」時會造訪 GitHub。";
 

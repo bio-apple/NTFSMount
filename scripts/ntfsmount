@@ -1,31 +1,64 @@
 #!/bin/bash
-# 仓库内 CLI。目前仅 diagnose（只读，不挂载、不装助手）。
-# 用法: ./scripts/ntfsmount diagnose [--json]
+# 仓库内 CLI。
+#   ./scripts/ntfsmount diagnose [--json]
+#   ./scripts/ntfsmount list|status|mount|unmount [--json] [diskNsM]
 set -euo pipefail
 DIR="$(cd "$(/usr/bin/dirname "$0")" && pwd)"
+ROOT="$(cd "$DIR/.." && pwd)"
+export NTFSMOUNT_ROOT="$ROOT"
 
 usage() {
-  echo "用法: ntfsmount diagnose [--json]" >&2
-  echo "      $DIR/ntfsmount diagnose [--json]" >&2
-  echo "      $DIR/ntfsmount-diagnose.sh [--json]" >&2
+  cat <<EOF >&2
+用法: ntfsmount <command> [--json] [diskNsM]
+  diagnose           只读环境诊断
+  list               列出 NTFS 卷
+  status [diskNsM]   一块卷的挂载状态；省略 ident 等于 list
+  mount diskNsM      可写挂载（需 root + 已安装助手）
+  unmount diskNsM    卸载（需 root + 已安装助手）
+--json 输出稳定英文 snake_case，便于 GUI / 脚本。
+EOF
 }
 
-if [[ $# -lt 1 ]]; then
+JSON=0
+POS=()
+for a in "$@"; do
+  case "$a" in
+    --json) JSON=1 ;;
+    -h|--help|help)
+      usage
+      exit 0
+      ;;
+    *) POS+=("$a") ;;
+  esac
+done
+
+if [[ ${#POS[@]} -lt 1 ]]; then
   usage
   exit 2
 fi
-cmd="$1"
-shift
+cmd="${POS[0]}"
+device="${POS[1]:-}"
+
 case "$cmd" in
   diagnose)
-    exec "$DIR/ntfsmount-diagnose.sh" "$@"
+    if [[ "$JSON" -eq 1 ]]; then
+      exec "$DIR/ntfsmount-diagnose.sh" --json
+    else
+      exec "$DIR/ntfsmount-diagnose.sh"
+    fi
     ;;
-  -h|--help|help)
-    usage
-    exit 0
+  list|status|mount|unmount)
+    # shellcheck source=ntfsmount-volumes.sh
+    . "$DIR/ntfsmount-volumes.sh"
+    case "$cmd" in
+      list) cmd_list ;;
+      status) cmd_status "$device" ;;
+      mount) cmd_mount "$device" ;;
+      unmount) cmd_unmount "$device" ;;
+    esac
     ;;
   *)
-    echo "error: 未知子命令: ${cmd}（目前仅支持 diagnose）" >&2
+    echo "error: 未知子命令: ${cmd}" >&2
     usage
     exit 2
     ;;

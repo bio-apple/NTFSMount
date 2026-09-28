@@ -66,6 +66,7 @@ if [[ -n "$CORE_BUNDLE" ]]; then
   cp -R "$CORE_BUNDLE" "$APP/Contents/Resources/"
 fi
 cp "$ROOT/LICENSE" "$APP/Contents/Resources/LICENSE"
+cp "$ROOT/NOTICE" "$APP/Contents/Resources/NOTICE"
 cp "$ROOT/THIRD_PARTY_LICENSES.md" "$APP/Contents/Resources/THIRD_PARTY_LICENSES.md"
 cp "$ROOT/docs/DISTRIBUTION.md" "$APP/Contents/Resources/DISTRIBUTION.md"
 cp "$ROOT/helper/ntfs-rw-helper" "$APP/Contents/Resources/ntfs-rw-helper"

@@ -59,13 +59,6 @@ struct MenuRoot: View {
               .disabled(store.busyId != nil)
               .help(VolumeActionCopy.ejectHelp)
           }
-          Divider()
-          Button(L10n.t("menu.formatNTFS")) {
-            if let disk = store.formatDisks.first(where: { $0.id == wholeDiskId(vol.id) }) {
-              store.confirmFormat(disk)
-            }
-          }
-          .disabled(store.busyId != nil || !store.formatDisks.contains(where: { $0.id == wholeDiskId(vol.id) }))
         } label: {
           Text("\(store.statusLabel(vol))  ·  \(vol.name)  ·  \(vol.sizeLabel)")
             .help(MenuBarTooltip.card(vol))
@@ -85,7 +78,7 @@ struct MenuRoot: View {
       Divider()
       Menu(L10n.t("menu.formatNTFS")) {
         ForEach(store.formatDisks) { disk in
-          Button(L10n.format("menu.formatItem", disk.name, disk.fsHint, disk.sizeLabel)) {
+          Button(L10n.format("menu.formatItem", disk.name, disk.fsHint, disk.sizeLabel), role: .destructive) {
             store.confirmFormat(disk)
           }
           .disabled(store.busyId != nil)

@@ -118,9 +118,31 @@ if /usr/bin/awk '
   echo "automount must not exec the user-writable .app helper" >&2
   exit 1
 fi
-to="$(/usr/bin/awk '/daemonTimeoutSec/{ gsub(/[^0-9]/,"",$NF); print $NF; exit }' "$ROOT/Sources/NTFSMount/Privileged.swift")"
-if [[ -z "$to" || "$to" -lt 30 || "$to" -gt 60 ]]; then
-  echo "Privileged.runViaDaemon timeout must be 30-60s, got: ${to:-missing}" >&2
+if /usr/bin/grep -q 'daemonTimeoutSec' "$ROOT/Sources/NTFSMount/Privileged.swift"; then
+  echo "Privileged must not use daemonTimeoutSec; timeouts live in HelperIpc.recvTimeoutSec" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'HelperIpc.recvTimeoutSec' "$ROOT/Sources/NTFSMount/Privileged.swift"; then
+  echo "Privileged must use HelperIpc.recvTimeoutSec" >&2
+  exit 1
+fi
+if ! /usr/bin/awk '
+  /func recvTimeoutSec/ { inh=1 }
+  inh && /case "format", "fix", "ntfsfix": return 600/ { long=1 }
+  inh && /default: return 180/ { def=1 }
+  END { exit (long && def) ? 0 : 1 }
+' "$ROOT/Sources/NTFSMountCore/HelperIpc.swift"; then
+  echo "HelperIpc.recvTimeoutSec must be 600 for format/fix/ntfsfix and 180 otherwise" >&2
+  exit 1
+fi
+wait_sec="$(/usr/bin/awk '/^#define WAIT_SEC /{ print $3; exit }' "$HELPERD_C")"
+wait_long="$(/usr/bin/awk '/^#define WAIT_SEC_LONG /{ print $3; exit }' "$HELPERD_C")"
+if [[ "$wait_sec" != "180" || "$wait_long" != "600" ]]; then
+  echo "helperd WAIT_SEC must be 180 and WAIT_SEC_LONG 600, got: ${wait_sec:-missing} ${wait_long:-missing}" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'HEARTBEAT_TENTHS' "$HELPERD_C"; then
+  echo "helperd must heartbeat during long helper runs" >&2
   exit 1
 fi
 
@@ -174,6 +196,28 @@ if ! /usr/bin/grep -q 'Privileged.run("probe"' "$STORE"; then
   echo "VolumeStore must probe volume health before writable mount" >&2
   exit 1
 fi
+if /usr/bin/awk '
+  $0 ~ /func mountAll\(/ { inh=1 }
+  inh && $0 ~ /^  func / && $0 !~ /func mountAll\(/ { inh=0 }
+  inh && /run\("mount"/ { found=1 }
+  END { exit found ? 0 : 1 }
+' "$STORE"; then
+  echo "mountAll must not call run(\"mount\") directly" >&2
+  exit 1
+fi
+if ! /usr/bin/awk '
+  $0 ~ /func mountAll\(/ || $0 ~ /func pumpMountAll\(/ { inh=1 }
+  inh && $0 ~ /^  func / && $0 !~ /func mountAll\(/ && $0 !~ /func pumpMountAll\(/ { inh=0 }
+  inh && /probeThenMount/ { found=1 }
+  END { exit found ? 0 : 1 }
+' "$STORE"; then
+  echo "mountAll must go through probeThenMount" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'com.bioapple.ntfsmount.helper-client' "$ROOT/Sources/NTFSMount/Privileged.swift"; then
+  echo "Privileged must serialize daemon transactions on a helper-client queue" >&2
+  exit 1
+fi
 if ! /usr/bin/grep -q '"probe"' "$HELPERD_C"; then
   echo "helperd must allow probe" >&2
   exit 1
@@ -207,12 +251,20 @@ if /usr/bin/grep -nE '(^|[^"=$])/Volumes/\$name' "$HELPER"; then
   echo "helper contains unquoted /Volumes/\$name" >&2
   exit 1
 fi
+if /usr/bin/grep -nE 'for[[:space:]]+[^;]+in[[:space:]]+/Volumes/' "$HELPER" "$ROOT"/scripts/*.sh; then
+  echo "must not iterate /Volumes by glob (breaks names with spaces)" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'list_slice_idents' "$HELPER"; then
+  echo "helper must enumerate diskNsM via list_slice_idents, not directory names" >&2
+  exit 1
+fi
 
 out="$("$HELPER" selftest)"
 echo "$out"
 [[ "$out" == ok\ selftest* ]] || { echo "selftest failed" >&2; exit 1; }
 ver="$("$HELPER" version)"
-[[ "$ver" == HELPER_VERSION=8 ]] || { echo "version mismatch: $ver" >&2; exit 1; }
+[[ "$ver" == HELPER_VERSION=9 ]] || { echo "version mismatch: $ver" >&2; exit 1; }
 
 # shellcheck disable=SC2016 # literal $(whoami) payload the helper must reject
 for bad in 'disk12s1;whoami' 'disk 12s1' '../disk1s1' 'disk5s1$(whoami)' 'disk4;id' 'mount'; do
@@ -348,12 +400,28 @@ file "$TMPD/helperd" | /usr/bin/grep -q 'arm64' || { echo "helperd not arm64" >&
 /bin/rm -rf "$TMPD"
 
 # README 与界面不得再写「没有程序坞」或「点盘名即可挂载」
-if /usr/bin/grep -n '没有程序坞图标' "$ROOT/README.md"; then
+if /usr/bin/grep -n '没有程序坞图标' "$ROOT/README.md" "$ROOT/README_ZH.md"; then
   echo "README still says no Dock icon" >&2
   exit 1
 fi
-if /usr/bin/grep -n '点盘名即可' "$ROOT/README.md"; then
+if /usr/bin/grep -n '点盘名即可' "$ROOT/README.md" "$ROOT/README_ZH.md"; then
   echo "README still says click the disk name" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'README_ZH.md' "$ROOT/README.md"; then
+  echo "README.md must link to README_ZH.md" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q '](./README.md)' "$ROOT/README_ZH.md"; then
+  echo "README_ZH.md must link to English README.md" >&2
+  exit 1
+fi
+if /usr/bin/grep -n '完整英文说明' "$ROOT/README.md"; then
+  echo "English README.md must not be the Chinese document" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'README.md' "$ROOT/README_EN.md"; then
+  echo "README_EN.md must redirect to README.md" >&2
   exit 1
 fi
 [[ -f "$ROOT/Resources/NTFSMount.entitlements" ]]
@@ -380,12 +448,156 @@ ntfs3g_version_allowed 2026.8.1 || { echo "allow 2026.8.1" >&2; exit 1; }
 if ntfs3g_version_allowed 2024.2.1; then echo "2024.x must warn" >&2; exit 1; fi
 if ntfs3g_version_allowed 2026.9.0; then echo "2026.9 must warn" >&2; exit 1; fi
 if ntfs3g_version_allowed garbage; then echo "garbage must warn" >&2; exit 1; fi
+if /usr/bin/grep -nF 'copy_if_exec /usr/local/bin/ntfs-3g' "$ROOT/scripts/prepare-runtime.sh"; then
+  echo "prepare-runtime must not copy ntfs-3g only from /usr/local/bin" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'find_ntfs3g_bin' "$ROOT/scripts/prepare-runtime.sh"; then
+  echo "prepare-runtime must resolve ntfs-3g dynamically (Apple Silicon /opt/homebrew)" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q '/opt/homebrew/bin/ntfs-3g' "$ROOT/scripts/prepare-runtime.sh"; then
+  echo "prepare-runtime must try /opt/homebrew/bin/ntfs-3g" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'ntfs3g_base_opts' "$HELPER"; then
+  echo "helper must build ntfs-3g -o via ntfs3g_base_opts" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'auto_xattr' "$HELPER"; then
+  echo "helper must pass auto_xattr so Finder xattr / 中文名 metadata 可用" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'locale=zh_CN.UTF-8' "$HELPER"; then
+  echo "helper must default ntfs-3g locale to zh_CN.UTF-8" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'allow_other' "$HELPER"; then
+  echo "helper must pass allow_other so the console user can write" >&2
+  exit 1
+fi
 if /usr/bin/grep -nE 'brew install macfuse|请安装 macFUSE|must install macFUSE' "$ROOT/scripts/ntfsmount-diagnose.sh"; then
   echo "diagnose must not require macFUSE" >&2
   exit 1
 fi
+if [[ ! -f "$ROOT/scripts/ci-shellcheck.sh" ]]; then
+  echo "missing scripts/ci-shellcheck.sh" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'helper/ntfs-rw-helper' "$ROOT/scripts/ci-shellcheck.sh"; then
+  echo "ci-shellcheck must include helper/ntfs-rw-helper" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'scripts/ci-shellcheck.sh' "$ROOT/.github/workflows/shellcheck.yml"; then
+  echo "shellcheck.yml must run scripts/ci-shellcheck.sh" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'uses: ./.github/workflows/shellcheck.yml' "$ROOT/.github/workflows/build.yml"; then
+  echo "build.yml must call the ShellCheck reusable workflow" >&2
+  exit 1
+fi
+if /usr/bin/grep -nE 'brew install shellcheck' "$ROOT/.github/workflows/build.yml"; then
+  echo "build.yml must not brew install shellcheck in Security Scan; use the ShellCheck job" >&2
+  exit 1
+fi
+CHECK_DEPS="$ROOT/scripts/check-fuse-deps.sh"
+if [[ ! -f "$CHECK_DEPS" ]]; then
+  echo "missing scripts/check-fuse-deps.sh" >&2
+  exit 1
+fi
+if /usr/bin/grep -nE '\$BREW[[:space:]]+install[[:space:]]+macfuse|"\$BREW" install macfuse' "$CHECK_DEPS"; then
+  echo "check-fuse-deps must not brew install macfuse" >&2
+  exit 1
+fi
+if /usr/bin/grep -nE '\$BREW[[:space:]]+install[[:space:]]+fuse-t|"\$BREW" install fuse-t' "$CHECK_DEPS"; then
+  echo "check-fuse-deps must not brew install fuse-t" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'brew install ntfs-3g' "$CHECK_DEPS"; then
+  echo "check-fuse-deps must brew install ntfs-3g only" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q '无需关闭 SIP' "$CHECK_DEPS"; then
+  echo "check-fuse-deps must say FUSE-T does not require lowering SIP" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'check-fuse-deps.sh' "$ROOT/README.md"; then
+  echo "README.md must document check-fuse-deps.sh" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'check-fuse-deps.sh' "$ROOT/README_ZH.md"; then
+  echo "README_ZH.md must document check-fuse-deps.sh" >&2
+  exit 1
+fi
+if /usr/bin/grep -nE '请执行：.*brew install macfuse|推荐.*brew install macfuse' "$ROOT/README.md" "$ROOT/README_ZH.md"; then
+  echo "README must not recommend brew install macfuse" >&2
+  exit 1
+fi
 if ! /usr/bin/grep -q 'ntfsmount-diagnose.sh' "$ROOT/scripts/build.sh"; then
   echo "build.sh must copy ntfsmount-diagnose.sh into the app" >&2
+  exit 1
+fi
+CLI="$ROOT/scripts/ntfsmount"
+if ! "$CLI" list --json | /usr/bin/python3 -c 'import json,sys; d=json.load(sys.stdin); assert d.get("ok") is True; assert isinstance(d.get("volumes"), list)'; then
+  echo "ntfsmount list --json must emit {ok, volumes}" >&2
+  exit 1
+fi
+if ! "$CLI" --json list | /usr/bin/python3 -c 'import json,sys; d=json.load(sys.stdin); assert "volumes" in d'; then
+  echo "ntfsmount --json list must work with flag before command" >&2
+  exit 1
+fi
+mount_json="$("$CLI" mount --json 2>/dev/null || true)"
+if ! printf '%s' "$mount_json" | /usr/bin/python3 -c 'import json,sys; d=json.load(sys.stdin); assert d.get("ok") is False; assert d.get("error")=="missing_device"'; then
+  echo "ntfsmount mount --json without ident must be missing_device JSON" >&2
+  echo "$mount_json" >&2
+  exit 1
+fi
+bad_json="$("$CLI" mount 'disk12s1;whoami' --json 2>/dev/null || true)"
+if ! printf '%s' "$bad_json" | /usr/bin/python3 -c 'import json,sys; d=json.load(sys.stdin); assert d.get("error")=="invalid_device"'; then
+  echo "ntfsmount mount must reject injected id as JSON invalid_device" >&2
+  echo "$bad_json" >&2
+  exit 1
+fi
+if /usr/bin/id -u | /usr/bin/grep -qx 0; then
+  :
+else
+  noroot="$("$CLI" mount disk4s1 --json 2>/dev/null || true)"
+  if ! printf '%s' "$noroot" | /usr/bin/python3 -c 'import json,sys; d=json.load(sys.stdin); assert d.get("error")=="not_root"'; then
+    echo "ntfsmount mount --json as non-root must be not_root" >&2
+    echo "$noroot" >&2
+    exit 1
+  fi
+fi
+if /usr/bin/grep -nE 'sudo[[:space:]]+-S\b' "$ROOT/scripts/ntfsmount" "$ROOT/scripts/ntfsmount-volumes.sh"; then
+  echo "ntfsmount must not feed sudo a password" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q '#define MAX_ARGS 32' "$ROOT/helper/ntfsmount-helperd.c"; then
+  echo "helperd MAX_ARGS must be at least 32" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'v2 ' "$ROOT/helper/ntfsmount-helperd.c"; then
+  echo "helperd must accept length-prefixed v2 argv" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'encodeV2' "$ROOT/Sources/NTFSMount/Privileged.swift"; then
+  echo "Privileged must send HelperIpc v2" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'WAIT_SEC_LONG' "$ROOT/helper/ntfsmount-helperd.c"; then
+  echo "helperd must wait longer for format/fix" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'peer_disconnected' "$ROOT/helper/ntfsmount-helperd.c"; then
+  echo "helperd must skip exec if the client hung up" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'stripHeartbeats' "$ROOT/Sources/NTFSMount/Privileged.swift"; then
+  echo "Privileged must ignore daemon NUL heartbeats" >&2
+  exit 1
+fi
+if /usr/bin/grep -n 'replacingOccurrences(of: "\\n", with: " ") + "\\n"' "$ROOT/Sources/NTFSMount/Privileged.swift"; then
+  echo "Privileged must not split argv on newlines for the primary protocol" >&2
   exit 1
 fi
 

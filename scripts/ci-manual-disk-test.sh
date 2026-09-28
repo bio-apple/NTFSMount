@@ -29,7 +29,7 @@ while IFS= read -r ident; do
   found=1
   echo "---- $ident ----"
   /usr/sbin/diskutil info "$ident" | /usr/bin/grep -E 'Device Identifier:|Volume Name:|Mount Point:|File System Personality:|Protocol:|Internal:|Removable Media:' || true
-done < <(/usr/sbin/diskutil list | /usr/bin/awk '/^[[:space:]]+[0-9]+:/{print $NF}')
+done < <(/usr/sbin/diskutil list | /usr/bin/awk '/Windows_NTFS/ && $NF ~ /^disk[0-9]+s[0-9]+$/ { print $NF; next } /^[[:space:]]+[0-9]+:/ && $NF ~ /^disk[0-9]+s[0-9]+$/ { print $NF }' | /usr/bin/awk 'NF && !seen[$0]++')
 
 if [[ "$found" -eq 0 ]]; then
   echo "error: 本机没有 NTFS 卷。GitHub-hosted runner 无法插入 USB。" >&2

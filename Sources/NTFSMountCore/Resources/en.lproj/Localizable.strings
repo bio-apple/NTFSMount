@@ -75,7 +75,7 @@ Return means you agree. Click “Quit” if you do not.";
 
 "menu.eject" = "Eject (Safe to Unplug)";
 
-"menu.formatNTFS" = "Format as NTFS…";
+"menu.formatNTFS" = "Erase whole disk as NTFS…";
 
 "menu.mountAll" = "Mount All Writable";
 
@@ -123,6 +123,8 @@ Return means you agree. Click “Quit” if you do not.";
 
 "window.emptySubtitle" = "Plug in a Windows-formatted external disk and it will appear on the left.";
 
+"window.emptyHint" = "Closing this window keeps the menu-bar NTFS icon. Use Eject to remove a disk. Do not Quit from the Dock if you want the icon to stay.";
+
 "window.encryptedLine" = "%@ (%@): %@";
 
 "window.otherDisks" = "Other external disks can be formatted as NTFS:";
@@ -132,6 +134,14 @@ Return means you agree. Click “Quit” if you do not.";
 "window.capacity" = "Capacity";
 
 "window.filesystem" = "File System";
+
+"window.device" = "Device";
+
+"window.media" = "Media";
+
+"window.usage" = "Usage";
+
+"window.usageAfterMount" = "Visible after mount";
 
 "window.used" = "Used %@";
 
@@ -191,6 +201,10 @@ Return means you agree. Click “Quit” if you do not.";
 
 "format.newName" = "New volume name:";
 
+"format.confirmAccessibility" = "Current volume name to confirm";
+
+"format.newNameAccessibility" = "New volume name";
+
 "format.unformatted" = "Unformatted";
 
 "encrypted.message" = "Possibly encrypted — do not write or format. macOS cannot confirm BitLocker; missing clues are not a negative result.";
@@ -201,7 +215,7 @@ Return means you agree. Click “Quit” if you do not.";
 
 "settings.autoMount" = "Auto-mount external NTFS when inserted";
 
-"settings.autoMountNote" = "Off by default until the helper is installed, terms are accepted, and writable risk is confirmed. Internal disks and Boot Camp are never auto-mounted. Auto-mount is still not a v1.2.0 selling point (Issue #1).";
+"settings.autoMountNote" = "After inserting an external NTFS disk, try writable mount; skip internal disks.";
 
 "settings.appearance" = "Appearance & Startup";
 
@@ -220,6 +234,8 @@ Return means you agree. Click “Quit” if you do not.";
 "settings.uninstall" = "Uninstall Helper…";
 
 "settings.compat" = "Compatibility";
+
+"settings.advanced" = "Advanced";
 
 "settings.log" = "Log";
 
@@ -251,7 +267,7 @@ Return means you agree. Click “Quit” if you do not.";
 
 "helper.hintAdHoc" = "Un-notarized builds cannot use system services reliably, so installing the helper asks for an administrator password.";
 
-"helper.privilegeHint" = "The mount helper runs as root and can mount, unmount, and format external disks. The administrator password is used only for one-time install and is not saved. The Unix socket is mode 0666 so this app can connect as a normal user; the daemon checks the caller against the CDHash written at install time and only runs the root-owned helper copy under /Library/Application Support/NTFSMount/. It does not write sudoers. Uninstall: “Uninstall Helper” above, or uninstall.sh in the repo. Logs are at ~/Library/Logs/ntfsmount.log and remain on this Mac after uninstall.";
+"helper.privilegeHint" = "The mount helper can mount, unmount, and format external disks. Your administrator password is used only for one-time install and is not saved.";
 
 "alert.updateHelperTitle" = "Update Mount Helper";
 
@@ -364,6 +380,8 @@ Return means you agree. Click “Quit” if you do not.";
 
 "diagnose.alertTitle" = "Environment Diagnose";
 
+"diagnose.checking" = "Checking bundled components and helper…";
+
 "diagnose.copy" = "Copy Results";
 
 "diagnose.openLog" = "Open Log";
@@ -469,7 +487,7 @@ Return means you agree. Click “Quit” if you do not.";
 
 "update.checkNow" = "Check for Updates…";
 
-"update.autoCheckNote" = "Off by default. No network until you turn it on. When on, it periodically queries the Sparkle appcast on GitHub for a new version (currently the pre-release v1.2.0 asset, not GitHub Latest). If an update is found you can install it in one click; it never installs silently. This build is ad-hoc and not notarized; update trust is Sparkle EdDSA, not Developer ID.";
+"update.autoCheckNote" = "Off by default. When on, the app contacts GitHub to look for updates.";
 
 "update.settingsAboutLine" = "NTFS Read-Write (NTFSMount) · direct distribution, not on the Mac App Store. No network by default; “Check for Updates Automatically” or “Check for Updates…” contacts GitHub.";
 

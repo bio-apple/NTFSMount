@@ -84,7 +84,7 @@ else
   NTFS3G_ALLOW_HUMAN="2026.7.7、2026.8.x"
   ntfs3g_parse_version() { printf '%s' ""; }
   ntfs3g_version_allowed() { return 1; }
-  ntfs3g_human_line() { printf '%s' "无法加载版本校验脚本"; }
+  ntfs3g_human_line() { printf '%s' "无法加载版本校验脚本；允许 ${NTFS3G_ALLOW_HUMAN}"; }
 fi
 
 # --- app / helper 版本（读文件，不执行挂载路径） ---
@@ -302,13 +302,15 @@ fi
 
 # --- 可选冲突探测（macFUSE 不是依赖；缺 brew 也正常） ---
 brew_macfuse="brew_missing"
-brew_bin=""
-for b in /opt/homebrew/bin/brew /usr/local/bin/brew; do
-  if [[ -x "$b" ]]; then
-    brew_bin="$b"
-    break
-  fi
-done
+brew_bin="$(command -v brew 2>/dev/null || true)"
+if [[ -z "$brew_bin" ]]; then
+  for b in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+    if [[ -x "$b" ]]; then
+      brew_bin="$b"
+      break
+    fi
+  done
+fi
 if [[ -n "$brew_bin" ]]; then
   if "$brew_bin" list macfuse >/dev/null 2>&1; then
     brew_macfuse="present"
@@ -494,6 +496,14 @@ add_mount() {
   mounts_human="${mounts_human}  ${device}  ${mp}  (${kind}/${fs})  占用: ${occ}"$'\n'
 }
 
+# 只收 diskNsM（末字段）。卷名「Seagate Expansion」不会把 ident 拆开。不要 ls /Volumes。
+disk_idents_from_list() {
+  printf '%s\n' "$1" | /usr/bin/awk '
+    /Windows_NTFS/ && $NF ~ /^disk[0-9]+s[0-9]+$/ { print $NF; next }
+    /^[[:space:]]+[0-9]+:/ && $NF ~ /^disk[0-9]+s[0-9]+$/ { print $NF }
+  ' | /usr/bin/awk 'NF && !seen[$0]++'
+}
+
 # diskutil NTFS 卷
 while IFS= read -r ident; do
   [[ "$ident" == disk* ]] || continue
@@ -510,7 +520,7 @@ while IFS= read -r ident; do
     kind="fuse"
   fi
   add_mount "$ident" "NTFS" "$mp" "$kind"
-done < <(printf '%s\n' "$diskutil_list" | /usr/bin/awk '/^[[:space:]]+[0-9]+:/{print $NF}')
+done < <(disk_idents_from_list "$diskutil_list")
 
 # mount 表里有但 diskutil 没标 NTFS 的 FUSE/NFS 行
 while IFS= read -r line; do
@@ -566,7 +576,7 @@ while IFS= read -r ident; do
     bl_bits="$bl_bits,"
   fi
   bl_bits="$bl_bits$item"
-done < <(printf '%s\n' "$diskutil_list" | /usr/bin/awk '/^[[:space:]]+[0-9]+:/{print $NF}')
+done < <(disk_idents_from_list "$diskutil_list")
 bl_json="[]"
 [[ -n "$bl_bits" ]] && bl_json="[$bl_bits]"
 if [[ "$bl_status" == "possible" ]]; then

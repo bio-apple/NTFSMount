@@ -8,7 +8,7 @@ NTFSMount ships the following binaries inside `NTFSMount.app/Contents/MacOS` (fi
 - **License:** GNU General Public License v2.0 (GPL-2.0)
 - **Source:** https://github.com/tuxera/ntfs-3g
 
-These binaries provide NTFS read/write mounting, optional dirty-volume repair (`ntfsfix`), and formatting. Because they are GPL-2.0, the combined work in this repository is offered under **GPL-2.0-or-later**. See [LICENSE](./LICENSE).
+These binaries provide NTFS read/write mounting, optional dirty-volume repair (`ntfsfix`), and formatting. Original NTFSMount Swift/helper code is offered under **GPL-2.0-or-later**. Binaries shipped together with ntfs-3g are constrained by **GPL-2.0**. **`go-nfsv4` is not part of that GPL grant** — see below. See [LICENSE](./LICENSE) and [NOTICE](./NOTICE).
 
 ## libfuse.2.dylib
 
@@ -38,4 +38,4 @@ Embedded as `Sparkle.framework` for in-app updates. The appcast is a Sparkle RSS
 
 ## Notices
 
-This file is informational and is not legal advice. The GPL-2.0 text is in [LICENSE](./LICENSE). LGPL-2.1 is available at https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+This file is informational and is not legal advice. The GPL-2.0 text is in [LICENSE](./LICENSE). LGPL-2.1 is **not** in LICENSE; see https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html. Sparkle MIT is upstream. FUSE-T terms are summarized in [NOTICE](./NOTICE).

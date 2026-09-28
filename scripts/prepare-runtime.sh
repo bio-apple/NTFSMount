@@ -24,6 +24,77 @@ FUSE_T_LIBFUSE="/usr/local/lib/libfuse.2.dylib"
 
 die() { echo "error: $*" >&2; exit 1; }
 
+# Homebrew：Apple Silicon 是 /opt/homebrew，Intel 旧前缀才是 /usr/local。不要只信 PATH。
+find_brew() {
+  local b
+  if command -v brew >/dev/null 2>&1; then
+    command -v brew
+    return 0
+  fi
+  for b in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+    if [[ -x "$b" ]]; then
+      printf '%s' "$b"
+      return 0
+    fi
+  done
+  return 1
+}
+
+export_homebrew_path() {
+  local brew_bin dir
+  brew_bin="$(find_brew)" || return 0
+  dir="$(/usr/bin/dirname "$brew_bin")"
+  case ":$PATH:" in
+    *":$dir:"*) ;;
+    *) PATH="$dir:$PATH"; export PATH ;;
+  esac
+}
+
+# 优先 brew --prefix / command -v；Apple Silicon 回落到 /opt/homebrew，最后才是 /usr/local。
+find_ntfs3g_bin() {
+  local brew_bin prefix p
+  if brew_bin="$(find_brew)"; then
+    prefix="$("$brew_bin" --prefix ntfs-3g 2>/dev/null || true)"
+    if [[ -n "$prefix" && -x "$prefix/bin/ntfs-3g" ]]; then
+      printf '%s' "$prefix/bin/ntfs-3g"
+      return 0
+    fi
+  fi
+  p="$(command -v ntfs-3g 2>/dev/null || true)"
+  if [[ -n "$p" && -x "$p" ]]; then
+    printf '%s' "$p"
+    return 0
+  fi
+  for p in \
+    /opt/homebrew/bin/ntfs-3g \
+    /opt/homebrew/opt/ntfs-3g/bin/ntfs-3g \
+    /usr/local/opt/ntfs-3g/bin/ntfs-3g \
+    /usr/local/bin/ntfs-3g
+  do
+    if [[ -x "$p" ]]; then
+      printf '%s' "$p"
+      return 0
+    fi
+  done
+  return 1
+}
+
+find_mount_ntfs() {
+  local p
+  p="$(command -v mount_ntfs 2>/dev/null || true)"
+  if [[ -n "$p" && -x "$p" ]]; then
+    printf '%s' "$p"
+    return 0
+  fi
+  for p in /opt/homebrew/sbin/mount_ntfs /opt/homebrew/bin/mount_ntfs /usr/local/sbin/mount_ntfs /usr/local/bin/mount_ntfs; do
+    if [[ -x "$p" ]]; then
+      printf '%s' "$p"
+      return 0
+    fi
+  done
+  return 1
+}
+
 print_fuse_t_install_help() {
   local pkg_sha=""
   if [[ -f "$SUMS" ]]; then
@@ -85,15 +156,15 @@ local_fuse_t_present() {
 }
 
 check_build_deps() {
+  local ver="" p="" brew_bin="" mp=""
   echo "FUSE-T 钉死 ${FUSE_T_VERSION}（runtime/versions.txt）。" >&2
+  export_homebrew_path
 
-  if command -v brew >/dev/null 2>&1; then
-    echo "已找到 Homebrew：$(command -v brew)" >&2
+  if brew_bin="$(find_brew)"; then
+    echo "已找到 Homebrew：$brew_bin" >&2
   else
-    echo "未找到 Homebrew（Apple Silicon 通常是 /opt/homebrew/bin/brew）。" >&2
+    echo "未找到 Homebrew（Apple Silicon 通常是 /opt/homebrew/bin/brew，不是 /usr/local）。" >&2
   fi
-
-  local ver="" p=""
   if local_fuse_t_present; then
     ver="$(local_fuse_t_version || true)"
     if [[ -z "$ver" ]]; then
@@ -109,15 +180,18 @@ check_build_deps() {
     print_fuse_t_install_help
   fi
 
-  if p="$(ntfs3g_prefix)"; then
+  if p="$(find_ntfs3g_bin)"; then
     echo "已找到 ntfs-3g：$p" >&2
-  elif command -v brew >/dev/null 2>&1; then
+  elif find_brew >/dev/null; then
     echo "未找到 ntfs-3g。将执行：brew install ntfs-3g" >&2
   else
     die "未找到 Homebrew，也无法定位 ntfs-3g。请先安装 Homebrew 再装 ntfs-3g：
   /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"
   brew install ntfs-3g
 然后重新运行 ./scripts/prepare-runtime.sh"
+  fi
+  if mp="$(find_mount_ntfs)"; then
+    echo "（可选）本机 mount_ntfs：$mp — 运行时不用它，只用捆绑 ntfs-3g。" >&2
   fi
 }
 
@@ -207,23 +281,14 @@ obtain_fuse_t() {
 }
 
 ntfs3g_prefix() {
-  local p
-  if command -v brew >/dev/null 2>&1; then
-    p="$(brew --prefix ntfs-3g 2>/dev/null || true)"
-    if [[ -n "$p" && -x "$p/bin/ntfs-3g" ]]; then
-      printf '%s' "$p"
-      return 0
-    fi
-  fi
-  if [[ -x /opt/homebrew/opt/ntfs-3g/bin/ntfs-3g ]]; then
-    printf '%s' /opt/homebrew/opt/ntfs-3g
+  local bin real
+  bin="$(find_ntfs3g_bin)" || return 1
+  real="$(/usr/bin/realpath "$bin" 2>/dev/null || printf '%s' "$bin")"
+  if [[ "$real" == */bin/ntfs-3g ]]; then
+    printf '%s' "$(/usr/bin/dirname "$(/usr/bin/dirname "$real")")"
     return 0
   fi
-  if [[ -x /usr/local/bin/ntfs-3g ]]; then
-    printf '%s' /usr/local
-    return 0
-  fi
-  return 1
+  printf '%s' "$(/usr/bin/dirname "$real")"
 }
 
 assert_arm64() {
@@ -231,40 +296,60 @@ assert_arm64() {
   /usr/bin/file "$file" | /usr/bin/grep -q 'arm64' || die "$file 不是 arm64 Mach-O"
 }
 
+copy_beside_or() {
+  local dest="$1" name="$2" prefix="$3"
+  local bin dir
+  bin="$(find_ntfs3g_bin)" || true
+  dir=""
+  [[ -n "$bin" ]] && dir="$(/usr/bin/dirname "$bin")"
+  copy_if_exec "$prefix/bin/$name" "$dest" \
+    || copy_if_exec "$prefix/sbin/$name" "$dest" \
+    || { [[ -n "$dir" ]] && copy_if_exec "$dir/$name" "$dest"; } \
+    || return 1
+}
+
 obtain_ntfs3g() {
-  local prefix
+  local prefix brew_bin bin
+  export_homebrew_path
   if ! prefix="$(ntfs3g_prefix)"; then
-    if command -v brew >/dev/null 2>&1; then
+    if brew_bin="$(find_brew)"; then
       echo "brew install ntfs-3g" >&2
-      brew install ntfs-3g
-      prefix="$(brew --prefix ntfs-3g)"
+      "$brew_bin" install ntfs-3g
+      export_homebrew_path
+      prefix="$(ntfs3g_prefix)" || die "brew install ntfs-3g 后仍找不到 ntfs-3g"
     else
       die "需要 Homebrew ntfs-3g。请先安装 Homebrew，再执行：
   brew install ntfs-3g
-Homebrew：
+Homebrew（Apple Silicon 装到 /opt/homebrew，不要假设 /usr/local）：
   /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
     fi
   fi
-  if [[ -x "$prefix/bin/ntfs-3g" ]]; then
-    copy_if_exec "$prefix/bin/ntfs-3g" "$WORK/ntfs-3g"
-    copy_if_exec "$prefix/sbin/mkntfs" "$WORK/mkntfs" || copy_if_exec "$prefix/bin/mkntfs" "$WORK/mkntfs"
-    copy_if_exec "$prefix/bin/ntfsfix" "$WORK/ntfsfix" \
-      || copy_if_exec "$prefix/sbin/ntfsfix" "$WORK/ntfsfix" \
-      || copy_if_exec /usr/local/bin/ntfsfix "$WORK/ntfsfix" \
-      || copy_if_exec /usr/local/sbin/ntfsfix "$WORK/ntfsfix" \
-      || die "找不到 ntfsfix（Homebrew ntfs-3g 通常自带）"
-    copy_if_exec "$prefix/lib/libntfs-3g.90.dylib" "$WORK/libntfs-3g.90.dylib"
-  else
-    copy_if_exec /usr/local/bin/ntfs-3g "$WORK/ntfs-3g"
-    copy_if_exec /usr/local/sbin/mkntfs "$WORK/mkntfs"
-    copy_if_exec /usr/local/bin/ntfsfix "$WORK/ntfsfix" || copy_if_exec /usr/local/sbin/ntfsfix "$WORK/ntfsfix" \
-      || die "找不到 ntfsfix（Homebrew ntfs-3g 通常自带）"
-    copy_if_exec /usr/local/lib/libntfs-3g.90.dylib "$WORK/libntfs-3g.90.dylib"
-  fi
+  bin="$(find_ntfs3g_bin)" || die "找不到 ntfs-3g"
+  copy_if_exec "$bin" "$WORK/ntfs-3g"
+  copy_beside_or "$WORK/mkntfs" mkntfs "$prefix" || die "找不到 mkntfs（Homebrew ntfs-3g 通常自带）"
+  copy_beside_or "$WORK/ntfsfix" ntfsfix "$prefix" || die "找不到 ntfsfix（Homebrew ntfs-3g 通常自带）"
+  copy_if_exec "$prefix/lib/libntfs-3g.90.dylib" "$WORK/libntfs-3g.90.dylib" \
+    || die "找不到 libntfs-3g.90.dylib（应在 $(printf '%s' "$prefix")/lib）"
   assert_arm64 "$WORK/ntfs-3g"
   assert_arm64 "$WORK/mkntfs"
   assert_arm64 "$WORK/ntfsfix"
   assert_arm64 "$WORK/libntfs-3g.90.dylib"
+}
+
+# 把当前 Mach-O 里实际链接的 libntfs-3g / libfuse 改成 @rpath（不硬编码 Homebrew 前缀）。
+relink_ntfs3g_libs() {
+  local bin old
+  for bin in "$WORK/ntfs-3g" "$WORK/mkntfs" "$WORK/ntfsfix"; do
+    [[ -x "$bin" ]] || continue
+    old="$(/usr/bin/otool -L "$bin" | /usr/bin/awk '/libntfs-3g\.90\.dylib/{print $1; exit}')"
+    if [[ -n "$old" && "$old" != "@rpath/libntfs-3g.90.dylib" ]]; then
+      install_name_tool -change "$old" '@rpath/libntfs-3g.90.dylib' "$bin" 2>/dev/null || true
+    fi
+  done
+  old="$(/usr/bin/otool -L "$WORK/ntfs-3g" | /usr/bin/awk '/libfuse\.2\.dylib/{print $1; exit}')"
+  if [[ -n "$old" && "$old" != "@rpath/libfuse.2.dylib" ]]; then
+    install_name_tool -change "$old" '@rpath/libfuse.2.dylib' "$WORK/ntfs-3g" 2>/dev/null || true
+  fi
 }
 
 [[ -f "$SUMS" ]] || die "缺少 $SUMS"
@@ -272,18 +357,13 @@ Homebrew：
 # shellcheck source=ntfs3g-version.sh
 . "$ROOT/scripts/ntfs3g-version.sh"
 
+export_homebrew_path
 check_build_deps
 obtain_fuse_t
 obtain_ntfs3g
 
 install_name_tool -id '@rpath/libntfs-3g.90.dylib' "$WORK/libntfs-3g.90.dylib"
-install_name_tool -change /usr/local/lib/libntfs-3g.90.dylib '@rpath/libntfs-3g.90.dylib' "$WORK/ntfs-3g" 2>/dev/null || true
-install_name_tool -change /opt/homebrew/opt/ntfs-3g/lib/libntfs-3g.90.dylib '@rpath/libntfs-3g.90.dylib' "$WORK/ntfs-3g" 2>/dev/null || true
-install_name_tool -change /usr/local/lib/libfuse.2.dylib '@rpath/libfuse.2.dylib' "$WORK/ntfs-3g" 2>/dev/null || true
-install_name_tool -change /usr/local/lib/libntfs-3g.90.dylib '@rpath/libntfs-3g.90.dylib' "$WORK/mkntfs" 2>/dev/null || true
-install_name_tool -change /opt/homebrew/opt/ntfs-3g/lib/libntfs-3g.90.dylib '@rpath/libntfs-3g.90.dylib' "$WORK/mkntfs" 2>/dev/null || true
-install_name_tool -change /usr/local/lib/libntfs-3g.90.dylib '@rpath/libntfs-3g.90.dylib' "$WORK/ntfsfix" 2>/dev/null || true
-install_name_tool -change /opt/homebrew/opt/ntfs-3g/lib/libntfs-3g.90.dylib '@rpath/libntfs-3g.90.dylib' "$WORK/ntfsfix" 2>/dev/null || true
+relink_ntfs3g_libs
 if ! /usr/bin/otool -l "$WORK/ntfs-3g" | /usr/bin/grep -q 'path @executable_path'; then
   install_name_tool -add_rpath '@executable_path' "$WORK/ntfs-3g"
 fi

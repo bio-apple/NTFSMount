@@ -75,7 +75,7 @@
 
 "menu.eject" = "推出（可安全拔出）";
 
-"menu.formatNTFS" = "格式化为 NTFS…";
+"menu.formatNTFS" = "抹掉整盘为 NTFS…";
 
 "menu.mountAll" = "全部以可写方式挂载";
 
@@ -123,6 +123,8 @@
 
 "window.emptySubtitle" = "插入 Windows 格式的移动盘后会出现在左侧。";
 
+"window.emptyHint" = "关闭窗口后，菜单栏的 NTFS 图标仍会保留。要取下磁盘请用「推出」。若希望图标继续显示，请不要从程序坞退出。";
+
 "window.encryptedLine" = "%@（%@）：%@";
 
 "window.otherDisks" = "其他移动盘可以格式化为 NTFS：";
@@ -132,6 +134,14 @@
 "window.capacity" = "容量";
 
 "window.filesystem" = "文件系统";
+
+"window.device" = "设备";
+
+"window.media" = "介质";
+
+"window.usage" = "用量";
+
+"window.usageAfterMount" = "挂载后可见";
 
 "window.used" = "已用 %@";
 
@@ -191,6 +201,10 @@
 
 "format.newName" = "新卷名：";
 
+"format.confirmAccessibility" = "用于确认的当前卷名";
+
+"format.newNameAccessibility" = "新卷名";
+
 "format.unformatted" = "未格式化";
 
 "encrypted.message" = "可能加密，勿写入/勿格式化。macOS 无法确认 BitLocker；未见线索不是阴性证明。";
@@ -201,7 +215,7 @@
 
 "settings.autoMount" = "插入时自动挂载外置 NTFS";
 
-"settings.autoMountNote" = "默认关闭，直到已安装助手、同意条款并确认过可写风险。内置盘与 Boot Camp 不会自动挂载。自动挂载仍非 v1.2.0 卖点（Issue #1）。";
+"settings.autoMountNote" = "插入外置 NTFS 磁盘后尝试以可写方式挂载；跳过内置磁盘。";
 
 "settings.appearance" = "外观与启动";
 
@@ -220,6 +234,8 @@
 "settings.uninstall" = "卸载助手…";
 
 "settings.compat" = "兼容性";
+
+"settings.advanced" = "高级";
 
 "settings.log" = "日志";
 
@@ -251,7 +267,7 @@
 
 "helper.hintAdHoc" = "未公证包无法稳定使用系统服务，安装助手会请求管理员密码。";
 
-"helper.privilegeHint" = "挂载助手以 root 运行，可以挂载、卸载、格式化外置盘。管理员密码只用于一次性安装，不会保存。Unix socket 权限为 0666，便于本应用以普通用户连接；守护进程用安装时写入的 CDHash 校验调用方，并只执行 /Library/Application Support/NTFSMount/ 下 root 所有的助手副本。不写 sudoers。卸载：上面的「卸载助手」，或仓库 uninstall.sh。日志在 ~/Library/Logs/ntfsmount.log，卸载后仍会留在本机。";
+"helper.privilegeHint" = "挂载助手可以挂载、卸载、格式化外置盘。管理员密码只用于一次性安装，不会保存。";
 
 "alert.updateHelperTitle" = "更新挂载助手";
 
@@ -364,6 +380,8 @@
 
 "diagnose.alertTitle" = "环境诊断";
 
+"diagnose.checking" = "正在检查捆绑组件与挂载助手…";
+
 "diagnose.copy" = "复制结果";
 
 "diagnose.openLog" = "打开日志";
@@ -469,7 +487,7 @@
 
 "update.checkNow" = "检查更新…";
 
-"update.autoCheckNote" = "默认关闭。打开前不会访问网络。打开后会定期向 GitHub 上的 Sparkle appcast 查询新版本（当前指向 pre-release v1.2.0 资产，不是 GitHub Latest）。发现更新后可一键安装，不会静默安装。当前构建为 ad-hoc、未公证；更新信任靠 Sparkle EdDSA 签名，不是 Developer ID。";
+"update.autoCheckNote" = "默认关闭。打开后会访问 GitHub 检查是否有新版本。";
 
 "update.settingsAboutLine" = "NTFS 读写（NTFSMount）· 直发，不上 Mac App Store。默认不联网；打开「自动检查更新」或「检查更新…」时会访问 GitHub。";
 

@@ -91,51 +91,6 @@ struct SettingsView: View {
           .padding(8)
         }
 
-        GroupBox(L10n.t("settings.compat")) {
-          VStack(alignment: .leading, spacing: 8) {
-            Text(MacOSCompat.noticeBody)
-              .font(.callout)
-              .foregroundStyle(.secondary)
-              .fixedSize(horizontal: false, vertical: true)
-          }
-          .padding(8)
-        }
-
-        GroupBox(Ntfs3gVersion.settingsGroupTitle) {
-          VStack(alignment: .leading, spacing: 8) {
-            Text(store.driverVersionLine)
-              .font(.callout)
-              .foregroundStyle(store.driverVersionUntested ? Color.orange : .secondary)
-              .fixedSize(horizontal: false, vertical: true)
-            Text(Ntfs3gVersion.allowListCaption)
-              .font(.caption)
-              .foregroundStyle(.secondary)
-              .fixedSize(horizontal: false, vertical: true)
-          }
-          .padding(8)
-        }
-
-        GroupBox(L10n.t("settings.log")) {
-          VStack(alignment: .leading, spacing: 8) {
-            ScrollView {
-              Text(logText)
-                .font(.system(.caption, design: .monospaced))
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .frame(minHeight: 140, maxHeight: 220)
-            HStack {
-              Button(L10n.t("settings.refreshLog")) { logText = AppLog.tail() }
-              Button(L10n.t("settings.openConsole")) { LogViewer.open() }
-              Button(L10n.t("menu.diagnose")) { EnvironmentDiagnosePresenter.present() }
-            }
-            Text(L10n.t("settings.diagnoseHint"))
-              .font(.caption)
-              .foregroundStyle(.secondary)
-          }
-          .padding(8)
-        }
-
         GroupBox(L10n.t("settings.aboutPrivacy")) {
           VStack(alignment: .leading, spacing: 8) {
             Text(UpdateCopy.settingsAboutLine)
@@ -152,6 +107,56 @@ struct SettingsView: View {
             }
           }
           .padding(8)
+        }
+
+        DisclosureGroup(L10n.t("settings.advanced")) {
+          VStack(alignment: .leading, spacing: 16) {
+            GroupBox(L10n.t("settings.compat")) {
+              VStack(alignment: .leading, spacing: 8) {
+                Text(MacOSCompat.noticeBody)
+                  .font(.callout)
+                  .foregroundStyle(.secondary)
+                  .fixedSize(horizontal: false, vertical: true)
+              }
+              .padding(8)
+            }
+
+            GroupBox(Ntfs3gVersion.settingsGroupTitle) {
+              VStack(alignment: .leading, spacing: 8) {
+                Text(store.driverVersionLine)
+                  .font(.callout)
+                  .foregroundStyle(store.driverVersionUntested ? Color.orange : .secondary)
+                  .fixedSize(horizontal: false, vertical: true)
+                Text(Ntfs3gVersion.allowListCaption)
+                  .font(.caption)
+                  .foregroundStyle(.secondary)
+                  .fixedSize(horizontal: false, vertical: true)
+              }
+              .padding(8)
+            }
+
+            GroupBox(L10n.t("settings.log")) {
+              VStack(alignment: .leading, spacing: 8) {
+                ScrollView {
+                  Text(logText)
+                    .font(.system(.caption, design: .monospaced))
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(minHeight: 140, maxHeight: 220)
+                HStack {
+                  Button(L10n.t("settings.refreshLog")) { logText = AppLog.tail() }
+                  Button(L10n.t("settings.openConsole")) { LogViewer.open() }
+                  Button(L10n.t("menu.diagnose")) { EnvironmentDiagnosePresenter.present() }
+                }
+                Text(L10n.t("settings.diagnoseHint"))
+                  .font(.caption)
+                  .foregroundStyle(.secondary)
+              }
+              .padding(8)
+            }
+          }
+          .padding(.top, 8)
         }
 
         if !store.message.isEmpty {

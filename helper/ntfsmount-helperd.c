@@ -10,10 +10,12 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <libproc.h>
+#include <poll.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -28,10 +30,12 @@
 #define HELPER_STAMP SUPPORT_DIR "/helper.stamp"
 #define HELPER_SEALED SUPPORT_DIR "/ntfs-rw-helper"
 #define BUNDLE_ID "com.bioapple.ntfsmount"
-#define MAX_ARGS 8
-#define MAX_ARG 512
+#define MAX_ARGS 32
+#define MAX_ARG 1024
 #define MAX_BODY (256 * 1024)
 #define WAIT_SEC 180
+#define WAIT_SEC_LONG 600
+#define HEARTBEAT_TENTHS 100
 
 static const char *kAllowed[] = {
     "mount", "unmount", "eject", "format", "fix", "ntfsfix", "probe", "automount",
@@ -319,6 +323,39 @@ static int read_line(int fd, char *buf, size_t n) {
   return -1;
 }
 
+static int read_exact(int fd, char *buf, size_t n) {
+  size_t i = 0;
+  while (i < n) {
+    ssize_t r = recv(fd, buf + i, n - i, 0);
+    if (r <= 0) return -1;
+    i += (size_t)r;
+  }
+  return 0;
+}
+
+static int parse_ulen(const char *s, unsigned *out) {
+  char *end = NULL;
+  unsigned long v;
+  if (!s || !*s) return -1;
+  errno = 0;
+  v = strtoul(s, &end, 10);
+  if (errno != 0 || end == s || *end != '\0' || v >= (unsigned long)MAX_ARG) return -1;
+  *out = (unsigned)v;
+  return 0;
+}
+
+static int read_v2_arg(int fd, char *buf, size_t cap) {
+  char nline[32];
+  unsigned n = 0;
+  if (read_line(fd, nline, sizeof(nline)) != 0) return -1;
+  if (parse_ulen(nline, &n) != 0) return -1;
+  if (n >= cap) return -1;
+  if (n > 0 && read_exact(fd, buf, n) != 0) return -1;
+  if (memchr(buf, 0, n) != NULL) return -1;
+  buf[n] = 0;
+  return 0;
+}
+
 static void write_all(int fd, const char *p, size_t n) {
   while (n) {
     ssize_t w = send(fd, p, n, 0);
@@ -328,17 +365,111 @@ static void write_all(int fd, const char *p, size_t n) {
   }
 }
 
-static int waitpid_timeout(pid_t pid, int *st, int sec) {
-  for (int i = 0; i < sec * 10; i++) {
-    pid_t r = waitpid(pid, st, WNOHANG);
-    if (r == pid) return 0;
-    if (r < 0) return -1;
-    usleep(100000);
+static int wait_sec_for_cmd(const char *cmd) {
+  if (strcmp(cmd, "format") == 0 || strcmp(cmd, "fix") == 0 || strcmp(cmd, "ntfsfix") == 0)
+    return WAIT_SEC_LONG;
+  return WAIT_SEC;
+}
+
+static void reap_children(int sig) {
+  (void)sig;
+  int st;
+  while (waitpid(-1, &st, WNOHANG) > 0) {
+  }
+}
+
+/* Client always SHUT_WR after argv; recv 0 / POLLHUP-with-POLLOUT is normal.
+ * Skip exec only if the peer fully closed (timeout) — same send-fail rule as wait_helper. */
+static int peer_disconnected(int fd) {
+  struct pollfd pfd;
+  pfd.fd = fd;
+  pfd.events = POLLOUT;
+  pfd.revents = 0;
+  if (poll(&pfd, 1, 0) > 0) {
+    if (pfd.revents & (POLLERR | POLLNVAL)) return 1;
+    if ((pfd.revents & POLLHUP) && !(pfd.revents & POLLOUT)) return 1;
+  }
+  {
+    char hb = '\0';
+    if (send(fd, &hb, 1, 0) <= 0) return 1;
+  }
+  return 0;
+}
+
+/* Poll helper stdout while waiting. Every 10s send NUL heartbeat so the app
+ * SO_RCVTIMEO does not fire. If the app hangs up, kill the helper (do not keep formatting). */
+static int wait_helper(int client, int pr, pid_t pid, int sec, int *st, char *body, size_t cap, size_t *nout) {
+  size_t n = 0;
+  int ticks = 0;
+  int max_ticks = sec * 10;
+  int since_hb = 0;
+  int pipe_open = 1;
+  int st_got = 0;
+  int local_st = 0;
+
+  while (ticks < max_ticks) {
+    if (!st_got) {
+      pid_t r = waitpid(pid, &local_st, WNOHANG);
+      if (r == pid) {
+        st_got = 1;
+      } else if (r < 0 && errno != EINTR) {
+        *nout = n;
+        return -1;
+      }
+    }
+    if (pipe_open) {
+      fd_set rfds;
+      struct timeval tv;
+      int s;
+      FD_ZERO(&rfds);
+      FD_SET(pr, &rfds);
+      tv.tv_sec = 0;
+      tv.tv_usec = 100000;
+      s = select(pr + 1, &rfds, NULL, NULL, &tv);
+      if (s < 0 && errno == EINTR) continue;
+      if (s > 0 && FD_ISSET(pr, &rfds)) {
+        if (n < cap - 1) {
+          ssize_t rd = read(pr, body + n, cap - 1 - n);
+          if (rd > 0)
+            n += (size_t)rd;
+          else
+            pipe_open = 0;
+        } else {
+          char dump[256];
+          ssize_t rd = read(pr, dump, sizeof(dump));
+          if (rd <= 0) pipe_open = 0;
+        }
+      }
+    } else if (!st_got) {
+      usleep(100000);
+    }
+    if (st_got && !pipe_open) {
+      *st = local_st;
+      *nout = n;
+      return 0;
+    }
+    ticks++;
+    since_hb++;
+    if (since_hb >= HEARTBEAT_TENTHS) {
+      char hb = '\0';
+      since_hb = 0;
+      if (send(client, &hb, 1, 0) <= 0) {
+        kill(pid, SIGTERM);
+        usleep(400000);
+        kill(pid, SIGKILL);
+        waitpid(pid, &local_st, 0);
+        *st = local_st;
+        *nout = n;
+        return -3;
+      }
+    }
   }
   kill(pid, SIGTERM);
   usleep(400000);
   kill(pid, SIGKILL);
-  waitpid(pid, st, 0);
+  waitpid(pid, &local_st, 0);
+  *st = local_st;
+  *nout = n;
   return -2;
 }
 
@@ -352,9 +483,19 @@ static void handle(int fd, const char *app) {
     return;
   }
   char line[64];
-  if (read_line(fd, line, sizeof(line)) != 0) return;
   int argc = 0;
-  if (sscanf(line, "v1 %d", &argc) != 1 || argc < 1 || argc > MAX_ARGS) {
+  int ver = 0;
+  int hdrn = 0;
+  char extra;
+  if (read_line(fd, line, sizeof(line)) != 0) return;
+  if (strncmp(line, "v2 ", 3) == 0 && sscanf(line + 3, "%d%c", &hdrn, &extra) == 1) {
+    ver = 2;
+    argc = hdrn;
+  } else if (strncmp(line, "v1 ", 3) == 0 && sscanf(line + 3, "%d%c", &hdrn, &extra) == 1) {
+    ver = 1;
+    argc = hdrn;
+  }
+  if (ver == 0 || argc < 1 || argc > MAX_ARGS) {
     const char *m = "ERR\n协议错误。\n";
     write_all(fd, m, strlen(m));
     return;
@@ -369,7 +510,15 @@ static void handle(int fd, const char *app) {
   }
   argv[0] = (char *)helper;
   for (int i = 0; i < argc; i++) {
-    if (read_line(fd, args[i], MAX_ARG) != 0) return;
+    if (ver == 2) {
+      if (read_v2_arg(fd, args[i], MAX_ARG) != 0) {
+        const char *m = "ERR\n协议错误。\n";
+        write_all(fd, m, strlen(m));
+        return;
+      }
+    } else if (read_line(fd, args[i], MAX_ARG) != 0) {
+      return;
+    }
     if (i == 0 && !allowed_cmd(args[i])) {
       const char *m = "ERR\n不允许的命令。\n";
       write_all(fd, m, strlen(m));
@@ -383,6 +532,7 @@ static void handle(int fd, const char *app) {
     write_all(fd, m, strlen(m));
     return;
   }
+  if (peer_disconnected(fd)) return;
 
   int pipefd[2];
   if (pipe(pipefd) != 0) return;
@@ -404,15 +554,11 @@ static void handle(int fd, const char *app) {
   close(pipefd[1]);
   char body[MAX_BODY];
   size_t n = 0;
-  while (n < sizeof(body) - 1) {
-    ssize_t r = read(pipefd[0], body + n, sizeof(body) - 1 - n);
-    if (r <= 0) break;
-    n += (size_t)r;
-  }
+  int st = 0;
+  int wr = wait_helper(fd, pipefd[0], pid, wait_sec_for_cmd(args[0]), &st, body, sizeof(body), &n);
   body[n] = 0;
   close(pipefd[0]);
-  int st = 0;
-  int wr = waitpid_timeout(pid, &st, WAIT_SEC);
+  if (wr == -3) return;
   int ok = wr == 0 && WIFEXITED(st) && WEXITSTATUS(st) == 0;
   if (wr == -2) {
     const char *m = "ERR\n挂载助手执行超时。\n";
@@ -428,6 +574,7 @@ static void handle(int fd, const char *app) {
 int main(void) {
   if (getuid() != 0) die("need root");
   signal(SIGPIPE, SIG_IGN);
+  signal(SIGCHLD, reap_children);
   char app[4096];
   if (read_app_path(app, sizeof(app)) != 0) die("no app.path");
   /* First SMAppService start writes the install pins. Never recopy from a
@@ -457,15 +604,13 @@ int main(void) {
     pid_t w = fork();
     if (w == 0) {
       close(s);
+      signal(SIGCHLD, SIG_DFL);
       handle(c, app);
       close(c);
       _exit(0);
     }
     close(c);
-    if (w > 0) {
-      int st;
-      waitpid(w, &st, 0);
-    }
+    /* Parent returns to accept. SIGCHLD reaps workers; do not waitpid here. */
   }
   return 0;
 }

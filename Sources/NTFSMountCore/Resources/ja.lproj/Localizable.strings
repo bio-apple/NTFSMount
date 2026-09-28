@@ -75,7 +75,7 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "menu.eject" = "取り出す（抜いても安全）";
 
-"menu.formatNTFS" = "NTFS にフォーマット…";
+"menu.formatNTFS" = "ディスク全体を NTFS で消去…";
 
 "menu.mountAll" = "すべて書き込み可能でマウント";
 
@@ -123,6 +123,8 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "window.emptySubtitle" = "Windows 形式の外付けディスクを接続すると左側に表示されます。";
 
+"window.emptyHint" = "このウィンドウを閉じても、メニューバーの NTFS アイコンは残ります。ディスクを取り外すときは「取り出す」を使ってください。アイコンを残したい場合は、Dock から終了しないでください。";
+
 "window.encryptedLine" = "%@（%@）：%@";
 
 "window.otherDisks" = "他の外付けディスクを NTFS にフォーマットできます：";
@@ -132,6 +134,14 @@ Return で同意します。同意しない場合は「終了」を押してく�
 "window.capacity" = "容量";
 
 "window.filesystem" = "ファイルシステム";
+
+"window.device" = "デバイス";
+
+"window.media" = "メディア";
+
+"window.usage" = "使用量";
+
+"window.usageAfterMount" = "マウント後に表示";
 
 "window.used" = "使用済み %@";
 
@@ -191,6 +201,10 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "format.newName" = "新しいボリューム名：";
 
+"format.confirmAccessibility" = "確認する現在のボリューム名";
+
+"format.newNameAccessibility" = "新しいボリューム名";
+
 "format.unformatted" = "未フォーマット";
 
 "encrypted.message" = "暗号化の可能性あり。書き込み／フォーマットしないでください。macOS は BitLocker を確認できません。手がかりがないことは陰性証明ではありません。";
@@ -201,7 +215,7 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "settings.autoMount" = "接続時に外付け NTFS を自動マウント";
 
-"settings.autoMountNote" = "ヘルパーのインストール、条項への同意、書き込みリスクの確認が済むまで既定はオフです。内蔵ディスクと Boot Camp は自動マウントしません。自動マウントは v1.2.0 の売りではありません（Issue #1）。";
+"settings.autoMountNote" = "外付け NTFS ディスクを接続すると、書き込み可能なマウントを試みます。内蔵ディスクは対象外です。";
 
 "settings.appearance" = "外観と起動";
 
@@ -220,6 +234,8 @@ Return で同意します。同意しない場合は「終了」を押してく�
 "settings.uninstall" = "ヘルパーをアンインストール…";
 
 "settings.compat" = "互換性";
+
+"settings.advanced" = "詳細";
 
 "settings.log" = "ログ";
 
@@ -251,7 +267,7 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "helper.hintAdHoc" = "未公証パッケージではシステムサービスを安定して使えないため、ヘルパーのインストールで管理者パスワードが必要です。";
 
-"helper.privilegeHint" = "マウントヘルパーは root で動作し、外付けディスクのマウント、アンマウント、フォーマットができます。管理者パスワードは一度きりのインストールにだけ使い、保存しません。Unix socket の権限は 0666 で、このアプリが一般ユーザとして接続できます。デーモンはインストール時に書いた CDHash で呼び出し元を検証し、/Library/Application Support/NTFSMount/ にある root 所有のヘルパーだけを実行します。sudoers は書きません。アンインストール：上の「ヘルパーをアンインストール」、またはリポジトリの uninstall.sh。ログは ~/Library/Logs/ntfsmount.log にあり、アンインストール後もこの Mac に残ります。";
+"helper.privilegeHint" = "マウントヘルパーは外付けディスクのマウント、アンマウント、フォーマットができます。管理者パスワードは一度きりのインストールにだけ使い、保存しません。";
 
 "alert.updateHelperTitle" = "マウントヘルパーを更新";
 
@@ -364,6 +380,8 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "diagnose.alertTitle" = "環境診断";
 
+"diagnose.checking" = "同梱コンポーネントとヘルパーを確認しています…";
+
 "diagnose.copy" = "結果をコピー";
 
 "diagnose.openLog" = "ログを開く";
@@ -469,7 +487,7 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "update.checkNow" = "更新を確認…";
 
-"update.autoCheckNote" = "既定はオフです。オンにするまでネットワークは使いません。オンにすると GitHub 上の Sparkle appcast を定期的に問い合わせます（現在は pre-release v1.2.0 の資産で、GitHub Latest ではありません）。更新が見つかればワンクリックでインストールでき、サイレントインストールはしません。このビルドは ad-hoc で未公証です。更新の信頼は Sparkle の EdDSA 署名であり、Developer ID ではありません。";
+"update.autoCheckNote" = "既定はオフです。オンにすると GitHub に接続して更新を確認します。";
 
 "update.settingsAboutLine" = "NTFS 読み書き（NTFSMount）· 直配布、Mac App Store 未掲載。既定はネットワーク不使用。「更新を自動で確認」または「更新を確認…」で GitHub にアクセスします。";
 

@@ -41,6 +41,8 @@ final class VolumeStore: ObservableObject {
   private var autoMountAttempted = Set<String>()
   private var autoMountQueue: [String] = []
   private var autoMountPumping = false
+  private var mountAllQueue: [String] = []
+  private var mountAllPumping = false
   private var lastAdvice: [String: VolumeHealth.MountAdvice] = [:]
   private var lastHelperText: [String: String] = [:]
   private var volumeMessages: [String: String] = [:]
@@ -58,9 +60,13 @@ final class VolumeStore: ObservableObject {
 
   var menuBarSymbol: String {
     if writableCount > 0 { return "externaldrive.fill.badge.checkmark" }
-    if volumes.contains(where: { !$0.mountPoint.isEmpty }) { return "externaldrive.fill.badge.questionmark" }
-    if !volumes.isEmpty { return "externaldrive" }
-    return "externaldrive.badge.questionmark"
+    if volumes.contains(where: { lastAdvice[$0.id] == .readOnlyDirty }) {
+      return "externaldrive.badge.exclamationmark"
+    }
+    if volumes.contains(where: { $0.isReadOnlyMounted }) {
+      return "externaldrive.fill.badge.questionmark"
+    }
+    return "externaldrive"
   }
 
   var menuBarTooltip: String { MenuBarTooltip.extra(volumes) }
@@ -424,6 +430,7 @@ final class VolumeStore: ObservableObject {
     busyId = nil
     setMessage(L10n.t("error.canceled"), volumeId: vol.id)
     restoreSystemMount(vol)
+    advanceMountAll(after: vol.id)
   }
 
   private func restoreSystemMount(_ vol: NTFSVolume) {
@@ -497,8 +504,29 @@ final class VolumeStore: ObservableObject {
     if !LegalGate.confirmWritable() { return }
     if !confirmDriverIfNeeded() { return }
     for vol in volumes where !vol.isWritableFuse && !vol.isInternal && canMountWritable(vol) {
-      run("mount", vol, openFinder: false)
+      if !mountAllQueue.contains(vol.id) {
+        mountAllQueue.append(vol.id)
+      }
     }
+    pumpMountAll()
+  }
+
+  private func pumpMountAll() {
+    guard !mountAllPumping else { return }
+    guard busyId == nil else { return }
+    mountAllQueue.removeAll { id in
+      guard let vol = volumes.first(where: { $0.id == id }) else { return true }
+      return vol.isWritableFuse || vol.isInternal || !canMountWritable(vol)
+    }
+    guard let id = mountAllQueue.first, let vol = volumes.first(where: { $0.id == id }) else { return }
+    mountAllPumping = true
+    probeThenMount(vol, openFinder: false)
+  }
+
+  private func advanceMountAll(after id: String) {
+    mountAllQueue.removeAll { $0 == id }
+    mountAllPumping = false
+    pumpMountAll()
   }
 
   func confirmInternalMount(_ vol: NTFSVolume) -> Bool {
@@ -562,20 +590,17 @@ final class VolumeStore: ObservableObject {
   }
 
   private func makeCancelDefault(_ alert: NSAlert) {
-    if alert.buttons.count > 1 {
-      alert.buttons[1].keyEquivalent = ""
-    }
-    if let cancel = alert.buttons.first {
-      cancel.keyEquivalent = "\r"
-    }
+    applyKeyEquivalents(AlertDefaultPolicy.cancelDefault, to: alert)
   }
 
   private func makeSafeDefault(_ alert: NSAlert) {
+    applyKeyEquivalents(AlertDefaultPolicy.safeDefault, to: alert)
+  }
+
+  private func applyKeyEquivalents(_ policy: AlertDefaultPolicy, to alert: NSAlert) {
+    let count = alert.buttons.count
     for (i, button) in alert.buttons.enumerated() {
-      button.keyEquivalent = i == 0 ? "\r" : ""
-    }
-    if let last = alert.buttons.last, alert.buttons.count > 1 {
-      last.keyEquivalent = "\u{1b}"
+      button.keyEquivalent = policy.keyEquivalent(at: i, buttonCount: count)
     }
   }
 
@@ -618,6 +643,8 @@ final class VolumeStore: ObservableObject {
   func applyDockPolicy() {
     if showDock {
       NSApp.setActivationPolicy(.regular)
+    } else {
+      NSApp.setActivationPolicy(.accessory)
     }
   }
 
@@ -739,6 +766,7 @@ final class VolumeStore: ObservableObject {
     } else if !result.ok, cmd == "mount", VolumeHealth.looksLikeKextOrFSKitBlock(result.text) {
       alertKextIgnored(shown)
     }
+    advanceMountAll(after: vol.id)
     if autoMountPumping == false { pumpAutoMount() }
   }
 
@@ -763,18 +791,43 @@ private struct FormatConfirmFields {
 
   init(disk: FormatDisk) {
     let currentCaption = NSTextField(labelWithString: L10n.t("format.currentName"))
-    currentCaption.frame = NSRect(x: 0, y: 58, width: 320, height: 16)
-    confirm = NSTextField(frame: NSRect(x: 0, y: 32, width: 320, height: 24))
-    confirm.placeholderString = L10n.t("format.currentPlaceholder")
+    let confirmField = NSTextField()
+    confirmField.placeholderString = disk.name
+    confirmField.setAccessibilityLabel(L10n.t("format.confirmAccessibility"))
     let newCaption = NSTextField(labelWithString: L10n.t("format.newName"))
-    newCaption.frame = NSRect(x: 0, y: 16, width: 320, height: 16)
-    label = NSTextField(frame: NSRect(x: 0, y: 0, width: 320, height: 24))
-    label.stringValue = disk.suggestedLabel
-    let box = NSView(frame: NSRect(x: 0, y: 0, width: 320, height: 76))
-    box.addSubview(currentCaption)
-    box.addSubview(confirm)
-    box.addSubview(newCaption)
-    box.addSubview(label)
+    let labelField = NSTextField()
+    labelField.stringValue = disk.suggestedLabel
+    labelField.setAccessibilityLabel(L10n.t("format.newNameAccessibility"))
+
+    let stack = NSStackView(views: [currentCaption, confirmField, newCaption, labelField])
+    stack.orientation = .vertical
+    stack.alignment = .leading
+    stack.spacing = 6
+    stack.translatesAutoresizingMaskIntoConstraints = false
+    NSLayoutConstraint.activate([
+      confirmField.widthAnchor.constraint(equalToConstant: 320),
+      labelField.widthAnchor.constraint(equalToConstant: 320),
+    ])
+
+    let box = NSView()
+    box.addSubview(stack)
+    NSLayoutConstraint.activate([
+      stack.leadingAnchor.constraint(equalTo: box.leadingAnchor),
+      stack.trailingAnchor.constraint(equalTo: box.trailingAnchor),
+      stack.topAnchor.constraint(equalTo: box.topAnchor),
+      stack.bottomAnchor.constraint(equalTo: box.bottomAnchor),
+    ])
+    box.layoutSubtreeIfNeeded()
+    let fitted = box.fittingSize
+    box.frame = NSRect(
+      x: 0,
+      y: 0,
+      width: max(fitted.width, 320),
+      height: max(fitted.height, 96)
+    )
+
+    confirm = confirmField
+    label = labelField
     view = box
   }
 }

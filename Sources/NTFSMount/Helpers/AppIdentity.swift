@@ -5,7 +5,7 @@ import NTFSMountCore
 enum AppIdentity {
   static var productName: String { L10n.t("app.productName") }
   static let bundleId = "com.bioapple.ntfsmount"
-  static let helperVersion = "5"
+  static let helperVersion = "9"
   static let sourceURL = "https://github.com/bio-apple/NTFSMount"
   static let helperSocket = "/var/run/com.bioapple.ntfsmount.sock"
   static let helperDaemonPath = "/Library/PrivilegedHelperTools/com.bioapple.ntfsmount.helperd"

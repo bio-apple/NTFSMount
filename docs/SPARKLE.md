@@ -43,7 +43,7 @@ gh release upload v1.2.0 --clobber dist/appcast.xml
 
 `https://github.com/bio-apple/NTFSMount/releases/download/v1.2.0/NTFSMount.dmg`
 
-已装 1.2.0 的应用会一直读这个 feed URL。发 1.3.0 时：把新 DMG 传到 `v1.3.0`，再生成一份**列出新版本**的 `appcast.xml`，用 `--clobber` **覆盖 v1.2.0 上的 appcast.xml**。不要改用 `/releases/latest/download/appcast.xml`，除非 FUSE-T 再分发与公证都已完成。
+已装 1.2.0 起的应用会一直读这个 feed URL。发 **1.2.1** 或更新版本时：把新 DMG 传到对应 tag，再生成一份列出新版本的 `appcast.xml`，用 `--clobber` **覆盖 v1.2.0 上的 appcast.xml**。不要改用 `/releases/latest/download/appcast.xml`，除非 FUSE-T 再分发与公证都已完成。
 
 需要 Sparkle CLI 时，脚本会从 GitHub 拉取钉死的 Sparkle 2.10.0 工具包（或使用 `SPARKLE_BIN` / SPM artifacts 里的 `generate_appcast`）。
 

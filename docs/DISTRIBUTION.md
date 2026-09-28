@@ -81,7 +81,7 @@ git push origin v0.1.0
 - **公开 Latest 仅当已公证并且 FUSE-T 许可证允许再分发**（仓库变量 `vars.FUSE_T_REDISTRIBUTION_OK=1`）。缺一不可。
 - 正式对外下载页必须同时完成 Developer ID 公证与 FUSE-T 书面授权。许可证拆分见仓库根目录 [NOTICE](../NOTICE)。
 
-macFUSE 依赖内核扩展，本项目不改用。在取得可再分发的用户态后端或 FUSE-T 授权之前，**不把本应用当作可商用产品对外销售**。
+macFUSE / osxfuse 依赖内核扩展；macOS 11+ 与 Apple Silicon 常需降低 SIP。本项目用 FUSE-T（用户态 NFS/WebDAV），不改用 kext。开发机检查：`./scripts/check-fuse-deps.sh`（不要 `brew install macfuse`）。在取得可再分发的用户态后端或 FUSE-T 授权之前，**不把本应用当作可商用产品对外销售**。
 
 ## 3. 特权模型
 
@@ -91,7 +91,11 @@ macFUSE 依赖内核扩展，本项目不改用。在取得可再分发的用户
 
 持续提权走 `SMAppService` + LaunchDaemon（Cocoa 原生平权）。`osascript` 的 `do shell script … with administrator privileges` **只用于一次性安装/卸载**（ad-hoc 回退）。助手装好后，挂载、卸载、格式化只经 Unix socket，不再弹管理员密码。不引入 `AuthorizationServices` 平行 API。
 
-`helper/ntfs-rw-helper` 是本仓库维护的 **bash 源码**（不是第三方预编译二进制）。`scripts/build.sh` 计算 SHA-256 写入 `Contents/Resources/ntfs-rw-helper.sha256`，并对脚本与 `ntfsmount-helperd` 做 codesign。运行时用该哈希对照 `helper.stamp` / UserDefaults，不匹配则拒绝执行并提示更新助手。
+`helper/ntfs-rw-helper` 是本仓库维护的 **bash 源码**（不是第三方预编译二进制，`HELPER_VERSION=9`）。`scripts/build.sh` 计算 SHA-256 写入 `Contents/Resources/ntfs-rw-helper.sha256`，并对脚本与 `ntfsmount-helperd` 做 codesign。运行时用该哈希对照 `helper.stamp` / UserDefaults，不匹配则拒绝执行并提示更新助手。`.app` 内同时放入 `LICENSE`、`NOTICE`、`THIRD_PARTY_LICENSES.md`、`DISTRIBUTION.md`。
+
+IPC：**v2** 长度前缀（单参最长 1024、最多 32 个参数），旧守护进程回「协议错误」时回退 v1。format / fix / ntfsfix 等待 **600 秒**并发送 NUL 心跳；其它命令 180 秒。本进程对 daemon 的调用串行化。读完 argv 后若客户端已断开则 **不 exec**。
+
+出口管制口径：仅使用系统 TLS（Sparkle HTTPS）与 Sparkle EdDSA 验签，不提供非豁免加密。`ITSAppUsesNonExemptEncryption=false`。若以后对卷内容做加密类功能，必须重评该键。
 
 ## 4. GitHub Release 的 SHA256
 
@@ -112,8 +116,10 @@ CI 在 `release: published` 时若 Release 已有 `NTFSMount.dmg` 但没有 side
 
 自动更新用 Sparkle EdDSA 签 DMG / appcast，**不是**用 GitHub Releases Atom，也**不要**把 feed 指到 GitHub Latest（FUSE-T 仍为个人使用预发布时）。
 
+已装用户读的 feed 仍钉在 **v1.2.0 资产 URL**（`Info.plist` `SUFeedURL`）。发 1.2.1 及以后版本时：把新 DMG 传到对应 tag，再生成 appcast，用 `--clobber` **覆盖 v1.2.0 上的 `appcast.xml`**。
+
 - Feed：`https://github.com/bio-apple/NTFSMount/releases/download/v1.2.0/appcast.xml`
-- 设置「自动检查更新」默认关闭；菜单「检查更新…」始终可用
-- 当前构建为 ad-hoc 时，更新信任只来自 Sparkle EdDSA，不要写成已公证更新
+- 设置「自动检查更新」默认关闭；菜单「检查更新…」始终可用（会访问 GitHub）
+- 当前构建为 ad-hoc 时，更新信任只来自 Sparkle EdDSA
 - 密钥与 `generate_appcast` 步骤：[docs/SPARKLE.md](./SPARKLE.md)
 

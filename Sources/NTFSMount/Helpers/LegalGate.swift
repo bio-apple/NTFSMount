@@ -65,11 +65,10 @@ enum LegalGate {
     alert.informativeText = L10n.t("writable.body")
     alert.addButton(withTitle: L10n.t("cancel"))
     alert.addButton(withTitle: L10n.t("writable.continue"))
-    if let cancel = alert.buttons.first {
-      cancel.keyEquivalent = "\r"
-    }
-    if alert.buttons.count > 1 {
-      alert.buttons[1].keyEquivalent = ""
+    let policy = AlertDefaultPolicy.writableConfirm
+    let count = alert.buttons.count
+    for (i, button) in alert.buttons.enumerated() {
+      button.keyEquivalent = policy.keyEquivalent(at: i, buttonCount: count)
     }
     guard alert.runModal() == .alertSecondButtonReturn else { return false }
     AppIdentity.markWritableAccepted()

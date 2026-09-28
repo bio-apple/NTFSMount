@@ -24,6 +24,10 @@ jobs:
       - name: Lint Sources and Tests
         run: swiftlint lint --strict --config .swiftlint.yml
 
+  shellcheck:
+    name: ShellCheck
+    uses: ./.github/workflows/shellcheck.yml
+
   test:
     name: UnitTest
     runs-on: macos-14
@@ -42,27 +46,6 @@ jobs:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
-      - name: Install ShellCheck
-        run: brew install shellcheck
-      - name: Lint shell scripts
-        run: |
-          shellcheck --severity=warning \
-            uninstall.sh \
-            helper/install-helper.sh \
-            helper/uninstall-helper.sh \
-            scripts/build.sh \
-            scripts/test-helper.sh \
-            scripts/package-dmg.sh \
-            scripts/write-dmg-sha256.sh \
-            scripts/check-helper-gone.sh \
-            scripts/prepare-runtime.sh \
-            scripts/coverage.sh \
-            scripts/notarize.sh \
-            scripts/ci-import-signing.sh \
-            scripts/ntfsmount \
-            scripts/ntfsmount-diagnose.sh \
-            scripts/sparkle-generate-keys.sh \
-            scripts/sparkle-generate-appcast.sh
       - name: Privilege and secret greps
         run: |
           set -euo pipefail
@@ -151,7 +134,7 @@ jobs:
     runs-on: macos-14
     permissions:
       contents: write
-    needs: [lint, test, security, build]
+    needs: [lint, test, security, build, shellcheck]
     steps:
       - uses: actions/checkout@v4
       - name: Import Developer ID

@@ -7,8 +7,6 @@ import ServiceManagement
 /// osascript「do shell script … with administrator privileges」仅用于一次性安装/卸载。
 /// 不引入 AuthorizationServices 平行 API，也不写 sudoers NOPASSWD。
 enum Privileged {
-  private static let daemonTimeoutSec: Int32 = 60
-
   static var systemHelperInstalled: Bool {
     FileManager.default.fileExists(atPath: AppIdentity.helperDaemonPath)
       || FileManager.default.fileExists(atPath: AppIdentity.helperDaemonPlist)
@@ -180,6 +178,8 @@ enum Privileged {
     runArgs([cmd, deviceId] + extra)
   }
 
+  private static let helperClientQueue = DispatchQueue(label: "com.bioapple.ntfsmount.helper-client")
+
   private static func runArgs(_ args: [String]) -> Outcome {
     if systemHelperInstalled && helperNeedsUpdate {
       return Outcome(ok: false, text: L10n.t("privileged.mismatch"))
@@ -191,10 +191,26 @@ enum Privileged {
   }
 
   private static func runViaDaemon(_ args: [String]) -> Outcome? {
+    helperClientQueue.sync { transactViaDaemon(args) }
+  }
+
+  private static func transactViaDaemon(_ args: [String]) -> Outcome? {
+    guard let v2 = HelperIpc.encodeV2(args) else {
+      return Outcome(ok: false, text: L10n.t("privileged.commFailed"))
+    }
+    guard let first = transactDaemonReconnect(v2, recvSec: HelperIpc.recvTimeoutSec(command: args.first ?? "")) else { return nil }
+    if first.ok { return first }
+    if first.text.contains("协议错误"), let v1 = HelperIpc.encodeV1Compat(args) {
+      return transactDaemonReconnect(v1, recvSec: HelperIpc.recvTimeoutSec(command: args.first ?? "")) ?? first
+    }
+    return first
+  }
+
+  private static func transactDaemonReconnect(_ payload: Data, recvSec: Int) -> Outcome? {
     let fd = socket(AF_UNIX, SOCK_STREAM, 0)
     guard fd >= 0 else { return nil }
     defer { close(fd) }
-    var timeout = timeval(tv_sec: Int(daemonTimeoutSec), tv_usec: 0)
+    var timeout = timeval(tv_sec: recvSec, tv_usec: 0)
     _ = setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
     _ = setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
     var addr = sockaddr_un()
@@ -211,17 +227,20 @@ enum Privileged {
       }
     }
     guard cr == 0 else { return nil }
-    var payload = "v1 \(args.count)\n"
-    for a in args { payload += a.replacingOccurrences(of: "\n", with: " ") + "\n" }
-    guard let data = payload.data(using: .utf8) else { return nil }
-    let sent = data.withUnsafeBytes { raw in
+    return transactDaemon(fd: fd, payload: payload, wallSec: recvSec)
+  }
+
+  private static func transactDaemon(fd: Int32, payload: Data, wallSec: Int) -> Outcome? {
+    let sent = payload.withUnsafeBytes { raw in
       send(fd, raw.baseAddress, raw.count, 0)
     }
-    guard sent == data.count else { return Outcome(ok: false, text: L10n.t("privileged.commFailed")) }
+    guard sent == payload.count else { return Outcome(ok: false, text: L10n.t("privileged.commFailed")) }
     shutdown(fd, SHUT_WR)
     var out = Data()
     var buf = [UInt8](repeating: 0, count: 4096)
-    while true {
+    let deadline = Date().addingTimeInterval(TimeInterval(wallSec))
+    var peerClosed = false
+    while Date() < deadline {
       let n = recv(fd, &buf, buf.count, 0)
       if n < 0 {
         if errno == EAGAIN || errno == EWOULDBLOCK || errno == ETIMEDOUT {
@@ -229,16 +248,22 @@ enum Privileged {
         }
         break
       }
-      if n == 0 { break }
+      if n == 0 {
+        peerClosed = true
+        break
+      }
       out.append(buf, count: n)
-      if out.count > 512 * 1024 { break }
+      if HelperIpc.stripHeartbeats(out).count > 512 * 1024 { break }
     }
-    let text = String(data: out, encoding: .utf8) ?? ""
+    let text = String(data: HelperIpc.stripHeartbeats(out), encoding: .utf8) ?? ""
     if text.hasPrefix("OK\n") {
       return Outcome(ok: true, text: String(text.dropFirst(3)).trimmingCharacters(in: .whitespacesAndNewlines))
     }
     if text.hasPrefix("ERR\n") {
       return Outcome(ok: false, text: String(text.dropFirst(4)).trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+    if !peerClosed {
+      return Outcome(ok: false, text: L10n.t("privileged.timeout"))
     }
     if text.isEmpty {
       return Outcome(ok: false, text: L10n.t("privileged.noResponse"))

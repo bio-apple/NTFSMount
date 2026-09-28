@@ -5,16 +5,20 @@ NTFS 读写（NTFSMount）许可拆分
 
 1. GPL-2.0-or-later
    适用于本仓库的 Swift 源码、helper 脚本、以及捆绑的 ntfs-3g / mkntfs / ntfsfix / libntfs-3g
-   （GPL-2.0）和 libfuse.2.dylib（LGPL-2.1）。完整文本见 LICENSE。
+   （GPL-2.0）。GPL-2.0 全文见 LICENSE。libfuse.2.dylib 为 LGPL-2.1，全文见
+   https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html （不是 LICENSE 文件）。
+
+   与 ntfs-3g 一起分发的目标文件按 GPL-2.0 约束。`go-nfsv4` **不是** GPL 作品的一部分，
+   见第 2 节。
 
    **对应源代码（GPL 要约）**  
    本仓库 Swift 与 helper 脚本：https://github.com/bio-apple/NTFSMount  
    捆绑二进制所对应的版本与上游地址以仓库内 [runtime/versions.txt](./runtime/versions.txt) 为准（构建时由 `scripts/prepare-runtime.sh` 填入应用包，该目录本身不进 Git）：
 
    - ntfs-3g / mkntfs / ntfsfix / libntfs-3g：**2026.7.7**（`ntfs-3g --version` → ntfs-3g 2026.7.7 external FUSE 29）
-   - 上游源码：https://github.com/tuxera/ntfs-3g  
-   - Homebrew formula（复现参考）：https://github.com/Homebrew/homebrew-core/blob/HEAD/Formula/n/ntfs-3g.rb  
-   - libfuse.2.dylib：**2.9.9**（FUSE library version；来自 FUSE-T **1.2.7** pkg，见同文件 `FUSE-T` / `libfuse.2.dylib` 行）  
+   - 上游源码（对应 tag，不要用 HEAD）：https://github.com/tuxera/ntfs-3g/tree/2026.7.7
+   - Homebrew formula 仅作复现参考（会漂移）：https://github.com/Homebrew/homebrew-core/blob/master/Formula/n/ntfs-3g.rb
+   - libfuse.2.dylib：**2.9.9**（FUSE library version；来自 FUSE-T **1.2.7** pkg）
    - libfuse 上游：https://github.com/macos-fuse-t/libfuse  
 
    若你收到的是已打包的 DMG/.app 而非 Git  checkout，包内另有 `源码.txt` 指向上述仓库；GPL 组件的完整对应源码以上游与 [runtime/versions.txt](./runtime/versions.txt) 记录为准。
@@ -58,11 +62,15 @@ NTFS 读写（NTFSMount）许可拆分
 3. 隐私与本地数据
    本应用**不上传**磁盘内容或挂载数据到开发者服务器；挂载与格式化在本地完成。
 
-   默认不联网。若用户打开设置「自动检查更新」，或点菜单「检查更新…」，应用会经 HTTPS 访问 GitHub 上的 Sparkle appcast（当前为 pre-release v1.2.0 资产，**不是** GitHub Latest）以下载版本信息与更新包。详见 [docs/SPARKLE.md](./docs/SPARKLE.md)。
+   默认不联网。若用户打开设置「自动检查更新」，或点菜单「检查更新…」，应用会经 HTTPS 访问
+   **GitHub（美国）** 上的 Sparkle appcast（当前钉在 pre-release **v1.2.0** 资产 URL，**不是** GitHub Latest）
+   以下载版本信息与更新包。对方服务器可见 IP、User-Agent 与应用版本。开发者不运营更新服务器。
+   详见 [docs/SPARKLE.md](./docs/SPARKLE.md)。
 
-   - **偏好设置（UserDefaults / 本地 plist）**：例如条款同意、Gatekeeper 提示、可写风险确认、自动挂载开关、程序坞显示、助手 SHA、Sparkle 的 `SUEnableAutomaticChecks` 等，键名以 `com.bioapple.ntfsmount.*` 或 Sparkle 的 `SU*` 为前缀。卸载应用或运行 `uninstall.sh` 会移除应用本身；**部分 UserDefaults 项可能仍留在本机**，除非你在「系统设置」或第三方工具中清理该应用的偏好。
-   - **用户 Application Support**：`~/Library/Application Support/com.bioapple.ntfsmount/`（例如可写确认标记文件 `writable-accepted`）。卸载脚本**不保证**删除此目录。
-   - **系统 Application Support（安装助手后）**：`/Library/Application Support/NTFSMount/` 存放特权助手副本、CDHash 钉扎与路径记录；「卸载助手」或 `uninstall.sh` 会移除 NTFSMount 专属内容（见 [docs/MANUAL_TEST.md](./docs/MANUAL_TEST.md)）。
-   - **日志**：`~/Library/Logs/ntfsmount.log` 仅写入本机，用于故障诊断。**卸载应用或助手后，该日志文件通常仍会留在本机**；需自行删除。
+   - **偏好设置（UserDefaults / 本地 plist）**：例如条款同意、Gatekeeper 提示、可写风险确认、自动挂载开关、程序坞显示、助手 SHA、Sparkle 的 `SUEnableAutomaticChecks` 等，键名以 `com.bioapple.ntfsmount.*` 或 Sparkle 的 `SU*` 为前缀。卸载应用或运行 `uninstall.sh` 会移除应用本身；**部分 UserDefaults 项可能仍留在本机**。
+   - **用户 Application Support**：`~/Library/Application Support/com.bioapple.ntfsmount/`（例如 `writable-accepted`）。卸载脚本**不保证**删除此目录。
+   - **系统 Application Support（安装助手后）**：`/Library/Application Support/NTFSMount/`；「卸载助手」或 `uninstall.sh` 会移除 NTFSMount 专属内容。
+   - **日志**：`~/Library/Logs/ntfsmount.log` 仅写入本机。卸载后通常仍会留下，需自行删除。
+   - 诊断报告可复制到剪贴板；若贴到 GitHub Issue，内容即离开本机。
 
 详见 THIRD_PARTY_LICENSES.md 与 docs/DISTRIBUTION.md。

@@ -84,7 +84,6 @@ public struct FormatDisk: Identifiable, Equatable, Sendable {
         name = ident
       }
       let encWarn = EncryptedDiskHint.warning(from: partInfo ?? info, content: partContent)
-        ?? EncryptedDiskHint.warning(from: info, content: partContent)
       out.append(FormatDisk(
         id: ident,
         name: name,

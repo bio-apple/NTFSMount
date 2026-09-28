@@ -528,6 +528,22 @@ final class FormatPolicyTests: XCTestCase {
     XCTAssertTrue(warning.contains("BANDISK"))
     XCTAssertTrue(warning.contains("ABCD-1234"))
     XCTAssertEqual(FormatPolicy.cancelTitle(locale: zh), "取消")
+    XCTAssertEqual(AlertDefaultPolicy.format, .cancelDefault)
+    XCTAssertEqual(AlertDefaultPolicy.format.keyEquivalent(at: 0, buttonCount: 2), "\r")
+    XCTAssertEqual(AlertDefaultPolicy.format.keyEquivalent(at: 1, buttonCount: 2), "")
+  }
+
+  func testFormatNtfsfixAndWritableConfirmAreCancelDefault() {
+    let policies = [
+      AlertDefaultPolicy.format,
+      AlertDefaultPolicy.ntfsfix,
+      AlertDefaultPolicy.writableConfirm,
+    ]
+    for policy in policies {
+      XCTAssertEqual(policy, .cancelDefault)
+      XCTAssertEqual(policy.keyEquivalent(at: 0, buttonCount: 2), "\r")
+      XCTAssertEqual(policy.keyEquivalent(at: 1, buttonCount: 2), "")
+    }
   }
 }
 
@@ -579,8 +595,62 @@ final class L10nTests: XCTestCase {
     XCTAssertEqual(OnboardingCopy.agreeTitle(locale: zh), "同意并继续")
     XCTAssertEqual(L10n.t("menu.diagnose", locale: en), "Diagnose Environment…")
     XCTAssertEqual(L10n.t("menu.diagnose", locale: zh), "诊断环境…")
+    XCTAssertEqual(
+      L10n.t("diagnose.checking", locale: en),
+      "Checking bundled components and helper…"
+    )
+    XCTAssertEqual(L10n.t("diagnose.checking", locale: zh), "正在检查捆绑组件与挂载助手…")
+    XCTAssertEqual(
+      L10n.t("window.emptyHint", locale: en),
+      "Closing this window keeps the menu-bar NTFS icon. Use Eject to remove a disk. Do not Quit from the Dock if you want the icon to stay."
+    )
+    XCTAssertFalse(L10n.t("settings.autoMountNote", locale: en).contains("Issue"))
+    XCTAssertFalse(L10n.t("helper.privilegeHint", locale: zh).contains("CDHash"))
+    XCTAssertFalse(L10n.t("update.autoCheckNote", locale: en).contains("EdDSA"))
+    XCTAssertEqual(L10n.t("window.usageAfterMount", locale: Locale(identifier: "zh-Hant")), "掛載後可見")
+    XCTAssertEqual(L10n.t("settings.advanced", locale: Locale(identifier: "ja")), "詳細")
     XCTAssertTrue(OnboardingCopy.body(notarized: false, locale: en).contains("Return means you agree"))
     XCTAssertTrue(OnboardingCopy.body(notarized: false, locale: zh).contains("回车即同意"))
+  }
+}
+
+final class HelperIpcTests: XCTestCase {
+  func testV2RoundTripKeepsNewlinesInVolumeLabel() {
+    let args = ["format", "disk4s1", "Win\nData"]
+    guard let data = HelperIpc.encodeV2(args) else {
+      return XCTFail("encode")
+    }
+    XCTAssertFalse(String(data: data, encoding: .utf8)?.contains("v1 ") == true)
+    XCTAssertEqual(HelperIpc.decodeV2(data), args)
+  }
+
+  func testV2RejectsTooManyArgs() {
+    let args = Array(repeating: "x", count: HelperIpc.maxArgs + 1)
+    XCTAssertNil(HelperIpc.encodeV2(args))
+  }
+
+  func testV1CompatStillStripsNewlines() {
+    let data = HelperIpc.encodeV1Compat(["format", "disk4s1", "A\nB"])
+    let text = String(data: data ?? Data(), encoding: .utf8) ?? ""
+    XCTAssertTrue(text.hasPrefix("v1 3\n"))
+    XCTAssertTrue(text.contains("A B\n"))
+    XCTAssertFalse(text.contains("A\nB"))
+  }
+
+  func testHeartbeatNULsAreStrippedBeforeOK() {
+    var data = Data([0, 0])
+    data.append(contentsOf: Array("OK\nrw\n".utf8))
+    data.append(0)
+    let text = String(data: HelperIpc.stripHeartbeats(data), encoding: .utf8)
+    XCTAssertEqual(text, "OK\nrw\n")
+  }
+
+  func testFormatUsesTenMinuteRecvTimeout() {
+    XCTAssertEqual(HelperIpc.recvTimeoutSec(command: "format"), 600)
+    XCTAssertEqual(HelperIpc.recvTimeoutSec(command: "fix"), 600)
+    XCTAssertEqual(HelperIpc.recvTimeoutSec(command: "ntfsfix"), 600)
+    XCTAssertEqual(HelperIpc.recvTimeoutSec(command: "mount"), 180)
+    XCTAssertEqual(HelperIpc.recvTimeoutSec(command: "probe"), 180)
   }
 }
 

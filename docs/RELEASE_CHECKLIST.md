@@ -1,59 +1,42 @@
 # 发布检查表 · Release checklist
 
-对外分发前逐项勾选。未公证、未取得 FUSE-T 分发许可时只宜个人使用或 GitHub pre-release。
+对外分发前勾选。未公证、未取得 FUSE-T 分发许可时只宜个人使用或 GitHub **pre-release**（不要当 Latest）。
 
 ## 构建
 
 - [ ] `bash scripts/test-helper.sh`
-- [ ] `bash scripts/build.sh`
-- [ ] `CODESIGN_IDENTITY='Developer ID Application: …' NOTARY_PROFILE=… ./scripts/notarize.sh`（本机）；或 CI Secrets：`APPLE_CERTIFICATE_BASE64` + `APPLE_CERTIFICATE_PASSWORD` + `APPLE_API_KEY_ID` / `APPLE_API_ISSUER` / `APPLE_API_KEY`
+- [ ] `bash scripts/build.sh`（`.app` 内含 LICENSE、**NOTICE**、THIRD_PARTY_LICENSES.md、DISTRIBUTION.md）
+- [ ] 本机公证：`CODESIGN_IDENTITY='Developer ID Application: …' NOTARY_PROFILE=… ./scripts/notarize.sh`；或配齐 CI Secrets
 - [ ] 推送 `v*` tag 后 Actions「DMG (tag)」成功，Release 含 `NTFSMount.dmg` 与 `.sha256`
-- [ ] `FUSE_T_REDISTRIBUTION_OK=1 ./scripts/package-dmg.sh`（有 FUSE-T 书面授权时才设此变量；否则 DMG 带个人使用说明）
-- [ ] 对 DMG 再 `xcrun stapler staple dist/NTFSMount.dmg`（staple 后再算 SHA256；`package-dmg.sh` 已在 staple 之后写出 sidecar）
-- [ ] `dist/NTFSMount.dmg.sha256` 已生成（`HASH  NTFSMount.dmg`）
+- [ ] 无 FUSE-T 书面授权时 **不要** 设 `FUSE_T_REDISTRIBUTION_OK=1`
+- [ ] `dist/NTFSMount.dmg.sha256` 在 staple 之后生成
 
 ## 安全与范围
 
-- [ ] 外置 NTFS 插入后自动可写（须已同意首次可写确认）
-- [ ] 内置 / Boot Camp NTFS **不会**自动挂载；手动挂载有确认框
-- [ ] 脏盘 / 休眠只读，且有通知
-- [ ] 格式化显示容量/设备号/序列号；「输入当前名称」「新卷名」分栏（不把当前名只放在占位符）；再确认一次；回车默认「取消」；名称不一致弹窗「名称不一致，未抹盘」；内置盘拒绝
+- [ ] 外置 NTFS：菜单「以可写方式挂载」；自动挂载不是卖点
+- [ ] 内置 / Boot Camp **不会**自动挂载；手动可写有确认框
+- [ ] 脏盘 / 休眠只读；不静默清 hiberfile；ntfsfix 回车默认取消
+- [ ] 「全部以可写方式挂载」逐盘走与单盘相同的健康探测对话框
+- [ ] 格式化：根菜单「抹掉整盘为 NTFS…」（卷子菜单里没有）；容量/设备号/序列号；输入当前名；两步；**回车=取消**
+- [ ] 可能加密 / BitLocker 线索盘：空状态提示；格式化框有警告
 - [ ] `disk5s1;whoami` 一类 id 被拒绝（selftest）
-- [ ] 旧助手已装 → 点「更新挂载助手」→ 黄条消失、可写挂载成功
-- [ ] 退出 App 后插入外置 NTFS：LaunchDaemon 仍挂载
+- [ ] 旧助手 →「更新挂载助手」；`HELPER_VERSION=9`
+- [ ] 安装后 **没有** `/etc/sudoers.d/ntfs-rw`
 
-## Gatekeeper
+## Gatekeeper 与界面
 
-- [ ] 干净用户访达双击 DMG → 应用可打开（已公证）
-- [ ] 未公证包会提示无法验证开发者；Control-点击「打开」能进，或「系统设置 → 隐私与安全性」点「仍要打开」能进
-- [ ] 首次启动只有一个确认框（条款 + 未公证 + 助手提示）；回车是「同意并继续」，Esc 是「退出」
+- [ ] 未公证：Control-click 打开，或「仍要打开」
+- [ ] 首次确认框：回车同意，Esc 退出
+- [ ] 关主窗口后菜单栏 **NTFS** 仍在；悬停图标有四行卡片
+- [ ] 空闲图标无问号 badge；诊断为可滚动窗口（不是一份 Alert）
+- [ ] 设置首页无 Issue 号 / CDHash / appcast 长文
+- [ ] 仅 Apple Silicon + macOS 13.0+ 文案出现在 README / DMG / Release
 
-## 助手
+## Sparkle 与 Release
 
-- [ ] 第一次从窗口横幅或「设置」安装助手（优先系统服务授权，失败才管理员密码）
-- [ ] 安装后 **没有** `/etc/sudoers.d/ntfs-rw`，也没有 `/usr/local/sbin/ntfs-rw-helper`
-- [ ] 仓库 `helper/*.sh` 与 `scripts/*.sh` 不含 `NOPASSWD:`
-- [ ] `ls /var/run/com.bioapple.ntfsmount.sock` 存在
-- [ ] 升级后提示更新助手，更新前拒绝用旧助手跑 format
-- [ ] 应用内「卸载挂载助手」能去掉守护进程、socket 与 LaunchDaemon
+- [ ] `appcast.xml` 覆盖上传到 **v1.2.0** 资产 URL（`SUFeedURL` 钉死此处），**不是** Latest
+- [ ] `SUEnableAutomaticChecks` 默认 false；私钥未进仓库
+- [ ] GitHub Release 在未公证或未授权时标为 pre-release
+- [ ] 禁止第三方镜像
 
-## 界面
-
-- [ ] 菜单栏有磁盘操作、打开窗口、诊断环境…、设置、检查更新…、退出
-- [ ] 自动挂载 / 登录 / 程序坞 / 自动检查更新（默认关） / 助手 / 日志在窗口「设置」
-- [ ] 首次启动只有一个确认框；回车是「同意并继续」，Esc 是「退出」
-- [ ] 未公证安装助手走管理员密码；已公证优先系统服务
-- [ ] 系统 NTFS 只读显示「只读 · 系统 NTFS」；脏盘/休眠显示「只读 · 休眠/未正常关机」
-- [ ] `bash scripts/check-helper-gone.sh` 在卸载助手后全部 gone
-- [ ] 真盘步骤见 [docs/MANUAL_TEST.md](./MANUAL_TEST.md)
-
-## 日志与许可
-
-- [ ] `~/Library/Logs/ntfsmount.log` 有记录
-- [ ] DMG 内有 LICENSE、NOTICE、THIRD_PARTY_LICENSES.md、DISTRIBUTION.md、源码.txt
-- [ ] 无 FUSE-T 授权时有「个人使用说明.txt」
-- [ ] GitHub Release 在未公证或未授权时标为 pre-release（不要用作 Latest）
-- [ ] 禁止第三方镜像；正式下载页须公证 + FUSE-T 书面授权
-- [ ] GitHub Release 附上 `NTFSMount.dmg` 与 `NTFSMount.dmg.sha256`，正文列出 SHA256（可粘贴 `dist/NTFSMount.dmg.release-notes.md`）
-- [ ] README / DMG 使用说明 / Release 说明写明：仅 Apple Silicon + macOS 13.0+，不支持 Intel Mac（x86_64）
-- [ ] Sparkle：`appcast.xml` 作为 v1.2.0（或后续）Release 资产上传，**不是** Latest；`SUEnableAutomaticChecks` 默认 false；私钥未进仓库
+真盘步骤：[docs/MANUAL_TEST.md](./MANUAL_TEST.md)。分发：[docs/DISTRIBUTION.md](./DISTRIBUTION.md)。
