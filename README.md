@@ -14,7 +14,7 @@ Download updates from GitHub Releases. The in-app Sparkle updater is hidden on t
 
 1. Download the DMG from GitHub Latest. Drag **NTFSMount** into Applications.
 2. Control-click → **Open**, or System Settings → Privacy & Security → **Open Anyway**.
-3. Agree, then **Install…** the mount helper (admin password once). This installs a LaunchDaemon — not sudoers NOPASSWD.
+3. Agree. The app then installs the mount helper (admin password once). This installs a LaunchDaemon — not sudoers NOPASSWD.
 4. Plug in an external NTFS disk → menu bar **NTFS** → **Mount Writable**.
 
 ## Architecture

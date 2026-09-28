@@ -94,6 +94,7 @@ final class VolumeStore: ObservableObject {
       PlatformGate.enforceOrTerminate()
       LegalGate.confirmOrTerminate()
       self?.presentWindowOnFirstLaunch()
+      self?.installHelperOnFirstLaunch()
       self?.enableAutoMountDefault()
       self?.checkGitHubReleaseUpdateIfNeeded()
     }
@@ -109,6 +110,22 @@ final class VolumeStore: ObservableObject {
     guard !UserDefaults.standard.bool(forKey: key) else { return }
     UserDefaults.standard.set(true, forKey: key)
     showMainWindow()
+  }
+
+  /// After the legal dialog: install the mount helper once if its socket is missing.
+  func installHelperOnFirstLaunch() {
+    let defaults = UserDefaults.standard
+    let key = AppIdentity.Defaults.didAutoInstallHelper
+    guard LegalGate.hasAcceptedLegal else { return }
+    guard AutoMountPolicy.shouldAutoInstallHelper(
+      alreadyAttempted: defaults.bool(forKey: key),
+      daemonReady: Privileged.daemonReady
+    ) else {
+      if Privileged.daemonReady { defaults.set(true, forKey: key) }
+      return
+    }
+    defaults.set(true, forKey: key)
+    Task { _ = await installHelper() }
   }
 
   /// Online: compare CFBundleShortVersionString to GitHub Latest. Offline / failure: stay quiet.

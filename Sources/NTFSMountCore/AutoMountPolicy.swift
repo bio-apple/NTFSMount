@@ -51,6 +51,12 @@ public enum AutoMountPolicy {
     autoMountEnabled && helperReady && legalAccepted
   }
 
+  /// First launch only: install the mount helper when it is not already running.
+  /// A later uninstall stays manual. An attempt is recorded even if the user cancels the password.
+  public static func shouldAutoInstallHelper(alreadyAttempted: Bool, daemonReady: Bool) -> Bool {
+    !alreadyAttempted && !daemonReady
+  }
+
   /// Toggle stays off until helper is installed, legal copy is accepted, and the writable stamp exists.
   public static func shouldAutoEnable(
     helperInstalled: Bool,

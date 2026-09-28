@@ -50,7 +50,7 @@ Install
 2. Menu bar shows NTFS. Closing the window keeps the icon; Quit from the Dock to exit
 3. Hover the menu-bar icon for disk status; you do not need the window
 4. First launch: one confirmation. Return = Agree and Continue, Esc = Quit
-5. In the window, click Install…. Unnotarized builds ask for an admin password
+5. After you agree, the app installs the mount helper. Unnotarized builds ask for an admin password
 6. If macOS cannot verify the developer: Control-click → Open; or System Settings → Privacy & Security → Open Anyway. Still quarantined:
    xattr -d com.apple.quarantine /Applications/NTFSMount.app
 
