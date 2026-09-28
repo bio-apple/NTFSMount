@@ -1,19 +1,34 @@
 # NTFSMount
 
-Menu-bar app for writable external NTFS on Apple Silicon (macOS 13+), in userspace — no kernel extension, **SIP stays enabled**.
+Menu-bar app for **read/write external NTFS** on Apple Silicon (macOS 13+). Userspace only — bundled FUSE-T (`go-nfsv4`) + ntfs-3g, no kernel extensions, **SIP stays on**.
 
-> ⚠️ Personal use only, not notarized. Writing or formatting an NTFS disk can cause data loss; back up first. You must allow the app to run manually. FUSE-T `go-nfsv4` is not GPL; do not redistribute or sell.
+> ⚠️ **Personal use only · not notarized.** Writing or formatting an NTFS volume can destroy data — back up first. Gatekeeper blocks first launch; you must allow the app manually. Bundled FUSE-T `go-nfsv4` is not GPL — do not redistribute or sell.
 
-**[Download DMG](https://github.com/bio-apple/NTFSMount/releases/latest/download/NTFSMount.dmg)** · [SHA256](https://github.com/bio-apple/NTFSMount/releases/latest)
+**[Download DMG](https://github.com/bio-apple/NTFSMount/releases/latest/download/NTFSMount.dmg)** · [Releases / SHA256](https://github.com/bio-apple/NTFSMount/releases/latest) · Current: **1.0.0**
 
-**Requirements:** Apple Silicon, macOS 13+, SIP on. Install in `/Applications`. No Homebrew, macFUSE, or extra FUSE-T.
+Download updates from GitHub Releases. The in-app Sparkle updater is hidden on this unnotarized build and is not the download path.
+
+**Requirements:** Apple Silicon (arm64), macOS 13+, SIP enabled. Install under `/Applications`. Not for Intel Macs, the Mac App Store, or official Homebrew. Do not `brew install` macFUSE, FUSE-T, or ntfs-3g — the app ships its own runtime and does not search Homebrew prefixes.
 
 ## Quick Start
 
-1. Download the DMG (GitHub Latest). Drag NTFSMount into Applications.
+1. Download the DMG from GitHub Latest. Drag **NTFSMount** into Applications.
 2. Control-click → **Open**, or System Settings → Privacy & Security → **Open Anyway**.
-3. Agree, then **Install…** the mount helper (admin password once).
+3. Agree, then **Install…** the mount helper (admin password once). This installs a LaunchDaemon — not sudoers NOPASSWD.
 4. Plug in an external NTFS disk → menu bar **NTFS** → **Mount Writable**.
+
+## Architecture
+
+```mermaid
+flowchart TB
+    A["Menu bar app (NTFSMount)"]
+    B["LaunchDaemon helper"]
+    C["FUSE-T (go-nfsv4) + ntfs-3g"]
+    D["NTFS volume"]
+    A --> B
+    B --> C
+    C --> D
+```
 
 ## Screenshots
 
@@ -35,12 +50,14 @@ Menu-bar app for writable external NTFS on Apple Silicon (macOS 13+), in userspa
 
 - In the app: Diagnose Environment → Export Diagnostic Report and attach the zip to an [Issue](.github/ISSUE_TEMPLATE/bug_report.md).
 - After an upgrade: replace the app, then **Update mount helper**.
+- If Diagnose reports missing bundled ntfs-3g: reinstall from GitHub Latest (do not use Homebrew).
+- On Sequoia or later, grant **Full Disk Access** to `NTFSMount.app`. The LaunchDaemon does not inherit that grant; if mounts still fail, add the helper in the same list.
 
 ## License
 
 - Swift source: GPL-2.0-or-later ([LICENSE](./LICENSE))
 - ntfs-3g: GPL-2.0-or-later
-- FUSE-T component: its own license; do not redistribute or sell
-- Overall app: not a single GPL; redistribution must follow [NOTICE](./NOTICE) and [docs/DISTRIBUTION.md](./docs/DISTRIBUTION.md)
+- FUSE-T (`go-nfsv4`): personal / non-commercial by default; **not GPL** — do not redistribute or sell
+- Overall package: not a single GPL; redistribution must follow [NOTICE](./NOTICE) and [docs/DISTRIBUTION.md](./docs/DISTRIBUTION.md)
 
 [CHANGELOG.md](./CHANGELOG.md) · [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md)
