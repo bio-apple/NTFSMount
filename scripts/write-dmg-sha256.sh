@@ -43,7 +43,7 @@ Verify:
 shasum -a 256 "$BASE"
 \`\`\`
 
-The result must match the SHA256 above. You can also download `$BASE.sha256` and run `shasum -a 256 -c "$BASE.sha256"`.
+The result must match the SHA256 above. You can also download \`$BASE.sha256\` and run \`shasum -a 256 -c "$BASE.sha256"\`.
 EOF
 
 echo "ok $SIDECAR"
