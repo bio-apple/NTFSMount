@@ -321,6 +321,10 @@ Return 即同意。不同意請點「結束」。";
 
 "alert.updateHelperBody" = "需要更新才能使用格式化、插入時自動掛載等新功能。將要求一次管理員密碼。";
 
+"alert.appUpdateTitle" = "發現新版本";
+
+"alert.appUpdateBody" = "GitHub Releases 上有 NTFSMount %@。是否在瀏覽器中開啟 DMG 下載連結？";
+
 "alert.update" = "更新";
 
 "alert.mountFailed" = "掛載失敗";

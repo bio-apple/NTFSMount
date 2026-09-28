@@ -3540,6 +3540,64 @@
         }
       }
     },
+    "alert.appUpdateTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update Available"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "发现新版本"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "發現新版本"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アップデートがあります"
+          }
+        }
+      }
+    },
+    "alert.appUpdateBody": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFSMount %@ is available on GitHub Releases. Open the DMG download in your browser?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub Releases 上有 NTFSMount %@。是否在浏览器中打开 DMG 下载链接？"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub Releases 上有 NTFSMount %@。是否在瀏覽器中開啟 DMG 下載連結？"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub Releases に NTFSMount %@ があります。ブラウザで DMG のダウンロードを開きますか？"
+          }
+        }
+      }
+    },
     "alert.update": {
       "extractionState": "manual",
       "localizations": {

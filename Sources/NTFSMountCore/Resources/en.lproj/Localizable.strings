@@ -321,6 +321,10 @@ Return means you agree. Click “Quit” if you do not.";
 
 "alert.updateHelperBody" = "An update is required for formatting, auto-mount on insert, and other new features. macOS will ask for an administrator password once.";
 
+"alert.appUpdateTitle" = "Update Available";
+
+"alert.appUpdateBody" = "NTFSMount %@ is available on GitHub Releases. Open the DMG download in your browser?";
+
 "alert.update" = "Update";
 
 "alert.mountFailed" = "Mount Failed";

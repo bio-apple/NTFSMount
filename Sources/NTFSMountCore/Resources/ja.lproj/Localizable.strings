@@ -321,6 +321,10 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "alert.updateHelperBody" = "フォーマットや接続時の自動マウントなど新機能を使うには更新が必要です。管理者パスワードを一度求めます。";
 
+"alert.appUpdateTitle" = "アップデートがあります";
+
+"alert.appUpdateBody" = "GitHub Releases に NTFSMount %@ があります。ブラウザで DMG のダウンロードを開きますか？";
+
 "alert.update" = "更新";
 
 "alert.mountFailed" = "マウントに失敗";

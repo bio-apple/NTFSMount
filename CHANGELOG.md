@@ -10,7 +10,7 @@ None.
 
 ## [1.0.0] - 2026-09-28
 
-Build 4 of the same `1.0.0` tag. Marketing version stays `1.0.0`.
+Build 5 of the same `1.0.0` tag. Marketing version stays `1.0.0`. Online GitHub release check; helper-stamp popup stays off.
 
 Version-number reset of the current personal-use tree. Includes the 1.2.1 feature set plus post-1.2.1 work that had not been tagged. Facts match [docs/RELEASE_NOTES/1.0.0.md](docs/RELEASE_NOTES/1.0.0.md).
 

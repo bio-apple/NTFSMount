@@ -94,8 +94,8 @@ final class VolumeStore: ObservableObject {
       PlatformGate.enforceOrTerminate()
       LegalGate.confirmOrTerminate()
       self?.presentWindowOnFirstLaunch()
-      self?.offerHelperUpdateIfNeeded()
       self?.enableAutoMountDefault()
+      self?.checkGitHubReleaseUpdateIfNeeded()
     }
   }
 
@@ -111,16 +111,35 @@ final class VolumeStore: ObservableObject {
     showMainWindow()
   }
 
-  func offerHelperUpdateIfNeeded() {
-    guard helperInstalled, Privileged.helperNeedsUpdate else { return }
+  /// Online: compare CFBundleShortVersionString to GitHub Latest. Offline / failure: stay quiet.
+  /// Does not install the mount helper; Settings / menu still can.
+  func checkGitHubReleaseUpdateIfNeeded() {
+    let current = AppVersion.shortString()
+    guard !current.isEmpty else { return }
+    let skipped = UserDefaults.standard.string(forKey: AppIdentity.Defaults.skippedReleaseVersion)
+    Task { [weak self] in
+      guard let remote = await GitHubReleaseChecker.fetchLatestVersion() else { return }
+      guard GitHubReleaseUpdate.shouldPrompt(current: current, remote: remote, skipped: skipped)
+      else { return }
+      await MainActor.run { self?.presentAppUpdateOffer(remoteVersion: remote) }
+    }
+  }
+
+  func presentAppUpdateOffer(remoteVersion: String) {
     NSApp.activate(ignoringOtherApps: true)
     let alert = NSAlert()
-    alert.messageText = L10n.t("alert.updateHelperTitle")
-    alert.informativeText = L10n.t("alert.updateHelperBody")
+    alert.messageText = L10n.t("alert.appUpdateTitle")
+    alert.informativeText = L10n.format("alert.appUpdateBody", remoteVersion)
     alert.addButton(withTitle: L10n.t("alert.update"))
     alert.addButton(withTitle: L10n.t("later"))
-    guard alert.runModal() == .alertFirstButtonReturn else { return }
-    Task { _ = await installHelper() }
+    if alert.runModal() == .alertFirstButtonReturn {
+      NSWorkspace.shared.open(GitHubReleaseUpdate.latestDMGURL)
+    } else {
+      UserDefaults.standard.set(
+        GitHubReleaseUpdate.normalizeVersion(remoteVersion),
+        forKey: AppIdentity.Defaults.skippedReleaseVersion
+      )
+    }
   }
 
   func statusLabel(_ vol: NTFSVolume) -> String {

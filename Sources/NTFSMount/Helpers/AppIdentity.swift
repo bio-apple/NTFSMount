@@ -32,6 +32,8 @@ enum AppIdentity {
     static let didShowGatekeeper = "com.bioapple.ntfsmount.didShowGatekeeper"
     static let lastHelperSHA = "com.bioapple.ntfsmount.lastHelperSHA"
     static let acceptedUntestedNtfs3g = "com.bioapple.ntfsmount.acceptedUntestedNtfs3g"
+    /// Normalized marketing version the user skipped via “Later” on the GitHub release dialog.
+    static let skippedReleaseVersion = "com.bioapple.ntfsmount.skippedReleaseVersion"
   }
 
   static func migrateDefaultsIfNeeded() {
