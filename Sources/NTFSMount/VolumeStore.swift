@@ -63,6 +63,8 @@ final class VolumeStore: ObservableObject {
     return "externaldrive.badge.questionmark"
   }
 
+  var menuBarTooltip: String { MenuBarTooltip.extra(volumes) }
+
   init() {
     AppIdentity.migrateDefaultsIfNeeded()
     applyDockPolicy()
@@ -300,6 +302,7 @@ final class VolumeStore: ObservableObject {
       lastAdvice[vol.id] = .writable
     }
     mountDefaultWritableIfNeeded()
+    StatusItemTooltip.apply(menuBarTooltip)
     refreshRunning = false
     if refreshQueued {
       refreshQueued = false

@@ -51,6 +51,14 @@ Return means you agree. Click “Quit” if you do not.";
 
 "menu.insertHint" = "Plug in a Windows-formatted external disk, then open the menu again";
 
+"tooltip.rw" = "RW";
+
+"tooltip.ro" = "RO";
+
+"tooltip.unmounted" = "—";
+
+"tooltip.fsLine" = "NTFS • %@";
+
 "menu.formatOtherHint" = "Use “Format as NTFS” in the window to convert other external disks to NTFS";
 
 "menu.encryptedLine" = "%@: possibly encrypted — do not write or format";

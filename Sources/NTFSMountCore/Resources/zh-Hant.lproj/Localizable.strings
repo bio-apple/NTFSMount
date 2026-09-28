@@ -51,6 +51,14 @@ Return 即同意。不同意請點「結束」。";
 
 "menu.insertHint" = "插入 Windows 格式的行動碟後再點選單";
 
+"tooltip.rw" = "可寫";
+
+"tooltip.ro" = "唯讀";
+
+"tooltip.unmounted" = "未掛載";
+
+"tooltip.fsLine" = "NTFS • %@";
+
 "menu.formatOtherHint" = "可用視窗裡「格式化為 NTFS」把其他行動碟轉成 NTFS";
 
 "menu.encryptedLine" = "%@：可能加密，勿寫入／勿格式化";

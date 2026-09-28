@@ -51,6 +51,14 @@
 
 "menu.insertHint" = "插入 Windows 格式的移动盘后再点菜单";
 
+"tooltip.rw" = "可写";
+
+"tooltip.ro" = "只读";
+
+"tooltip.unmounted" = "未挂载";
+
+"tooltip.fsLine" = "NTFS • %@";
+
 "menu.formatOtherHint" = "可用窗口里「格式化为 NTFS」把其他移动盘转成 NTFS";
 
 "menu.encryptedLine" = "%@：可能加密，勿写入/勿格式化";

@@ -42,6 +42,13 @@ public struct NTFSVolume: Identifiable, Equatable, Sendable {
     ByteCountFormatter.string(fromByteCount: size, countStyle: .file)
   }
 
+  /// Used / total when mounted; otherwise capacity only.
+  public var usageLine: String {
+    guard hasUsage else { return sizeLabel }
+    let used = ByteCountFormatter.string(fromByteCount: usedBytes, countStyle: .file)
+    return "\(used) / \(sizeLabel)"
+  }
+
   public var stateLabel: String {
     if isWritableFuse { return L10n.t("volume.stateWritable") }
     if isReadOnlyMounted { return L10n.t("volume.stateRoSystem") }

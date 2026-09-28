@@ -68,6 +68,7 @@ struct MenuRoot: View {
           .disabled(store.busyId != nil || !store.formatDisks.contains(where: { $0.id == wholeDiskId(vol.id) }))
         } label: {
           Text("\(store.statusLabel(vol))  ·  \(vol.name)  ·  \(vol.sizeLabel)")
+            .help(MenuBarTooltip.card(vol))
         }
       }
       Divider()

@@ -51,6 +51,14 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "menu.insertHint" = "Windows 形式の外付けディスクを接続してからメニューを開いてください";
 
+"tooltip.rw" = "RW";
+
+"tooltip.ro" = "RO";
+
+"tooltip.unmounted" = "未マウント";
+
+"tooltip.fsLine" = "NTFS • %@";
+
 "menu.formatOtherHint" = "ウィンドウの「NTFS にフォーマット」で他の外付けディスクを NTFS にできます";
 
 "menu.encryptedLine" = "%@：暗号化の可能性あり。書き込み／フォーマットしないでください";

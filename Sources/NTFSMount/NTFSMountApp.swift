@@ -14,6 +14,9 @@ struct NTFSMountApp: App {
       MenuRoot(store: store)
     } label: {
       Label(store.menuBarTitle, systemImage: store.menuBarSymbol)
+        .help(store.menuBarTooltip)
+        .onAppear { StatusItemTooltip.apply(store.menuBarTooltip) }
+        .onChange(of: store.menuBarTooltip) { StatusItemTooltip.apply($0) }
     }
     .menuBarExtraStyle(.menu)
   }
