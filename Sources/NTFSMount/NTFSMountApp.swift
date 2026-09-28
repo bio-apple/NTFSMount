@@ -1,9 +1,17 @@
+import AppKit
 import NTFSMountCore
 import SwiftUI
 import os
 
+final class AppDelegate: NSObject, NSApplicationDelegate {
+  func applicationWillTerminate(_ notification: Notification) {
+    AppLog.clear()
+  }
+}
+
 @main
 struct NTFSMountApp: App {
+  @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
   @StateObject private var store = VolumeStore()
 
   init() {

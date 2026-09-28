@@ -55,7 +55,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     running = false
     DispatchQueue.main.async {
       let othersVisible = NSApp.windows.contains { $0.isVisible && $0 != self.window }
-      if !othersVisible && !UserDefaults.standard.bool(forKey: AppIdentity.Defaults.showDock) {
+      if !othersVisible && !AppIdentity.bool(forKey: AppIdentity.Defaults.showDock, default: true) {
         NSApp.setActivationPolicy(.accessory)
       }
     }

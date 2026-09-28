@@ -239,7 +239,7 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "settings.cleanMacJunk" = "取り出す前に Mac の不要ファイルを削除";
 
-"settings.cleanMacJunkNote" = "オンにすると、取り出しまたはマウント解除の前に、その外付けの書き込み可能な NTFS 上の .DS_Store、AppleDouble（._*）、.Trashes、.Spotlight-V100、.fseventsd、.TemporaryItems を削除します。既定はオフです。hiberfil.sys、pagefile、書類は削除しません。";
+"settings.cleanMacJunkNote" = "オンにすると、取り出しまたはマウント解除の前に、その外付けの書き込み可能な NTFS 上の .DS_Store、AppleDouble（._*）、.Trashes、.Spotlight-V100、.fseventsd、.TemporaryItems を削除します。既定はオンです。hiberfil.sys、pagefile、書類は削除しません。";
 
 "cleanJunk.working" = "Mac の不要ファイルを削除しています…";
 

@@ -239,7 +239,7 @@ Return means you agree. Click “Quit” if you do not.";
 
 "settings.cleanMacJunk" = "Clean Mac junk files before eject";
 
-"settings.cleanMacJunkNote" = "When on, eject or unmount deletes .DS_Store, AppleDouble (._*) files, .Trashes, .Spotlight-V100, .fseventsd, and .TemporaryItems on that mounted external NTFS volume. Off by default. Does not touch hiberfil.sys, pagefile, or your documents.";
+"settings.cleanMacJunkNote" = "When on, eject or unmount deletes .DS_Store, AppleDouble (._*) files, .Trashes, .Spotlight-V100, .fseventsd, and .TemporaryItems on that mounted external NTFS volume. On by default. Does not touch hiberfil.sys, pagefile, or your documents.";
 
 "cleanJunk.working" = "Cleaning Mac junk files…";
 

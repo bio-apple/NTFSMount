@@ -113,10 +113,10 @@ final class L10nTests: XCTestCase {
     XCTAssertTrue(L10n.t("settings.cleanMacJunkNote", locale: en).contains("._*"))
     XCTAssertTrue(L10n.t("settings.cleanMacJunkNote", locale: en).contains(".Trashes"))
     XCTAssertTrue(L10n.t("settings.cleanMacJunkNote", locale: en).contains(".Spotlight-V100"))
-    XCTAssertTrue(L10n.t("settings.cleanMacJunkNote", locale: en).contains("Off by default"))
+    XCTAssertTrue(L10n.t("settings.cleanMacJunkNote", locale: en).contains("On by default"))
     XCTAssertFalse(L10n.t("settings.cleanMacJunkNote", locale: en).contains("清理"))
     XCTAssertTrue(L10n.t("settings.cleanMacJunk", locale: zh).contains("推出前"))
-    XCTAssertTrue(L10n.t("settings.cleanMacJunkNote", locale: hant).contains("預設關閉"))
+    XCTAssertTrue(L10n.t("settings.cleanMacJunkNote", locale: hant).contains("預設打開"))
     XCTAssertTrue(L10n.t("cleanJunk.continueWithout", locale: ja).contains("続ける"))
   }
 

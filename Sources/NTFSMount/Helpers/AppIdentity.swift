@@ -61,6 +61,12 @@ enum AppIdentity {
     try? "1\n".write(to: url, atomically: true, encoding: .utf8)
   }
 
+  /// Missing keys use `defaultValue`. A stored false stays off.
+  static func bool(forKey key: String, default defaultValue: Bool) -> Bool {
+    if UserDefaults.standard.object(forKey: key) == nil { return defaultValue }
+    return UserDefaults.standard.bool(forKey: key)
+  }
+
   static func sha256File(_ path: String) -> String? {
     guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)) else { return nil }
     return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()

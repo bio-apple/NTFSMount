@@ -31,9 +31,10 @@ final class VolumeStore: ObservableObject {
   @Published var encryptedDisks: [PossibleEncryptedDisk] = []
   @Published var autoMount: Bool = Privileged.autoMountEnabled
   @Published var launchAtLogin: Bool = SMAppService.mainApp.status == .enabled
-  @Published var showDock: Bool = UserDefaults.standard.bool(forKey: AppIdentity.Defaults.showDock)
-  @Published var cleanMacJunkBeforeEject: Bool = UserDefaults.standard.bool(
-    forKey: AppIdentity.Defaults.cleanMacJunkBeforeEject
+  @Published var showDock: Bool = AppIdentity.bool(forKey: AppIdentity.Defaults.showDock, default: true)
+  @Published var cleanMacJunkBeforeEject: Bool = AppIdentity.bool(
+    forKey: AppIdentity.Defaults.cleanMacJunkBeforeEject,
+    default: true
   )
   @Published var openSettings = false
   @Published var driverVersionLine: String = Ntfs3gVersion.settingsChecking

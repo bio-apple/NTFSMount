@@ -36,34 +36,41 @@ enum PlatformGate {
 enum SigningStatus {
   static var isDeveloperID: Bool {
     guard let codesign = CommandPath.find("codesign") else { return false }
+    let result = capture(executable: codesign, arguments: ["-dv", "--verbose=4", Bundle.main.bundlePath])
+    return result.stderr.contains("Developer ID Application")
+  }
+
+  static var isNotarized: Bool {
+    guard let spctl = CommandPath.find("spctl") else { return false }
+    let result = capture(
+      executable: spctl,
+      arguments: ["--assess", "--type", "execute", "-v", Bundle.main.bundlePath]
+    )
+    return result.status == 0 && result.stderr.lowercased().contains("notarized")
+  }
+
+  /// `Process.waitUntilExit` on the main thread runs the run loop. That re-enters SwiftUI
+  /// and aborts (AttributeGraph precondition) when called from a view body.
+  private static func capture(executable: String, arguments: [String]) -> (status: Int32, stderr: String) {
     let proc = Process()
-    proc.executableURL = URL(fileURLWithPath: codesign)
-    proc.arguments = ["-dv", "--verbose=4", Bundle.main.bundlePath]
+    proc.executableURL = URL(fileURLWithPath: executable)
+    proc.arguments = arguments
     let err = Pipe()
     proc.standardOutput = Pipe()
     proc.standardError = err
     do {
       try proc.run()
-      proc.waitUntilExit()
     } catch {
-      return false
+      return (1, "")
+    }
+    let wait = { proc.waitUntilExit() }
+    if Thread.isMainThread {
+      DispatchQueue.global(qos: .userInitiated).sync(execute: wait)
+    } else {
+      wait()
     }
     let text = String(data: err.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-    return text.contains("Developer ID Application")
-  }
-
-  static var isNotarized: Bool {
-    guard let spctl = CommandPath.find("spctl") else { return false }
-    let proc = Process()
-    proc.executableURL = URL(fileURLWithPath: spctl)
-    proc.arguments = ["--assess", "--type", "execute", "-v", Bundle.main.bundlePath]
-    let err = Pipe()
-    proc.standardOutput = Pipe()
-    proc.standardError = err
-    try? proc.run()
-    proc.waitUntilExit()
-    let text = String(data: err.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-    return proc.terminationStatus == 0 && text.lowercased().contains("notarized")
+    return (proc.terminationStatus, text)
   }
 }
 
@@ -78,8 +85,8 @@ enum AppLog {
       .appendingPathComponent("Library/Logs/ntfsmount.log")
   }
 
-  /// File log stays for in-app diagnose. Unified Logging gets the same line as `.private`
-  /// so paths and helper output are redacted unless private data is enabled.
+  /// Session file log for in-app diagnose. Removed when the app quits.
+  /// Unified Logging gets the same line as `.private` so paths stay redacted.
   static func append(_ line: String, unified: Bool = true) {
     let text = "\(ISO8601DateFormatter().string(from: Date())) \(line)\n"
     if let data = text.data(using: .utf8) {
@@ -95,6 +102,14 @@ enum AppLog {
     }
     if unified {
       app.info("\(line, privacy: .private)")
+    }
+  }
+
+  /// Drop the settings log. Does not touch system Console / unified logging.
+  static func clear() {
+    let fm = FileManager.default
+    for path in [url.path, url.path + ".old", "/tmp/ntfsmount.log"] {
+      try? fm.removeItem(atPath: path)
     }
   }
 

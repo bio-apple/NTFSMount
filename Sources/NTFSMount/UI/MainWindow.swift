@@ -29,7 +29,7 @@ final class MainWindowController: NSObject, NSWindowDelegate {
 
   func windowWillClose(_ notification: Notification) {
     DispatchQueue.main.async {
-      if UserDefaults.standard.bool(forKey: AppIdentity.Defaults.showDock) {
+      if AppIdentity.bool(forKey: AppIdentity.Defaults.showDock, default: true) {
         NSApp.setActivationPolicy(.regular)
       } else {
         NSApp.setActivationPolicy(.accessory)

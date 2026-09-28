@@ -239,7 +239,7 @@ Return 即同意。不同意請點「結束」。";
 
 "settings.cleanMacJunk" = "推出前清理 Mac 垃圾檔案";
 
-"settings.cleanMacJunkNote" = "打開後，推出或卸載時會刪除該外接可寫 NTFS 上的 .DS_Store、AppleDouble（._*）、.Trashes、.Spotlight-V100、.fseventsd 和 .TemporaryItems。預設關閉。不會刪除 hiberfil.sys、pagefile 或你的文件。";
+"settings.cleanMacJunkNote" = "打開後，推出或卸載時會刪除該外接可寫 NTFS 上的 .DS_Store、AppleDouble（._*）、.Trashes、.Spotlight-V100、.fseventsd 和 .TemporaryItems。預設打開。不會刪除 hiberfil.sys、pagefile 或你的文件。";
 
 "cleanJunk.working" = "正在清理 Mac 垃圾檔案…";
 
