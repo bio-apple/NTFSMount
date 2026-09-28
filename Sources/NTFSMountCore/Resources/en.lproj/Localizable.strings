@@ -371,6 +371,8 @@ Return means you agree. Click “Quit” if you do not.";
 
 "privileged.noResponse" = "The mount helper did not respond. Install or update the helper first.";
 
+"privileged.socketMissing" = "The mount helper is still missing (socket %@ does not exist). Install-helper output and recent log follow:";
+
 "platform.cannotRun" = "Cannot run %@";
 
 "platform.noIntel" = "Intel Macs (x86_64) are not supported. Apple Silicon (M-series) is required.";
@@ -396,13 +398,13 @@ Return means you agree. Click “Quit” if you do not.";
 
 "diagnose.updateHelper" = "Update Mount Helper…";
 
-"diagnose.brokenBundle" = "Bundled ntfs-3g / go-nfsv4 is missing. This copy is incomplete — re-download the app. Do not install macFUSE or run brew.";
+"diagnose.installFailed" = "Mount helper install failed";
+
+"diagnose.brokenBundle" = "Bundled ntfs-3g / go-nfsv4 is missing. This copy is incomplete — re-download the app.";
 
 "diagnose.openLog" = "Open Log";
 
 "diagnose.header" = "NTFS Read-Write · environment diagnose (read-only; does not mount or install the helper)";
-
-"diagnose.fuseTNote" = "This app uses bundled FUSE-T go-nfsv4 + ntfs-3g and does not need macFUSE installed.";
 
 "diagnose.notAppleSilicon" = "Not Apple Silicon (%@); this app does not support Intel";
 
@@ -420,7 +422,7 @@ Return means you agree. Click “Quit” if you do not.";
 
 "diagnose.fuseSysUnused" = "; system FUSE-T %@ is not used";
 
-"diagnose.fuseMissing" = "Bundled go-nfsv4 is missing (pinned FUSE-T %@; no need to install macFUSE)";
+"diagnose.fuseMissing" = "Bundled go-nfsv4 is missing (pinned FUSE-T %@)";
 
 "diagnose.helperMissing" = "Helper not installed (socket missing; this diagnose will not install it)";
 
@@ -434,11 +436,7 @@ Return means you agree. Click “Quit” if you do not.";
 
 "diagnose.sysext" = "system extension";
 
-"diagnose.conflict" = "Detected %@ (may interfere with FUSE-T; this app does not need macFUSE)";
-
-"diagnose.noMacFuseBrew" = "No macFUSE kext detected (missing Homebrew is normal; this app does not need macFUSE)";
-
-"diagnose.noMacFuse" = "No macFUSE detected (this app does not need macFUSE installed)";
+"diagnose.conflict" = "Detected %@ (may interfere with FUSE-T)";
 
 "diagnose.quarantine" = "App is quarantined (Gatekeeper may block it; Control-click to Open)";
 
@@ -454,7 +452,7 @@ Return means you agree. Click “Quit” if you do not.";
 
 "diagnose.gatekeeper" = "Gatekeeper: %@";
 
-"settings.diagnoseHint" = "Read-only check of bundled components and the helper. Does not mount or install the helper. This app does not need macFUSE.";
+"settings.diagnoseHint" = "Read-only check of bundled components and the helper. Does not mount or install the helper.";
 
 "premount.dirtyTitle" = "NTFS volume may be damaged or was not unmounted cleanly";
 

@@ -125,7 +125,12 @@ sign() {
     fi
     codesign --force --sign "$id" "${nested_extra[@]}" "$sparkle"
   fi
-  codesign --force --sign "$id" --identifier com.bioapple.ntfsmount.helperd "${extra[@]}" "$HELPERD"
+  if [[ -n "${CODESIGN_IDENTITY:-}" ]]; then
+    codesign --force --sign "$id" --identifier com.bioapple.ntfsmount.helperd "${extra[@]}" "$HELPERD"
+  else
+    # launchd/AMFI 会拒绝 Hardened Runtime 的 ad-hoc 守护进程。
+    codesign --force --sign "$id" --identifier com.bioapple.ntfsmount.helperd "$HELPERD"
+  fi
   codesign --force --sign "$id" --identifier com.bioapple.ntfsmount.helper "${extra[@]}" "$APP/Contents/Resources/ntfs-rw-helper"
   codesign --force --sign "$id" \
     "$MACOS/libfuse.2.dylib" \

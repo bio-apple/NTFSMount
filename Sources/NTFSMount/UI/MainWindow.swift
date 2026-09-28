@@ -69,7 +69,7 @@ struct MainWindowView: View {
     }
     .frame(minWidth: 680, minHeight: 400)
     .safeAreaInset(edge: .top, spacing: 0) {
-      if !store.helperInstalled || Privileged.helperNeedsUpdate {
+      if !store.helperInstalled || !Privileged.daemonReady || Privileged.helperNeedsUpdate {
         HelperInstallBanner(store: store)
       }
     }
@@ -193,7 +193,7 @@ struct HelperInstallBanner: View {
   @ObservedObject var store: VolumeStore
 
   private var needsUpdate: Bool {
-    store.helperInstalled && Privileged.helperNeedsUpdate
+    Privileged.helperOfferIsUpdate
   }
 
   var body: some View {
@@ -231,7 +231,7 @@ private struct EmptyVolumeView: View {
   @ObservedObject var store: VolumeStore
 
   private var helperReady: Bool {
-    store.helperInstalled && !Privileged.helperNeedsUpdate
+    Privileged.daemonReady && !Privileged.helperNeedsUpdate
   }
 
   var body: some View {
@@ -289,7 +289,7 @@ private struct EmptyVolumeView: View {
   }
 
   private var emptyTitle: String {
-    if !store.helperInstalled { return L10n.t("window.emptyTitleNeedHelper") }
+    if !Privileged.daemonReady { return L10n.t("window.emptyTitleNeedHelper") }
     if Privileged.helperNeedsUpdate { return L10n.t("window.helperUpdate") }
     return L10n.t("window.emptyTitle")
   }

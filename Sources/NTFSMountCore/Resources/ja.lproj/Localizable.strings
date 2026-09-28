@@ -371,6 +371,8 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "privileged.noResponse" = "マウントヘルパーが応答しません。先にヘルパーをインストールまたは更新してください。";
 
+"privileged.socketMissing" = "マウントヘルパーのインストール後も socket がありません（%@）。インストールスクリプトの出力と直近のログ：";
+
 "platform.cannotRun" = "%@ を実行できません";
 
 "platform.noIntel" = "Intel Mac（x86_64）は非対応です。Apple Silicon（M チップ）が必要です。";
@@ -396,13 +398,13 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "diagnose.updateHelper" = "マウントヘルパーを更新…";
 
-"diagnose.brokenBundle" = "同梱の ntfs-3g / go-nfsv4 がありません。このコピーは不完全です。アプリを再ダウンロードしてください。macFUSE のインストールも brew も不要です。";
+"diagnose.installFailed" = "マウントヘルパーのインストールに失敗しました";
+
+"diagnose.brokenBundle" = "同梱の ntfs-3g / go-nfsv4 がありません。このコピーは不完全です。アプリを再ダウンロードしてください。";
 
 "diagnose.openLog" = "ログを開く";
 
 "diagnose.header" = "NTFS 読み書き · 環境診断（読み取り専用。マウントもヘルパー導入もしません）";
-
-"diagnose.fuseTNote" = "このアプリは同梱の FUSE-T go-nfsv4 + ntfs-3g を使い、macFUSE のインストールは不要です。";
 
 "diagnose.notAppleSilicon" = "Apple Silicon ではありません（%@）。このアプリは Intel 非対応です";
 
@@ -420,7 +422,7 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "diagnose.fuseSysUnused" = "；システムの FUSE-T %@ は使っていません";
 
-"diagnose.fuseMissing" = "同梱 go-nfsv4 がありません（FUSE-T %@ 固定。macFUSE のインストールは不要）";
+"diagnose.fuseMissing" = "同梱 go-nfsv4 がありません（FUSE-T %@ 固定）";
 
 "diagnose.helperMissing" = "ヘルパー未インストール（socket なし。この診断ではインストールしません）";
 
@@ -434,11 +436,7 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "diagnose.sysext" = "システム拡張";
 
-"diagnose.conflict" = "%@ を検出（FUSE-T を妨げる可能性。このアプリに macFUSE は不要）";
-
-"diagnose.noMacFuseBrew" = "macFUSE kext は未検出（Homebrew がなくても正常。このアプリに macFUSE は不要）";
-
-"diagnose.noMacFuse" = "macFUSE は未検出（このアプリに macFUSE のインストールは不要）";
+"diagnose.conflict" = "%@ を検出（FUSE-T を妨げる可能性）";
 
 "diagnose.quarantine" = "アプリに隔離属性があります（Gatekeeper がブロックする可能性。Control クリックで開く）";
 
@@ -454,7 +452,7 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "diagnose.gatekeeper" = "Gatekeeper：%@";
 
-"settings.diagnoseHint" = "同梱コンポーネントとヘルパーの読み取り専用チェック。マウントもヘルパー導入もしません。このアプリに macFUSE は不要です。";
+"settings.diagnoseHint" = "同梱コンポーネントとヘルパーの読み取り専用チェック。マウントもヘルパー導入もしません。";
 
 "premount.dirtyTitle" = "NTFS ボリュームが破損しているか、正常にアンマウントされていません";
 

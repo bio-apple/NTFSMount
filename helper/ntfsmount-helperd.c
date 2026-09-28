@@ -43,6 +43,12 @@ static const char *kAllowed[] = {
     NULL};
 
 static void die(const char *m) {
+  int saved = errno;
+  FILE *f = fopen("/Library/Logs/ntfsmount-helperd.log", "a");
+  if (f) {
+    fprintf(f, "helperd: %s (errno=%d)\n", m, saved);
+    fclose(f);
+  }
   fprintf(stderr, "helperd: %s\n", m);
   exit(1);
 }
@@ -572,6 +578,7 @@ static void handle(int fd, const char *app) {
 }
 
 int main(void) {
+  fprintf(stderr, "helperd: start pid=%d uid=%d\n", (int)getpid(), (int)getuid());
   if (getuid() != 0) die("need root");
   signal(SIGPIPE, SIG_IGN);
   signal(SIGCHLD, reap_children);

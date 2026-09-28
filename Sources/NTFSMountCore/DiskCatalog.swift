@@ -19,8 +19,9 @@ public struct LiveDiskCatalog: DiskCatalog {
   }
 
   public func fuseMountPoints() -> Set<String> {
+    guard let mount = CommandPath.find("mount") else { return [] }
     let proc = Process()
-    proc.executableURL = URL(fileURLWithPath: "/sbin/mount")
+    proc.executableURL = URL(fileURLWithPath: mount)
     proc.standardOutput = Pipe()
     proc.standardError = Pipe()
     try? proc.run()
@@ -44,8 +45,9 @@ public enum DiskCatalogs {
 }
 
 func diskutilPlist(_ args: [String]) -> [String: Any]? {
+  guard let diskutil = CommandPath.find("diskutil") else { return nil }
   let proc = Process()
-  proc.executableURL = URL(fileURLWithPath: "/usr/sbin/diskutil")
+  proc.executableURL = URL(fileURLWithPath: diskutil)
   proc.arguments = args
   let out = Pipe()
   proc.standardOutput = out

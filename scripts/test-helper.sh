@@ -40,6 +40,22 @@ if /usr/bin/grep -n '/usr/bin/realpath' "$ROOT/helper/install-helper.sh"; then
   echo "install-helper must not invoke /usr/bin/realpath (macOS has no such binary)" >&2
   exit 1
 fi
+if /usr/bin/grep -nE '/(bin|usr/bin)/launchctl' "$ROOT/helper/install-helper.sh" "$ROOT/helper/uninstall-helper.sh" "$ROOT/helper/ntfs-rw-helper" "$ROOT/uninstall.sh" "$ROOT/scripts/ntfsmount-diagnose.sh" "$ROOT"/Sources/NTFSMount/*.swift "$ROOT"/Sources/NTFSMount/Helpers/*.swift; then
+  echo "must resolve launchctl via resolve_cmd / CommandPath, not a hardcoded /bin or /usr/bin path" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'resolve_cmd launchctl' "$ROOT/helper/install-helper.sh"; then
+  echo "install-helper must resolve launchctl at runtime" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'resolve_cmd bash' "$ROOT/helper/install-helper.sh"; then
+  echo "install-helper must resolve bash at runtime for the LaunchDaemon Program" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'LAUNCHCTL" bootstrap' "$ROOT/helper/install-helper.sh"; then
+  echo "install-helper must bootstrap the LaunchDaemon via resolved launchctl" >&2
+  exit 1
+fi
 
 HELPERD_C="$ROOT/helper/ntfsmount-helperd.c"
 if ! /usr/bin/grep -q '/Library/Application Support/NTFSMount' "$HELPERD_C"; then
@@ -103,6 +119,26 @@ for key in 'app.path' 'allowed.cdhash' 'helper.stamp' 'ntfs-rw-helper'; do
 done
 if ! /usr/bin/grep -q '无法读取应用 CDHash' "$ROOT/helper/install-helper.sh"; then
   echo "install-helper must refuse an empty CDHash" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'AssociatedBundleIdentifiers' "$ROOT/helper/install-helper.sh"; then
+  echo "install-helper plist must include AssociatedBundleIdentifiers" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'resolve_cmd bash' "$ROOT/helper/install-helper.sh" || ! /usr/bin/grep -q 'run-helperd.sh' "$ROOT/helper/install-helper.sh"; then
+  echo "ad-hoc LaunchDaemon must spawn via resolved bash run-helperd.sh" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'xattr -cr' "$ROOT/helper/install-helper.sh"; then
+  echo "install-helper must strip quarantine from copied helper binaries" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'Signature=adhoc' "$ROOT/helper/install-helper.sh"; then
+  echo "install-helper must re-sign ad-hoc helperd without Hardened Runtime" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'socket 未出现' "$ROOT/helper/install-helper.sh"; then
+  echo "install-helper must fail when the helper socket never appears" >&2
   exit 1
 fi
 if /usr/bin/grep -nF 'ntfs-3g /dev/${ident}"' "$HELPER"; then

@@ -2,6 +2,20 @@
 # 安装特权守护进程（LaunchDaemon + 签名钉扎）。必须以 root 运行。
 # 用法: install-helper.sh <helper> <helperd> <用户名> <NTFSMount.app路径>
 set -euo pipefail
+# 不写死 /bin vs /usr/bin；不搜 PATH（root 下可被劫持）。
+resolve_cmd() {
+  local n="$1" p
+  for p in "/bin/$n" "/usr/bin/$n" "/sbin/$n" "/usr/sbin/$n"; do
+    if [[ -x "$p" ]]; then
+      printf '%s\n' "$p"
+      return 0
+    fi
+  done
+  echo "error: 找不到命令 $n" >&2
+  return 1
+}
+LAUNCHCTL="$(resolve_cmd launchctl)"
+BASH_BIN="$(resolve_cmd bash)"
 if [[ "$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null || true)" != "1" && "$(/usr/bin/uname -m)" != "arm64" ]]; then
   echo "error: NTFSMount 仅支持 Apple Silicon（M 芯片 / arm64），不支持 Intel Mac（x86_64）。当前架构：$(/usr/bin/uname -m)" >&2
   exit 1
@@ -52,7 +66,29 @@ printf '%s %s\n' "$BUNDLE_VER" "$HELPER_SHA" >"$SUPPORT/helper.stamp"
 /usr/sbin/chown root:wheel "$SUPPORT/app.path" "$SUPPORT/allowed.cdhash" "$SUPPORT/helper.stamp"
 /bin/chmod 644 "$SUPPORT/app.path" "$SUPPORT/allowed.cdhash" "$SUPPORT/helper.stamp"
 
-/usr/bin/launchctl bootout system/com.bioapple.ntfsmount.helper >/dev/null 2>&1 || true
+/bin/cp "$HELPERD_SRC" "$SUPPORT/ntfsmount-helperd"
+/usr/sbin/chown root:wheel "$SUPPORT/ntfsmount-helperd"
+/bin/chmod 755 "$SUPPORT/ntfsmount-helperd"
+# launchd 对 ad-hoc 的 Program 二进制常直接拒绝；job 用系统 bash 再 exec helperd。
+/bin/cat > "$SUPPORT/run-helperd.sh" <<'RUN'
+#!/bin/bash
+echo "run-helperd: exec $(date -u +%Y-%m-%dT%H:%M:%SZ)" >&2
+exec "/Library/Application Support/NTFSMount/ntfsmount-helperd"
+RUN
+/usr/sbin/chown root:wheel "$SUPPORT/run-helperd.sh"
+/bin/chmod 755 "$SUPPORT/run-helperd.sh"
+/usr/bin/xattr -cr "$HELPER_DST" "$HELPERD_DST" "$SUPPORT/ntfsmount-helperd" "$SUPPORT/run-helperd.sh" 2>/dev/null || true
+# Hardened Runtime + ad-hoc 会被 AMFI 杀掉；安装时去掉 runtime 标志（仅 ad-hoc 源）。
+if /usr/bin/codesign -dv "$SUPPORT/ntfsmount-helperd" 2>&1 | /usr/bin/grep -q 'Signature=adhoc'; then
+  /usr/bin/codesign --force --sign - --identifier com.bioapple.ntfsmount.helperd \
+    "$SUPPORT/ntfsmount-helperd" "$HELPERD_DST" >/dev/null
+fi
+
+SOCK="/var/run/com.bioapple.ntfsmount.sock"
+"$LAUNCHCTL" bootout system/com.bioapple.ntfsmount.helper >/dev/null 2>&1 || true
+"$LAUNCHCTL" unload "$PLIST" >/dev/null 2>&1 || true
+/bin/rm -f "$SOCK"
+/bin/sleep 0.3
 cat > "$PLIST" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -60,30 +96,58 @@ cat > "$PLIST" <<EOF
 <dict>
   <key>Label</key>
   <string>com.bioapple.ntfsmount.helper</string>
+  <key>AssociatedBundleIdentifiers</key>
+  <array>
+    <string>com.bioapple.ntfsmount</string>
+  </array>
+  <key>Program</key>
+  <string>${BASH_BIN}</string>
   <key>ProgramArguments</key>
   <array>
-    <string>${HELPERD_DST}</string>
+    <string>${BASH_BIN}</string>
+    <string>${SUPPORT}/run-helperd.sh</string>
   </array>
   <key>RunAtLoad</key>
   <true/>
   <key>KeepAlive</key>
   <true/>
+  <key>StandardOutPath</key>
+  <string>/Library/Logs/ntfsmount-helperd.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Library/Logs/ntfsmount-helperd.log</string>
 </dict>
 </plist>
 EOF
 /usr/sbin/chown root:wheel "$PLIST"
 /bin/chmod 644 "$PLIST"
-/usr/bin/launchctl bootstrap system "$PLIST" || true
-SOCK="/var/run/com.bioapple.ntfsmount.sock"
-for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
-  /usr/bin/launchctl kickstart -k system/com.bioapple.ntfsmount.helper >/dev/null 2>&1 || true
+set +e
+BOOT_ERR="$("$LAUNCHCTL" bootstrap system "$PLIST" 2>&1)"
+BOOT_RC=$?
+set -e
+if [[ $BOOT_RC -ne 0 && -n "$BOOT_ERR" ]]; then
+  echo "$BOOT_ERR" >&2
+fi
+"$LAUNCHCTL" enable system/com.bioapple.ntfsmount.helper >/dev/null 2>&1 || true
+for _ in $(/usr/bin/seq 1 50); do
+  "$LAUNCHCTL" kickstart -k system/com.bioapple.ntfsmount.helper >/dev/null 2>&1 || true
   if [[ -S "$SOCK" || -e "$SOCK" ]]; then
     break
   fi
-  /bin/sleep 0.1
+  /bin/sleep 0.2
 done
 
 # 只清理旧版 sudoers / 符号链接，绝不写入 /etc/sudoers.d
 /bin/rm -f "$SUDOERS" "$LEGACY_HELPER"
+
+if [[ ! -S "$SOCK" && ! -e "$SOCK" ]]; then
+  echo "error: 挂载助手已拷贝，但 socket 未出现（$SOCK）。" >&2
+  echo "请在「系统设置 → 通用 → 登录项与扩展」允许 NTFSMount 在后台运行后重试。" >&2
+  "$LAUNCHCTL" print system/com.bioapple.ntfsmount.helper 2>&1 | /usr/bin/tail -n 40 >&2 || true
+  if [[ -f /Library/Logs/ntfsmount-helperd.log ]]; then
+    echo "--- helperd log ---" >&2
+    /usr/bin/tail -n 20 /Library/Logs/ntfsmount-helperd.log >&2
+  fi
+  exit 1
+fi
 
 echo "ok helper daemon $HELPERD_DST"

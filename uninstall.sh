@@ -2,6 +2,19 @@
 # 完全卸载：应用 + 特权助手 + LaunchDaemon/Agent + 本机配置。不写 sudoers。
 # 仅卸助手见 helper/uninstall-helper.sh。
 set -euo pipefail
+resolve_cmd() {
+  local n="$1" p
+  for p in "/bin/$n" "/usr/bin/$n" "/sbin/$n" "/usr/sbin/$n"; do
+    if [[ -x "$p" ]]; then
+      printf '%s\n' "$p"
+      return 0
+    fi
+  done
+  echo "error: 找不到命令 $n" >&2
+  return 1
+}
+LAUNCHCTL="$(resolve_cmd launchctl || true)"
+OSASCRIPT="$(resolve_cmd osascript || true)"
 
 SYSTEM_LABELS=(
   com.bioapple.ntfsmount.helper
@@ -15,11 +28,11 @@ clean_user_home() {
   local uid="${2:-}"
   [[ -n "$home" && -d "$home" ]] || return 0
 
-  if [[ -n "$uid" ]]; then
-    /usr/bin/launchctl bootout "gui/${uid}/local.ntfsmount" >/dev/null 2>&1 || true
-    /usr/bin/launchctl bootout "user/${uid}/local.ntfsmount" >/dev/null 2>&1 || true
-    /usr/bin/launchctl bootout "gui/${uid}/com.bioapple.ntfsmount" >/dev/null 2>&1 || true
-    /usr/bin/launchctl bootout "user/${uid}/com.bioapple.ntfsmount" >/dev/null 2>&1 || true
+  if [[ -n "$uid" && -n "${LAUNCHCTL:-}" ]]; then
+    "$LAUNCHCTL" bootout "gui/${uid}/local.ntfsmount" >/dev/null 2>&1 || true
+    "$LAUNCHCTL" bootout "user/${uid}/local.ntfsmount" >/dev/null 2>&1 || true
+    "$LAUNCHCTL" bootout "gui/${uid}/com.bioapple.ntfsmount" >/dev/null 2>&1 || true
+    "$LAUNCHCTL" bootout "user/${uid}/com.bioapple.ntfsmount" >/dev/null 2>&1 || true
   fi
 
   /bin/rm -f "${home}/Library/LaunchAgents/local.ntfsmount.plist"
@@ -31,8 +44,8 @@ clean_user_home() {
     "${home}/Library/Application Support/com.bioapple.ntfsmount" \
     "${home}/Library/Application Support/NTFSMount"
 
-  if [[ "$(/usr/bin/id -u)" -eq 0 && -n "$uid" ]]; then
-    /usr/bin/launchctl asuser "$uid" /usr/bin/defaults delete com.bioapple.ntfsmount >/dev/null 2>&1 || true
+  if [[ "$(/usr/bin/id -u)" -eq 0 && -n "$uid" && -n "${LAUNCHCTL:-}" ]]; then
+    "$LAUNCHCTL" asuser "$uid" /usr/bin/defaults delete com.bioapple.ntfsmount >/dev/null 2>&1 || true
   else
     /usr/bin/defaults delete com.bioapple.ntfsmount >/dev/null 2>&1 || true
   fi
@@ -49,22 +62,28 @@ clean_named_user() {
   clean_user_home "$home" "${uid:-}"
 }
 
-/usr/bin/osascript -e 'quit app "NTFS 读写"' 2>/dev/null || true
-/usr/bin/osascript -e 'quit app "NTFSMount"' 2>/dev/null || true
+if [[ -n "${OSASCRIPT:-}" ]]; then
+  "$OSASCRIPT" -e 'quit app "NTFS 读写"' 2>/dev/null || true
+  "$OSASCRIPT" -e 'quit app "NTFSMount"' 2>/dev/null || true
+fi
 
 if [[ "$(/usr/bin/id -u)" -ne 0 ]]; then
   SCRIPT="$(cd "$(/usr/bin/dirname "$0")" && /bin/pwd -P)/$(/usr/bin/basename "$0")"
-  /usr/bin/osascript - "$SCRIPT" <<'APPLESCRIPT'
+  if [[ -n "${OSASCRIPT:-}" ]]; then
+    "$OSASCRIPT" - "$SCRIPT" <<'APPLESCRIPT'
 on run argv
   do shell script quoted form of (item 1 of argv) with administrator privileges
 end run
 APPLESCRIPT
+  fi
   clean_user_home "$HOME" "$(/usr/bin/id -u)"
   exit 0
 fi
 
 for label in "${SYSTEM_LABELS[@]}"; do
-  /usr/bin/launchctl bootout "system/${label}" >/dev/null 2>&1 || true
+  if [[ -n "${LAUNCHCTL:-}" ]]; then
+    "$LAUNCHCTL" bootout "system/${label}" >/dev/null 2>&1 || true
+  fi
 done
 
 /bin/rm -f \
@@ -83,7 +102,7 @@ clean_named_user "${SUDO_USER:-}"
 
 leftover=0
 for label in "${SYSTEM_LABELS[@]}"; do
-  if /usr/bin/launchctl print "system/${label}" >/dev/null 2>&1; then
+  if [[ -n "${LAUNCHCTL:-}" ]] && "$LAUNCHCTL" print "system/${label}" >/dev/null 2>&1; then
     echo "仍在 launchd：system/${label}"
     leftover=1
   fi

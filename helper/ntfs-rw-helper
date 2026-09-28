@@ -7,11 +7,25 @@ set -euo pipefail
 
 HELPER_VERSION=9
 
-DISKUTIL="/usr/sbin/diskutil"
-MOUNT="/sbin/mount"
-UMOUNT="/sbin/umount"
-PKILL="/usr/bin/pkill"
-LSOF="/usr/sbin/lsof"
+# 不写死 /bin vs /usr/bin；不搜 PATH（root 下可被劫持）。
+resolve_cmd() {
+  local n="$1" p
+  for p in "/bin/$n" "/usr/bin/$n" "/sbin/$n" "/usr/sbin/$n"; do
+    if [[ -x "$p" ]]; then
+      printf '%s\n' "$p"
+      return 0
+    fi
+  done
+  echo "error: 找不到命令 $n" >&2
+  return 1
+}
+DISKUTIL="$(resolve_cmd diskutil)"
+MOUNT="$(resolve_cmd mount)"
+UMOUNT="$(resolve_cmd umount)"
+PKILL="$(resolve_cmd pkill)"
+LSOF="$(resolve_cmd lsof)"
+LAUNCHCTL="$(resolve_cmd launchctl)"
+OSASCRIPT="$(resolve_cmd osascript)"
 # macOS diskutil 把 -- 当成非法参数；id 必须先 valid_id/valid_whole，再作为独立 argv 传入，永不拼进 shell 字符串。
 # umount(8) 支持 --，卸载挂载点时使用。
 
@@ -474,11 +488,11 @@ notify() {
   uid="$(/usr/bin/id -u "$user" 2>/dev/null || true)"
   e="display notification \"${msg}\" with title \"NTFS 读写\""
   if [[ "$(/usr/bin/id -u)" -eq 0 && -n "$uid" && "$uid" != "0" ]]; then
-    /bin/launchctl asuser "$uid" /usr/bin/osascript -e "$e" >/dev/null 2>&1 \
-      || /usr/bin/sudo -u "$user" /usr/bin/osascript -e "$e" >/dev/null 2>&1 \
+    "$LAUNCHCTL" asuser "$uid" "$OSASCRIPT" -e "$e" >/dev/null 2>&1 \
+      || /usr/bin/sudo -u "$user" "$OSASCRIPT" -e "$e" >/dev/null 2>&1 \
       || true
   else
-    /usr/bin/osascript -e "$e" >/dev/null 2>&1 || true
+    "$OSASCRIPT" -e "$e" >/dev/null 2>&1 || true
   fi
 }
 
@@ -1235,8 +1249,8 @@ do_enable_automount() {
   require_root
   local helper
   helper="$(installed_helper_path)" || die "请先安装挂载助手"
-  /usr/bin/launchctl bootout "system/${DAEMON_LABEL}" >/dev/null 2>&1 || true
-  /usr/bin/launchctl bootout "system/${LEGACY_DAEMON_LABEL}" >/dev/null 2>&1 || true
+  "$LAUNCHCTL" bootout "system/${DAEMON_LABEL}" >/dev/null 2>&1 || true
+  "$LAUNCHCTL" bootout "system/${LEGACY_DAEMON_LABEL}" >/dev/null 2>&1 || true
   /bin/rm -f "/Library/LaunchDaemons/${LEGACY_DAEMON_LABEL}.plist"
   /usr/bin/plutil -create xml1 "$DAEMON_PLIST"
   /usr/bin/plutil -insert Label -string "$DAEMON_LABEL" "$DAEMON_PLIST"
@@ -1247,14 +1261,14 @@ do_enable_automount() {
   /usr/bin/plutil -insert ThrottleInterval -integer 5 "$DAEMON_PLIST"
   /usr/sbin/chown root:wheel "$DAEMON_PLIST"
   /bin/chmod 644 "$DAEMON_PLIST"
-  /usr/bin/launchctl bootstrap system "$DAEMON_PLIST" || die "launchctl bootstrap 失败"
+  "$LAUNCHCTL" bootstrap system "$DAEMON_PLIST" || die "launchctl bootstrap 失败"
   echo "ok automount enabled"
 }
 
 do_disable_automount() {
   require_root
-  /usr/bin/launchctl bootout "system/${DAEMON_LABEL}" >/dev/null 2>&1 || true
-  /usr/bin/launchctl bootout "system/${LEGACY_DAEMON_LABEL}" >/dev/null 2>&1 || true
+  "$LAUNCHCTL" bootout "system/${DAEMON_LABEL}" >/dev/null 2>&1 || true
+  "$LAUNCHCTL" bootout "system/${LEGACY_DAEMON_LABEL}" >/dev/null 2>&1 || true
   /bin/rm -f "$DAEMON_PLIST" "/Library/LaunchDaemons/${LEGACY_DAEMON_LABEL}.plist"
   echo "ok automount disabled"
 }

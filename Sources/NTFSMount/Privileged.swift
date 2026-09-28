@@ -1,6 +1,8 @@
+import AppKit
 import Darwin
 import Foundation
 import NTFSMountCore
+import Security
 import ServiceManagement
 
 /// 持续提权走 SMAppService + LaunchDaemon（Cocoa 原生平权）。
@@ -45,6 +47,44 @@ enum Privileged {
     FileManager.default.fileExists(atPath: AppIdentity.helperSocket)
   }
 
+  /// Button copy: Install when the socket is missing; Update only if a live helper is stale.
+  static var helperOfferIsUpdate: Bool {
+    EnvironmentDiagnose.helperOfferIsUpdate(
+      socketExists: daemonReady,
+      helperNeedsUpdate: helperNeedsUpdate
+    )
+  }
+
+  /// LSUIElement agents must become a regular app before osascript / SMAppService password UI.
+  static func prepareForAdminPrompt() {
+    let apply = {
+      NSApp.setActivationPolicy(.regular)
+      NSApp.activate(ignoringOtherApps: true)
+    }
+    if Thread.isMainThread {
+      apply()
+    } else {
+      DispatchQueue.main.sync(execute: apply)
+    }
+  }
+
+  /// Ad-hoc LaunchDaemons cannot use SMAppService's BundleProgram; osascript installs a bash trampoline.
+  private static var bundleIsAdHoc: Bool {
+    var staticCode: SecStaticCode?
+    guard SecStaticCodeCreateWithPath(Bundle.main.bundleURL as CFURL, [], &staticCode) == errSecSuccess,
+          let staticCode
+    else { return true }
+    var info: CFDictionary?
+    guard SecCodeCopySigningInformation(staticCode, SecCSFlags(rawValue: kSecCSSigningInformation), &info) == errSecSuccess,
+          let dict = info as NSDictionary?
+    else { return true }
+    if let flags = dict[kSecCodeInfoFlags] as? NSNumber {
+      return flags.uint32Value & 0x0002 != 0 // kSecCodeSignatureAdhoc
+    }
+    let certs = dict[kSecCodeInfoCertificates] as? [Any]
+    return certs == nil || certs?.isEmpty == true
+  }
+
   /// SMAppService and osascript must both leave the same root-owned pins.
   private static var sealedHelperMatchesBundle: Bool {
     let fm = FileManager.default
@@ -65,6 +105,7 @@ enum Privileged {
   }
 
   static func installHelper() -> Outcome {
+    prepareForAdminPrompt()
     guard let helper = Bundle.main.path(forResource: "ntfs-rw-helper", ofType: nil)
     else {
       return Outcome(ok: false, text: L10n.t("privileged.missingHelper"))
@@ -75,12 +116,13 @@ enum Privileged {
     }
 
     var smOk = false
-    if registerDaemonService() {
+    if !bundleIsAdHoc, registerDaemonService() {
       kickstartUntilSocket()
       if daemonReady && sealedHelperMatchesBundle { smOk = true }
     }
 
     if !smOk {
+      try? SMAppService.daemon(plistName: "com.bioapple.ntfsmount.helper.plist").unregister()
       guard let installer = Bundle.main.path(forResource: "install-helper", ofType: "sh") else {
         return Outcome(ok: false, text: L10n.t("privileged.missingInstallScript"))
       }
@@ -94,6 +136,9 @@ enum Privileged {
       if hasLegacySudoers || FileManager.default.fileExists(atPath: AppIdentity.legacyHelperPath) {
         _ = removeLegacySudoers()
       }
+      if !daemonReady {
+        return Outcome(ok: false, text: failedInstallText(fallback.text))
+      }
       return Outcome(
         ok: true,
         text: L10n.format("privileged.installedPassword", fallback.text)
@@ -104,6 +149,13 @@ enum Privileged {
       _ = removeLegacySudoers()
     }
     return Outcome(ok: true, text: L10n.t("privileged.installedSM"))
+  }
+
+  static func failedInstallText(_ helperOutput: String) -> String {
+    var parts = [L10n.format("privileged.socketMissing", AppIdentity.helperSocket)]
+    let trimmed = helperOutput.trimmingCharacters(in: .whitespacesAndNewlines)
+    if !trimmed.isEmpty { parts.append(trimmed) }
+    return parts.joined(separator: "\n\n")
   }
 
   private static func registerDaemonService() -> Bool {
@@ -122,8 +174,9 @@ enum Privileged {
     let deadline = Date().addingTimeInterval(seconds)
     while Date() < deadline {
       if FileManager.default.fileExists(atPath: path) { return }
+      guard let launchctl = CommandPath.find("launchctl") else { return }
       let proc = Process()
-      proc.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+      proc.executableURL = URL(fileURLWithPath: launchctl)
       proc.arguments = ["kickstart", "-k", "system/com.bioapple.ntfsmount.helper"]
       proc.standardOutput = Pipe()
       proc.standardError = Pipe()
@@ -134,8 +187,11 @@ enum Privileged {
   }
 
   private static func removeLegacySudoers() -> Outcome {
-    runAdmin(parts: [
-      "/bin/rm", "-f",
+    guard let rm = CommandPath.find("rm") else {
+      return Outcome(ok: false, text: L10n.t("privileged.commFailed"))
+    }
+    return runAdmin(parts: [
+      rm, "-f",
       AppIdentity.legacySudoers,
       AppIdentity.legacyHelperPath,
     ])
@@ -272,6 +328,13 @@ enum Privileged {
   }
 
   private static func runAdmin(parts: [String]) -> Outcome {
+    prepareForAdminPrompt()
+    if !Thread.isMainThread {
+      Thread.sleep(forTimeInterval: 0.05)
+    }
+    guard let osascript = CommandPath.find("osascript") else {
+      return Outcome(ok: false, text: L10n.t("privileged.commFailed"))
+    }
     let source = """
     on run argv
       set cmd to ""
@@ -282,7 +345,7 @@ enum Privileged {
     end run
     """
     let osa = Process()
-    osa.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+    osa.executableURL = URL(fileURLWithPath: osascript)
     osa.arguments = ["-"] + parts
     let stdin = Pipe()
     let osaOut = Pipe()

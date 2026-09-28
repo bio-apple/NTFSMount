@@ -67,28 +67,36 @@ public enum EnvironmentDiagnose {
   public static let pinnedFuseT = "1.2.7"
   public static let minMacOSMajor = 13
   public static var reportHeader: String { L10n.t("diagnose.header") }
-  public static var fuseTNote: String { L10n.t("diagnose.fuseTNote") }
 
   public static func lines(from snap: DiagnoseSnapshot, locale: Locale? = nil) -> [DiagnoseLine] {
-    [
+    var lines = [
       platformLine(snap, locale: locale),
       runtimeLine(snap, locale: locale),
       driverVersionLine(snap, locale: locale),
       fuseLine(snap, locale: locale),
       helperLine(snap, locale: locale),
-      conflictLine(snap, locale: locale),
-      gatekeeperLine(snap, locale: locale),
     ]
+    if let conflict = conflictLine(snap, locale: locale) {
+      lines.append(conflict)
+    }
+    lines.append(gatekeeperLine(snap, locale: locale))
+    return lines
   }
 
   public static func reportText(from lines: [DiagnoseLine], locale: Locale? = nil) -> String {
     let body = lines.map(\.displayLine).joined(separator: "\n")
-    return "\(L10n.t("diagnose.header", locale: locale))\n\n\(body)\n\n\(L10n.t("diagnose.fuseTNote", locale: locale))"
+    return "\(L10n.t("diagnose.header", locale: locale))\n\n\(body)"
   }
 
-  /// LaunchDaemon helper is missing or unreachable. macFUSE / brew are never installable here.
+  /// LaunchDaemon helper is missing or unreachable.
   public static func helperNeedsInstall(_ snap: DiagnoseSnapshot) -> Bool {
     !snap.helperSocketExists || snap.helperPing.hasPrefix("connect_failed")
+  }
+
+  /// Update copy only when a live helper (socket) exists but SHA/legacy is stale.
+  /// Missing socket always uses the Install copy, even if leftover sudoers makes `helperNeedsUpdate` true.
+  public static func helperOfferIsUpdate(socketExists: Bool, helperNeedsUpdate: Bool) -> Bool {
+    socketExists && helperNeedsUpdate
   }
 
   /// Bundled ntfs-3g / ntfsfix / go-nfsv4 gap means a broken app copy, not a brew install.
@@ -281,32 +289,19 @@ public enum EnvironmentDiagnose {
     )
   }
 
-  static func conflictLine(_ snap: DiagnoseSnapshot, locale: Locale? = nil) -> DiagnoseLine {
+  static func conflictLine(_ snap: DiagnoseSnapshot, locale: Locale? = nil) -> DiagnoseLine? {
     let brew = snap.brewMacFuse == "present"
     let kext = snap.kextMacFuse == "present"
     let sysext = snap.sysextMacFuse == "present"
-    if brew || kext || sysext {
-      var bits: [String] = []
-      if brew { bits.append("Homebrew macfuse") }
-      if kext { bits.append("macFUSE kext") }
-      if sysext { bits.append(L10n.t("diagnose.sysext", locale: locale)) }
-      return DiagnoseLine(
-        id: "macfuse_conflict",
-        status: .conflict,
-        title: L10n.format("diagnose.conflict", bits.joined(separator: " / "), locale: locale)
-      )
-    }
-    if snap.brewMacFuse == "brew_missing" {
-      return DiagnoseLine(
-        id: "macfuse_conflict",
-        status: .info,
-        title: L10n.t("diagnose.noMacFuseBrew", locale: locale)
-      )
-    }
+    guard brew || kext || sysext else { return nil }
+    var bits: [String] = []
+    if brew { bits.append("Homebrew macfuse") }
+    if kext { bits.append("macFUSE kext") }
+    if sysext { bits.append(L10n.t("diagnose.sysext", locale: locale)) }
     return DiagnoseLine(
       id: "macfuse_conflict",
-      status: .info,
-      title: L10n.t("diagnose.noMacFuse", locale: locale)
+      status: .conflict,
+      title: L10n.format("diagnose.conflict", bits.joined(separator: " / "), locale: locale)
     )
   }
 

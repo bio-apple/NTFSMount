@@ -371,6 +371,8 @@ Return 即同意。不同意請點「結束」。";
 
 "privileged.noResponse" = "掛載助手沒有回應。請先安裝或更新助手。";
 
+"privileged.socketMissing" = "掛載助手安裝後 socket 仍不存在（%@）。下面是安裝指令碼輸出與最近紀錄：";
+
 "platform.cannotRun" = "無法執行 %@";
 
 "platform.noIntel" = "不支援 Intel Mac（x86_64）。需要 Apple Silicon（M 晶片）";
@@ -396,13 +398,13 @@ Return 即同意。不同意請點「結束」。";
 
 "diagnose.updateHelper" = "更新掛載助手…";
 
-"diagnose.brokenBundle" = "內附的 ntfs-3g / go-nfsv4 缺失。這是不完整的安裝包，請重新下載本 App。不要安裝 macFUSE，也不要 brew install。";
+"diagnose.installFailed" = "安裝掛載助手失敗";
+
+"diagnose.brokenBundle" = "內附的 ntfs-3g / go-nfsv4 缺失。這是不完整的安裝包，請重新下載本 App。";
 
 "diagnose.openLog" = "打開紀錄";
 
 "diagnose.header" = "NTFS 讀寫 · 環境診斷（唯讀，不掛載、不裝助手）";
-
-"diagnose.fuseTNote" = "本 App 使用內附 FUSE-T go-nfsv4 + ntfs-3g，不需要安裝 macFUSE。";
 
 "diagnose.notAppleSilicon" = "非 Apple Silicon（%@）；本 App 不支援 Intel";
 
@@ -420,7 +422,7 @@ Return 即同意。不同意請點「結束」。";
 
 "diagnose.fuseSysUnused" = "；系統 FUSE-T %@ 未被使用";
 
-"diagnose.fuseMissing" = "內附 go-nfsv4 缺失（釘死 FUSE-T %@；不必安裝 macFUSE）";
+"diagnose.fuseMissing" = "內附 go-nfsv4 缺失（釘死 FUSE-T %@）";
 
 "diagnose.helperMissing" = "助手未安裝（socket 不存在；本診斷不會去安裝）";
 
@@ -434,11 +436,7 @@ Return 即同意。不同意請點「結束」。";
 
 "diagnose.sysext" = "系統延伸功能";
 
-"diagnose.conflict" = "偵測到 %@（可能干擾 FUSE-T；本 App 不需要 macFUSE）";
-
-"diagnose.noMacFuseBrew" = "未偵測到 macFUSE kext（無 Homebrew 屬正常；本 App 不需要 macFUSE）";
-
-"diagnose.noMacFuse" = "未偵測到 macFUSE（本 App 不需要安裝 macFUSE）";
+"diagnose.conflict" = "偵測到 %@（可能干擾 FUSE-T）";
 
 "diagnose.quarantine" = "App 帶隔離屬性（Gatekeeper 可能攔截；Control-click 打開）";
 
@@ -454,7 +452,7 @@ Return 即同意。不同意請點「結束」。";
 
 "diagnose.gatekeeper" = "Gatekeeper：%@";
 
-"settings.diagnoseHint" = "唯讀檢查內附元件與助手，不掛載、不裝助手；本 App 不需要 macFUSE。";
+"settings.diagnoseHint" = "唯讀檢查內附元件與助手，不掛載、不裝助手。";
 
 "premount.dirtyTitle" = "NTFS 卷可能已損壞／未正常卸載";
 

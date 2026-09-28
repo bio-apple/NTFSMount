@@ -5135,35 +5135,6 @@
         }
       }
     },
-    "diagnose.fuseTNote": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This app uses bundled FUSE-T go-nfsv4 + ntfs-3g and does not need macFUSE installed."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "本应用使用捆绑 FUSE-T go-nfsv4 + ntfs-3g，不需要安装 macFUSE。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "本 App 使用內附 FUSE-T go-nfsv4 + ntfs-3g，不需要安裝 macFUSE。"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "このアプリは同梱の FUSE-T go-nfsv4 + ntfs-3g を使い、macFUSE のインストールは不要です。"
-          }
-        }
-      }
-    },
     "diagnose.notAppleSilicon": {
       "extractionState": "manual",
       "localizations": {
@@ -5402,25 +5373,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bundled go-nfsv4 is missing (pinned FUSE-T %@; no need to install macFUSE)"
+            "value": "Bundled go-nfsv4 is missing (pinned FUSE-T %@)"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "捆绑 go-nfsv4 缺失（钉死 FUSE-T %@；不必安装 macFUSE）"
+            "value": "捆绑 go-nfsv4 缺失（钉死 FUSE-T %@）"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "內附 go-nfsv4 缺失（釘死 FUSE-T %@；不必安裝 macFUSE）"
+            "value": "內附 go-nfsv4 缺失（釘死 FUSE-T %@）"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "同梱 go-nfsv4 がありません（FUSE-T %@ 固定。macFUSE のインストールは不要）"
+            "value": "同梱 go-nfsv4 がありません（FUSE-T %@ 固定）"
           }
         }
       }
@@ -5605,83 +5576,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Detected %@ (may interfere with FUSE-T; this app does not need macFUSE)"
+            "value": "Detected %@ (may interfere with FUSE-T)"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "检测到 %@（可能干扰 FUSE-T；本应用不需要 macFUSE）"
+            "value": "检测到 %@（可能干扰 FUSE-T）"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "偵測到 %@（可能干擾 FUSE-T；本 App 不需要 macFUSE）"
+            "value": "偵測到 %@（可能干擾 FUSE-T）"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ を検出（FUSE-T を妨げる可能性。このアプリに macFUSE は不要）"
-          }
-        }
-      }
-    },
-    "diagnose.noMacFuseBrew": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No macFUSE kext detected (missing Homebrew is normal; this app does not need macFUSE)"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "未检测到 macFUSE kext（无 Homebrew 属正常；本应用不需要 macFUSE）"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "未偵測到 macFUSE kext（無 Homebrew 屬正常；本 App 不需要 macFUSE）"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "macFUSE kext は未検出（Homebrew がなくても正常。このアプリに macFUSE は不要）"
-          }
-        }
-      }
-    },
-    "diagnose.noMacFuse": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No macFUSE detected (this app does not need macFUSE installed)"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "未检测到 macFUSE（本应用不需要安装 macFUSE）"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "未偵測到 macFUSE（本 App 不需要安裝 macFUSE）"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "macFUSE は未検出（このアプリに macFUSE のインストールは不要）"
+            "value": "%@ を検出（FUSE-T を妨げる可能性）"
           }
         }
       }
@@ -5895,25 +5808,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Read-only check of bundled components and the helper. Does not mount or install the helper. This app does not need macFUSE."
+            "value": "Read-only check of bundled components and the helper. Does not mount or install the helper."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "只读检查捆绑组件与助手，不挂载、不装助手；本应用不需要 macFUSE。"
+            "value": "只读检查捆绑组件与助手，不挂载、不装助手。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "唯讀檢查內附元件與助手，不掛載、不裝助手；本 App 不需要 macFUSE。"
+            "value": "唯讀檢查內附元件與助手，不掛載、不裝助手。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "同梱コンポーネントとヘルパーの読み取り専用チェック。マウントもヘルパー導入もしません。このアプリに macFUSE は不要です。"
+            "value": "同梱コンポーネントとヘルパーの読み取り専用チェック。マウントもヘルパー導入もしません。"
           }
         }
       }

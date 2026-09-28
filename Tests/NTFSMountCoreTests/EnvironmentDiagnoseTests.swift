@@ -28,7 +28,7 @@ final class EnvironmentDiagnoseTests: XCTestCase {
     snap.spctl = "accepted"
     let lines = EnvironmentDiagnose.lines(from: snap, locale: Locale(identifier: "zh-Hans"))
     XCTAssertEqual(lines.map(\.id), [
-      "platform", "runtime", "ntfs_3g_version", "fuse_t", "helper", "macfuse_conflict", "gatekeeper",
+      "platform", "runtime", "ntfs_3g_version", "fuse_t", "helper", "gatekeeper",
     ])
     XCTAssertEqual(line(lines, "platform").status, .pass)
     XCTAssertTrue(line(lines, "platform").title.contains("Apple Silicon"))
@@ -36,13 +36,12 @@ final class EnvironmentDiagnoseTests: XCTestCase {
     XCTAssertEqual(line(lines, "fuse_t").status, .pass)
     XCTAssertTrue(line(lines, "fuse_t").title.contains("1.2.7"))
     XCTAssertEqual(line(lines, "helper").status, .pass)
-    XCTAssertEqual(line(lines, "macfuse_conflict").status, .info)
-    XCTAssertTrue(line(lines, "macfuse_conflict").title.contains("不需要"))
+    XCTAssertNil(lines.first { $0.id == "macfuse_conflict" })
     XCTAssertEqual(line(lines, "gatekeeper").status, .pass)
     let report = EnvironmentDiagnose.reportText(from: lines, locale: Locale(identifier: "zh-Hans"))
     XCTAssertTrue(report.contains("✅"))
     XCTAssertTrue(report.contains("只读"))
-    XCTAssertTrue(report.contains("不需要安装 macFUSE"))
+    XCTAssertFalse(report.contains("macFUSE"))
     XCTAssertFalse(report.contains("请安装 macFUSE"))
     XCTAssertFalse(report.contains("brew install macfuse"))
   }
@@ -77,7 +76,8 @@ final class EnvironmentDiagnoseTests: XCTestCase {
     XCTAssertTrue(line(lines, "runtime").title.contains("ntfs-3g"))
     XCTAssertFalse(line(lines, "runtime").title.contains("macFUSE"))
     XCTAssertEqual(line(lines, "fuse_t").status, .fail)
-    XCTAssertTrue(line(lines, "fuse_t").title.contains("不必安装 macFUSE"))
+    XCTAssertTrue(line(lines, "fuse_t").title.contains("go-nfsv4"))
+    XCTAssertFalse(line(lines, "fuse_t").title.contains("macFUSE"))
     XCTAssertEqual(line(lines, "helper").status, .fail)
     XCTAssertTrue(line(lines, "helper").title.contains("不会去安装"))
     XCTAssertTrue(EnvironmentDiagnose.helperNeedsInstall(snap))
@@ -107,6 +107,13 @@ final class EnvironmentDiagnoseTests: XCTestCase {
     XCTAssertFalse(EnvironmentDiagnose.helperNeedsInstall(snap))
   }
 
+  func testHelperOfferIsUpdateRequiresLiveSocket() {
+    XCTAssertFalse(EnvironmentDiagnose.helperOfferIsUpdate(socketExists: false, helperNeedsUpdate: true))
+    XCTAssertFalse(EnvironmentDiagnose.helperOfferIsUpdate(socketExists: false, helperNeedsUpdate: false))
+    XCTAssertFalse(EnvironmentDiagnose.helperOfferIsUpdate(socketExists: true, helperNeedsUpdate: false))
+    XCTAssertTrue(EnvironmentDiagnose.helperOfferIsUpdate(socketExists: true, helperNeedsUpdate: true))
+  }
+
   func testMacFusePresentIsConflictNotRequirement() {
     var snap = DiagnoseSnapshot()
     snap.appleSilicon = true
@@ -120,7 +127,6 @@ final class EnvironmentDiagnoseTests: XCTestCase {
     let conflict = line(EnvironmentDiagnose.lines(from: snap, locale: zh), "macfuse_conflict")
     XCTAssertEqual(conflict.status, .conflict)
     XCTAssertTrue(conflict.title.contains("可能干扰"))
-    XCTAssertTrue(conflict.title.contains("不需要 macFUSE"))
     XCTAssertFalse(conflict.title.contains("请安装"))
   }
 
@@ -137,8 +143,7 @@ final class EnvironmentDiagnoseTests: XCTestCase {
     snap.helperPing = "alive_caller_rejected"
     snap.quarantine = true
     let lines = EnvironmentDiagnose.lines(from: snap, locale: zh)
-    XCTAssertEqual(line(lines, "macfuse_conflict").status, .info)
-    XCTAssertTrue(line(lines, "macfuse_conflict").title.contains("无 Homebrew"))
+    XCTAssertNil(lines.first { $0.id == "macfuse_conflict" })
     XCTAssertEqual(line(lines, "helper").status, .pass)
     XCTAssertEqual(line(lines, "gatekeeper").status, .fail)
     XCTAssertTrue(line(lines, "gatekeeper").title.contains("隔离"))

@@ -203,8 +203,6 @@ if kext_macfuse_present; then
   warn "检测到 macFUSE / osxfuse 内核扩展。本应用不使用 kext，可能干扰 FUSE-T。不要为了本应用关闭 SIP。"
 elif brew_macfuse_listed; then
   warn "Homebrew 列出了 macfuse。本应用不需要它。不要 brew install macfuse，不要降低 SIP。"
-else
-  ok "kext      未检测到 macFUSE / osxfuse（预期；本应用不需要）"
 fi
 
 echo

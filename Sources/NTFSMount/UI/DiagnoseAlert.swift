@@ -26,6 +26,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
   private var running = false
   private var installing = false
   private var report = ""
+  private var lastSnap: DiagnoseSnapshot?
   private var generation = 0
 
   func show(store: VolumeStore) {
@@ -33,7 +34,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     if window == nil {
       buildWindow()
     }
-    NSApp.activate(ignoringOtherApps: true)
+    Privileged.prepareForAdminPrompt()
     window?.makeKeyAndOrderFront(nil)
     if !running && !installing {
       start()
@@ -42,6 +43,12 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
 
   func windowWillClose(_ notification: Notification) {
     running = false
+    DispatchQueue.main.async {
+      let othersVisible = NSApp.windows.contains { $0.isVisible && $0 != self.window }
+      if !othersVisible && !UserDefaults.standard.bool(forKey: AppIdentity.Defaults.showDock) {
+        NSApp.setActivationPolicy(.accessory)
+      }
+    }
   }
 
   private func start() {
@@ -65,6 +72,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
         guard let self, self.generation == token else { return }
         self.running = false
         self.report = text
+        self.lastSnap = snap
         self.setBody(text)
         self.spinner?.stopAnimation(nil)
         self.spinner?.isHidden = true
@@ -85,7 +93,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
       || Privileged.helperNeedsUpdate
     setInstallVisible(helperOffer)
     guard helperOffer else { return }
-    let update = (store?.helperInstalled ?? false) && Privileged.helperNeedsUpdate
+    let update = Privileged.helperOfferIsUpdate
     installButton?.title = L10n.t(update ? "diagnose.updateHelper" : "diagnose.installHelper")
     installButton?.isEnabled = !(store?.helperInstallBusy ?? false) && !installing
   }
@@ -114,16 +122,48 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
   }
 
   @objc private func installHelper() {
-    guard let store, !installing, !store.helperInstallBusy else { return }
+    guard !installing else { return }
+    guard let store else {
+      showInstallFailure(L10n.t("diagnose.installFailed"))
+      return
+    }
+    guard !store.helperInstallBusy else { return }
+    Privileged.prepareForAdminPrompt()
+    window?.makeKeyAndOrderFront(nil)
     installing = true
     installButton?.title = L10n.t("installing")
     installButton?.isEnabled = false
-    store.installHelper { [weak self] in
+    store.installHelper { [weak self] outcome in
       guard let self else { return }
       self.installing = false
       guard self.window?.isVisible == true else { return }
-      self.start()
+      if outcome.ok, Privileged.daemonReady {
+        self.start()
+      } else {
+        if let snap = self.lastSnap {
+          self.updateActions(snap)
+        } else {
+          self.installButton?.isEnabled = true
+        }
+        self.showInstallFailure(outcome.text)
+      }
     }
+  }
+
+  private func showInstallFailure(_ detail: String) {
+    let trimmed = detail.trimmingCharacters(in: .whitespacesAndNewlines)
+    let logs = AppLog.tail(40)
+    var block = "\n\n—— \(L10n.t("diagnose.installFailed")) ——\n"
+    if !trimmed.isEmpty {
+      block += trimmed + "\n"
+    }
+    block += "\n\(AppLog.url.path)\n\(logs)"
+    let body = report.isEmpty ? block.trimmingCharacters(in: .whitespacesAndNewlines) : report + block
+    report = body
+    setBody(body)
+    copyButton?.isEnabled = true
+    let hint = trimmed.split(whereSeparator: \.isNewline).first.map(String.init)
+    setHint(hint)
   }
 
   @objc private func closeWindow() {

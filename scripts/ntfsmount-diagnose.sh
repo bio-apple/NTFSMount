@@ -5,6 +5,17 @@
 #   ./scripts/ntfsmount diagnose [--json]
 #   ./scripts/ntfsmount-diagnose.sh [--json]
 set -euo pipefail
+resolve_cmd() {
+  local n="$1" p
+  for p in "/bin/$n" "/usr/bin/$n" "/sbin/$n" "/usr/sbin/$n"; do
+    if [[ -x "$p" ]]; then
+      printf '%s\n' "$p"
+      return 0
+    fi
+  done
+  echo "error: 找不到命令 $n" >&2
+  return 1
+}
 
 SCRIPT_DIR="$(cd "$(/usr/bin/dirname "$0")" && pwd)"
 IN_APP=0
@@ -24,6 +35,13 @@ HELPER_PLIST="/Library/LaunchDaemons/com.bioapple.ntfsmount.helper.plist"
 HELPERD="/Library/PrivilegedHelperTools/com.bioapple.ntfsmount.helperd"
 FUSE_T_BIN="/Library/Application Support/fuse-t/bin"
 FUSE_T_APP="/Applications/FUSE-T.app"
+XATTR="$(resolve_cmd xattr || true)"
+SPCTL="$(resolve_cmd spctl || true)"
+MOUNT="$(resolve_cmd mount || true)"
+DISKUTIL="$(resolve_cmd diskutil || true)"
+LSOF="$(resolve_cmd lsof || true)"
+LAUNCHCTL="$(resolve_cmd launchctl || true)"
+NFSD="$(resolve_cmd nfsd || true)"
 
 JSON=0
 while [[ $# -gt 0 ]]; do
@@ -350,9 +368,14 @@ quarantine=false
 spctl_status="unavailable"
 spctl_detail=""
 if [[ -n "$gk_target" ]]; then
-  q="$(/usr/bin/xattr -p com.apple.quarantine "$gk_target" 2>/dev/null || true)"
+  q=""
+  if [[ -n "$XATTR" ]]; then
+    q="$("$XATTR" -p com.apple.quarantine "$gk_target" 2>/dev/null || true)"
+  fi
   [[ -n "$q" ]] && quarantine=true
-  spctl_detail="$(timeout_run 5 /usr/sbin/spctl --assess --type execute -vv "$gk_target" || true)"
+  if [[ -n "$SPCTL" ]]; then
+    spctl_detail="$(timeout_run 5 "$SPCTL" --assess --type execute -vv "$gk_target" || true)"
+  fi
   spctl_detail="$(oneline "$spctl_detail")"
   spctl_l="$(printf '%s' "$spctl_detail" | /usr/bin/tr '[:upper:]' '[:lower:]')"
   if printf '%s' "$spctl_l" | /usr/bin/grep -q 'notarized'; then
@@ -402,7 +425,10 @@ if [[ -n "$vmnet_bits" ]]; then
   vmnet_human_ifaces="$(/usr/bin/python3 -c 'import json,sys; arr=json.loads(sys.argv[1]); print(", ".join("%s/%s"% (x.get("name","?"), "up" if x.get("up") else "down") for x in arr) or "无")' "$vmnet_ifaces_json" 2>/dev/null || echo "见 JSON")"
 fi
 
-lc_fuse="$(timeout_run 3 /bin/launchctl list || true)"
+lc_fuse=""
+if [[ -n "${LAUNCHCTL:-}" ]]; then
+  lc_fuse="$(timeout_run 3 "$LAUNCHCTL" list || true)"
+fi
 lc_hits="$(printf '%s\n' "$lc_fuse" | /usr/bin/grep -iE 'vmnet|fuse-t|fuset|nfsd|com\.apple\.nfs' || true)"
 lc_json="[]"
 if [[ -n "$lc_hits" ]]; then
@@ -410,7 +436,10 @@ if [[ -n "$lc_hits" ]]; then
 fi
 
 # --- NFS ---
-nfsd_out="$(timeout_run 3 /sbin/nfsd status || true)"
+nfsd_out=""
+if [[ -n "${NFSD:-}" ]]; then
+  nfsd_out="$(timeout_run 3 "$NFSD" status || true)"
+fi
 nfsd_out_line="$(oneline "$nfsd_out")"
 nfsd_enabled=false
 nfsd_running=false
@@ -445,7 +474,10 @@ go_proc_count="$(printf '%s\n' "$go_procs" | /usr/bin/grep -c . || true)"
 
 listen_json="[]"
 if [[ -n "$go_procs" ]]; then
-  listen_out="$(timeout_run 3 /usr/sbin/lsof -nP -iTCP -sTCP:LISTEN || true)"
+  listen_out=""
+  if [[ -n "${LSOF:-}" ]]; then
+    listen_out="$(timeout_run 3 "$LSOF" -nP -iTCP -sTCP:LISTEN || true)"
+  fi
   listen_hits="$(printf '%s\n' "$listen_out" | /usr/bin/grep -i 'go-nfsv4' || true)"
   if [[ -n "$listen_hits" ]]; then
     listen_json="$(printf '%s\n' "$listen_hits" | /usr/bin/python3 -c 'import json,sys; lines=[ln.strip() for ln in sys.stdin if ln.strip()]; print(json.dumps(lines[:12], ensure_ascii=False, separators=(",", ":")))')"
@@ -453,14 +485,23 @@ if [[ -n "$go_procs" ]]; then
 fi
 
 # --- 挂载点 + 占用 ---
-mount_text="$(timeout_run 3 /sbin/mount || true)"
-diskutil_list="$(timeout_run 15 /usr/sbin/diskutil list || true)"
+mount_text=""
+diskutil_list=""
+if [[ -n "${MOUNT:-}" ]]; then
+  mount_text="$(timeout_run 3 "$MOUNT" || true)"
+fi
+if [[ -n "${DISKUTIL:-}" ]]; then
+  diskutil_list="$(timeout_run 15 "$DISKUTIL" list || true)"
+fi
 
 occupier_for() {
   local mp="$1"
   local out errfile names
   errfile="$(/usr/bin/mktemp /tmp/ntfsmount-lsof.XXXXXX 2>/dev/null || echo /tmp/ntfsmount-lsof.$$)"
-  out="$(/usr/bin/perl -e 'alarm shift; exec @ARGV' 3 /usr/sbin/lsof -nP "$mp" 2>"$errfile" || true)"
+  out=""
+  if [[ -n "${LSOF:-}" ]]; then
+    out="$(/usr/bin/perl -e 'alarm shift; exec @ARGV' 3 "$LSOF" -nP "$mp" 2>"$errfile" || true)"
+  fi
   names="$(printf '%s\n' "$out" | /usr/bin/awk 'NR>1 && $1 != "lsof" { print $1 }' | /usr/bin/sort -u | /usr/bin/head -8 || true)"
   names="$(printf '%s' "$names" | /usr/bin/tr '\n' ',' | /usr/bin/sed -e 's/,$//' -e 's/,/, /g')"
   err="$(oneline "$(/bin/cat "$errfile" 2>/dev/null || true)")"
@@ -507,7 +548,10 @@ disk_idents_from_list() {
 # diskutil NTFS 卷
 while IFS= read -r ident; do
   [[ "$ident" == disk* ]] || continue
-  info="$(timeout_run 8 /usr/sbin/diskutil info -plist "$ident" || true)"
+  info=""
+  if [[ -n "${DISKUTIL:-}" ]]; then
+    info="$(timeout_run 8 "$DISKUTIL" info -plist "$ident" || true)"
+  fi
   [[ -n "$info" ]] || continue
   fs="$(printf '%s' "$info" | /usr/bin/plutil -extract FilesystemName raw - 2>/dev/null || true)"
   [[ "$fs" == "NTFS" ]] || continue
@@ -549,7 +593,10 @@ bl_status="not_seen"
 bl_human="未见 diskutil 加密线索（macOS 无法确认 BitLocker，这不是阴性证明）"
 while IFS= read -r ident; do
   [[ "$ident" == disk* ]] || continue
-  info="$(timeout_run 8 /usr/sbin/diskutil info "$ident" || true)"
+  info=""
+  if [[ -n "${DISKUTIL:-}" ]]; then
+    info="$(timeout_run 8 "$DISKUTIL" info "$ident" || true)"
+  fi
   [[ -n "$info" ]] || continue
   content="$(printf '%s' "$info" | /usr/bin/awk -F': *' '/Partition Type:|Content \(IOContent\):|Type \(Bundle\):/{print $2; exit}')"
   content="$(trim "$content")"
@@ -698,7 +745,11 @@ else
   runtime_h="${runtime_h}无"
 fi
 
-conflict_h="brew=${brew_macfuse} kext=${kext_macfuse} sysext=${sysext_macfuse}（本应用不需要 macFUSE；kext 存在可能干扰）"
+conflict_h=""
+if [[ "$brew_macfuse" == present || "$kext_macfuse" == present || "$sysext_macfuse" == present ]]; then
+  conflict_h="macFUSE 冲突: brew=${brew_macfuse} kext=${kext_macfuse} sysext=${sysext_macfuse}（可能干扰 FUSE-T）
+"
+fi
 gk_h="quarantine=${quarantine} spctl=${spctl_status}"
 
 cat <<EOF
@@ -716,8 +767,7 @@ ${mounts_human}• BitLocker 状态: ${bl_human}
 助手: ${helper_h}
 捆绑 HELPER_VERSION=${helper_version}
 FUSE-T / go-nfsv4: ${fuse_h}
-macFUSE 冲突探测: ${conflict_h}
-Gatekeeper: ${gk_h}
+${conflict_h}Gatekeeper: ${gk_h}
 
 提交 Bug 或给 CI 收日志请附上本输出；机器可读: ./scripts/ntfsmount diagnose --json
 EOF

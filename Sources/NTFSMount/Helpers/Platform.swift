@@ -34,8 +34,9 @@ enum PlatformGate {
 
 enum SigningStatus {
   static var isDeveloperID: Bool {
+    guard let codesign = CommandPath.find("codesign") else { return false }
     let proc = Process()
-    proc.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
+    proc.executableURL = URL(fileURLWithPath: codesign)
     proc.arguments = ["-dv", "--verbose=4", Bundle.main.bundlePath]
     let err = Pipe()
     proc.standardOutput = Pipe()
@@ -51,8 +52,9 @@ enum SigningStatus {
   }
 
   static var isNotarized: Bool {
+    guard let spctl = CommandPath.find("spctl") else { return false }
     let proc = Process()
-    proc.executableURL = URL(fileURLWithPath: "/usr/sbin/spctl")
+    proc.executableURL = URL(fileURLWithPath: spctl)
     proc.arguments = ["--assess", "--type", "execute", "-v", Bundle.main.bundlePath]
     let err = Pipe()
     proc.standardOutput = Pipe()

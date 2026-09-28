@@ -8,7 +8,7 @@ struct MenuRoot: View {
   var body: some View {
     Button(L10n.t("menu.openWindow")) { store.showMainWindow() }
       .keyboardShortcut("o")
-    if !store.helperInstalled {
+    if !store.helperInstalled || !Privileged.daemonReady {
       Button(store.helperInstallBusy ? L10n.t("installing") : L10n.t("menu.installHelper")) {
         store.installHelper()
       }

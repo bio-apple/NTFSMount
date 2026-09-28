@@ -601,6 +601,8 @@ final class L10nTests: XCTestCase {
     )
     XCTAssertEqual(L10n.t("diagnose.checking", locale: zh), "正在检查捆绑组件与挂载助手…")
     XCTAssertEqual(L10n.t("diagnose.installHelper", locale: zh), "安装挂载助手…")
+    XCTAssertEqual(L10n.t("diagnose.installFailed", locale: zh), "安装挂载助手失败")
+    XCTAssertTrue(L10n.t("privileged.socketMissing", locale: zh).contains("socket"))
     XCTAssertEqual(L10n.t("window.firstInstall", locale: zh), "助手未安装（socket 不存在）。")
     XCTAssertTrue(L10n.t("window.helperMissingDetail", locale: zh).contains("管理员密码"))
     XCTAssertFalse(L10n.t("diagnose.brokenBundle", locale: en).contains("brew install macfuse"))

@@ -64,7 +64,7 @@ struct SettingsView: View {
             Text(helperStatus)
               .font(.callout)
             HStack {
-              if !store.helperInstalled {
+              if !Privileged.daemonReady {
                 Button(store.helperInstallBusy ? L10n.t("installing") : L10n.t("settings.install")) {
                   store.installHelper()
                 }
@@ -174,7 +174,7 @@ struct SettingsView: View {
   }
 
   private var helperStatus: String {
-    if !store.helperInstalled { return L10n.t("helper.statusMissing") }
+    if !Privileged.daemonReady { return L10n.t("helper.statusMissing") }
     if Privileged.helperNeedsUpdate { return L10n.t("helper.statusNeedsUpdate") }
     if Privileged.hasLegacySudoers { return L10n.t("helper.statusLegacy") }
     return L10n.t("helper.statusOK")

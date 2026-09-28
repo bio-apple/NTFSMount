@@ -174,34 +174,66 @@ final class VolumeStore: ObservableObject {
     alert.runModal()
   }
 
-  func installHelper(then completion: (() -> Void)? = nil) {
+  func installHelper(then completion: ((Privileged.Outcome) -> Void)? = nil) {
     guard !helperInstallBusy else { return }
     helperInstallBusy = true
     setMessage(L10n.t("installing"))
-    DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-      let result = Privileged.installHelper()
-      DispatchQueue.main.async {
-        guard let self else {
-          completion?()
-          return
-        }
-        self.helperInstallBusy = false
-        self.helperInstalled = Privileged.systemHelperInstalled
-        self.setMessage(self.display(result.text))
-        if result.ok {
-          UserDefaults.standard.set(false, forKey: AppIdentity.Defaults.autoMountUserOff)
-          if let bundled = Bundle.main.path(forResource: "ntfs-rw-helper", ofType: nil) {
-            UserDefaults.standard.set(AppIdentity.sha256File(bundled), forKey: AppIdentity.Defaults.lastHelperSHA)
+    Privileged.prepareForAdminPrompt()
+    DispatchQueue.main.async { [weak self] in
+      DispatchQueue.global(qos: .userInitiated).async {
+        let result = Privileged.installHelper()
+        DispatchQueue.main.async {
+          guard let self else {
+            completion?(result)
+            return
           }
-          self.waitForHelperSocketThenFinishInstall(then: completion)
-        } else {
-          completion?()
+          self.finishInstallHelper(result, then: completion)
         }
       }
     }
   }
 
-  private func waitForHelperSocketThenFinishInstall(then completion: (() -> Void)? = nil) {
+  private func finishInstallHelper(
+    _ result: Privileged.Outcome,
+    then completion: ((Privileged.Outcome) -> Void)?
+  ) {
+    helperInstalled = Privileged.systemHelperInstalled
+    if result.ok {
+      UserDefaults.standard.set(false, forKey: AppIdentity.Defaults.autoMountUserOff)
+      setMessage(display(result.text))
+      if Privileged.daemonReady {
+        markHelperSHAMatched()
+        helperInstallBusy = false
+        enableAutoMountDefault()
+        completion?(result)
+      } else {
+        waitForHelperSocketThenFinishInstall(successText: result.text, then: completion)
+      }
+    } else {
+      helperInstallBusy = false
+      AppLog.append("install-helper failed: \(result.text)")
+      setMessage(installFailureMessage(result.text))
+      completion?(result)
+    }
+  }
+
+  private func markHelperSHAMatched() {
+    if let bundled = Bundle.main.path(forResource: "ntfs-rw-helper", ofType: nil) {
+      UserDefaults.standard.set(AppIdentity.sha256File(bundled), forKey: AppIdentity.Defaults.lastHelperSHA)
+    }
+  }
+
+  private func installFailureMessage(_ raw: String) -> String {
+    let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+    if trimmed.isEmpty { return L10n.t("error.helperInstallFailed") }
+    if trimmed.count <= 600 { return trimmed }
+    return String(trimmed.prefix(600)) + "…"
+  }
+
+  private func waitForHelperSocketThenFinishInstall(
+    successText: String,
+    then completion: ((Privileged.Outcome) -> Void)?
+  ) {
     let path = AppIdentity.helperSocket
     DispatchQueue.global(qos: .userInitiated).async { [weak self] in
       let deadline = Date().addingTimeInterval(5)
@@ -210,12 +242,21 @@ final class VolumeStore: ObservableObject {
       }
       DispatchQueue.main.async {
         guard let self else {
-          completion?()
+          completion?(Privileged.Outcome(ok: false, text: successText))
           return
         }
         self.helperInstalled = Privileged.systemHelperInstalled
-        self.enableAutoMountDefault()
-        completion?()
+        self.helperInstallBusy = false
+        if Privileged.daemonReady {
+          self.markHelperSHAMatched()
+          self.enableAutoMountDefault()
+          completion?(Privileged.Outcome(ok: true, text: successText))
+        } else {
+          let fail = Privileged.Outcome(ok: false, text: Privileged.failedInstallText(successText))
+          AppLog.append("install-helper: socket missing after wait")
+          self.setMessage(self.installFailureMessage(fail.text))
+          completion?(fail)
+        }
       }
     }
   }
@@ -445,7 +486,11 @@ final class VolumeStore: ObservableObject {
   private func restoreSystemMount(_ vol: NTFSVolume) {
     DispatchQueue.global(qos: .utility).async {
       let proc = Process()
-      proc.executableURL = URL(fileURLWithPath: "/usr/sbin/diskutil")
+      guard let diskutil = CommandPath.find("diskutil") else {
+        DispatchQueue.main.async { self.refresh() }
+        return
+      }
+      proc.executableURL = URL(fileURLWithPath: diskutil)
       proc.arguments = ["mount", vol.id]
       proc.standardOutput = Pipe()
       proc.standardError = Pipe()

@@ -28,7 +28,7 @@ enum EnvironmentDiagnoseRunner {
   static func runBundledScript() -> DiagnoseSnapshot? {
     guard let script = bundledScriptPath() else { return nil }
     let cap = runCapture(
-      "/bin/bash",
+      "bash",
       [script, "--json"],
       timeout: 25
     )
@@ -211,20 +211,20 @@ enum EnvironmentDiagnoseRunner {
   }
 
   static func kextMacFuseStatus() -> String {
-    guard FileManager.default.isExecutableFile(atPath: "/usr/sbin/kextstat") else {
+    guard CommandPath.find("kextstat") != nil else {
       return "unavailable"
     }
-    let cap = runCapture("/usr/sbin/kextstat", [], timeout: 3)
+    let cap = runCapture("kextstat", [], timeout: 3)
     let text = (String(data: cap.data, encoding: .utf8) ?? "").lowercased()
     if text.contains("macfuse") || text.contains("osxfuse") { return "present" }
     return "absent"
   }
 
   static func sysextMacFuseStatus() -> String {
-    guard FileManager.default.isExecutableFile(atPath: "/usr/bin/systemextensionsctl") else {
+    guard CommandPath.find("systemextensionsctl") != nil else {
       return "unavailable"
     }
-    let cap = runCapture("/usr/bin/systemextensionsctl", ["list"], timeout: 5)
+    let cap = runCapture("systemextensionsctl", ["list"], timeout: 5)
     let text = (String(data: cap.data, encoding: .utf8) ?? "").lowercased()
     if text.contains("macfuse") || text.contains("osxfuse") { return "present" }
     if text.isEmpty { return "unavailable" }
@@ -240,17 +240,17 @@ enum EnvironmentDiagnoseRunner {
   }
 
   static func hasQuarantine(_ path: String) -> Bool {
-    let cap = runCapture("/usr/bin/xattr", ["-p", "com.apple.quarantine", path], timeout: 2)
+    let cap = runCapture("xattr", ["-p", "com.apple.quarantine", path], timeout: 2)
     let text = String(data: cap.data, encoding: .utf8) ?? ""
     return cap.status == 0 && !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
   }
 
   static func spctlStatus(_ path: String) -> String {
-    guard FileManager.default.isExecutableFile(atPath: "/usr/sbin/spctl") else {
+    guard CommandPath.find("spctl") != nil else {
       return "unavailable"
     }
     let cap = runCapture(
-      "/usr/sbin/spctl",
+      "spctl",
       ["--assess", "--type", "execute", "-v", path],
       timeout: 5,
       combineErr: true
@@ -274,7 +274,10 @@ enum EnvironmentDiagnoseRunner {
     combineErr: Bool = false
   ) -> Capture {
     let proc = Process()
-    proc.executableURL = URL(fileURLWithPath: exe)
+    guard let path = CommandPath.find(exe) else {
+      return Capture(data: Data(), status: -1)
+    }
+    proc.executableURL = URL(fileURLWithPath: path)
     proc.arguments = args
     proc.environment = [
       "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
