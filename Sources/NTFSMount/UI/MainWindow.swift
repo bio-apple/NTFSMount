@@ -60,19 +60,52 @@ struct MainWindowView: View {
   @ObservedObject var store: VolumeStore
   @State private var selectedId: String?
 
+  private var showHelperBanner: Bool {
+    !store.helperInstalled || !Privileged.daemonReady || Privileged.helperNeedsUpdate
+  }
+
   var body: some View {
-    NavigationSplitView {
-      sidebar
-        .navigationSplitViewColumnWidth(min: 196, ideal: 228, max: 300)
-    } detail: {
-      detail
-    }
-    .frame(minWidth: 680, minHeight: 400)
-    .safeAreaInset(edge: .top, spacing: 0) {
-      if !store.helperInstalled || !Privileged.daemonReady || Privileged.helperNeedsUpdate {
+    // Keep the banner outside NavigationSplitView.safeAreaInset: on macOS the inset
+    // paints above the split view but often does not receive mouse hits, so「更新…」
+    // looked live while the click never reached installHelper.
+    VStack(spacing: 0) {
+      if showHelperBanner {
         HelperInstallBanner(store: store)
       }
+      NavigationSplitView {
+        sidebar
+          .navigationSplitViewColumnWidth(min: 196, ideal: 228, max: 300)
+      } detail: {
+        detail
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .toolbar {
+        ToolbarItem(placement: .automatic) {
+          Button {
+            store.refresh()
+          } label: {
+            Label(L10n.t("window.refresh"), systemImage: "arrow.clockwise")
+          }
+          .help(L10n.t("window.refreshHelp"))
+        }
+        ToolbarItem(placement: .automatic) {
+          Button {
+            LogViewer.open()
+          } label: {
+            Label(L10n.t("window.viewLog"), systemImage: "doc.text")
+          }
+          .help(L10n.t("window.viewLogHelp"))
+        }
+        ToolbarItem(placement: .automatic) {
+          Button {
+            store.showAbout()
+          } label: {
+            Label(L10n.t("window.about"), systemImage: "info.circle")
+          }
+        }
+      }
     }
+    .frame(minWidth: 680, minHeight: 400)
     .onAppear {
       if store.openSettings {
         selectedId = "__settings__"
@@ -90,31 +123,6 @@ struct MainWindowView: View {
       if want {
         selectedId = "__settings__"
         store.openSettings = false
-      }
-    }
-    .toolbar {
-      ToolbarItem(placement: .automatic) {
-        Button {
-          store.refresh()
-        } label: {
-          Label(L10n.t("window.refresh"), systemImage: "arrow.clockwise")
-        }
-        .help(L10n.t("window.refreshHelp"))
-      }
-      ToolbarItem(placement: .automatic) {
-        Button {
-          LogViewer.open()
-        } label: {
-          Label(L10n.t("window.viewLog"), systemImage: "doc.text")
-        }
-        .help(L10n.t("window.viewLogHelp"))
-      }
-      ToolbarItem(placement: .automatic) {
-        Button {
-          store.showAbout()
-        } label: {
-          Label(L10n.t("window.about"), systemImage: "info.circle")
-        }
       }
     }
   }
@@ -214,11 +222,15 @@ struct HelperInstallBanner: View {
           .fixedSize(horizontal: false, vertical: true)
       }
       Spacer(minLength: 12)
-      Button(store.helperInstallBusy
-        ? L10n.t("installing")
-        : L10n.t(needsUpdate ? "window.update" : "menu.installHelper")
-      ) {
+      Button {
+        // Same path as Settings「更新」/ menu「更新挂载助手…」: password prompt, no auto-install.
         Task { _ = await store.installHelper() }
+      } label: {
+        Text(
+          store.helperInstallBusy
+            ? L10n.t("installing")
+            : L10n.t(needsUpdate ? "window.update" : "menu.installHelper")
+        )
       }
       .buttonStyle(.borderedProminent)
       .controlSize(.small)

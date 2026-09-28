@@ -8,208 +8,213 @@ struct SettingsView: View {
   @State private var fdaStatus = FullDiskAccess.Status.unknown
 
   var body: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 20) {
-        Text(L10n.t("settings.title"))
-          .font(.title2.weight(.semibold))
+    // Constrain ScrollView to the detail viewport so macOS can scroll instead of clipping.
+    GeometryReader { proxy in
+      ScrollView(.vertical, showsIndicators: true) {
+        VStack(alignment: .leading, spacing: 20) {
+          Text(L10n.t("settings.title"))
+            .font(.title2.weight(.semibold))
 
-        GroupBox(L10n.t("settings.mount")) {
-          VStack(alignment: .leading, spacing: 10) {
-            Toggle(L10n.t("settings.autoMount"), isOn: Binding(
-              get: { store.autoMount },
-              set: { _ in Task { await store.toggleAutoMount() } }
-            ))
-            .disabled(store.busyId != nil || !store.helperInstalled || Privileged.helperNeedsUpdate)
-            if !store.helperInstalled || Privileged.helperNeedsUpdate {
-              Text(L10n.t("settings.autoMountNeedHelper"))
+          GroupBox(L10n.t("settings.mount")) {
+            VStack(alignment: .leading, spacing: 10) {
+              Toggle(L10n.t("settings.autoMount"), isOn: Binding(
+                get: { store.autoMount },
+                set: { _ in Task { await store.toggleAutoMount() } }
+              ))
+              .disabled(store.busyId != nil || !store.helperInstalled || Privileged.helperNeedsUpdate)
+              if !store.helperInstalled || Privileged.helperNeedsUpdate {
+                Text(L10n.t("settings.autoMountNeedHelper"))
+                  .font(.caption)
+                  .foregroundStyle(.secondary)
+                  .fixedSize(horizontal: false, vertical: true)
+              }
+              Text(L10n.t("settings.autoMountNote"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+              Toggle(L10n.t("settings.cleanMacJunk"), isOn: Binding(
+                get: { store.cleanMacJunkBeforeEject },
+                set: { _ in store.toggleCleanMacJunkBeforeEject() }
+              ))
+              Text(L10n.t("settings.cleanMacJunkNote"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             }
-            Text(L10n.t("settings.autoMountNote"))
-              .font(.caption)
-              .foregroundStyle(.secondary)
-              .fixedSize(horizontal: false, vertical: true)
-            Toggle(L10n.t("settings.cleanMacJunk"), isOn: Binding(
-              get: { store.cleanMacJunkBeforeEject },
-              set: { _ in store.toggleCleanMacJunkBeforeEject() }
-            ))
-            Text(L10n.t("settings.cleanMacJunkNote"))
-              .font(.caption)
-              .foregroundStyle(.secondary)
-              .fixedSize(horizontal: false, vertical: true)
+            .padding(8)
           }
-          .padding(8)
-        }
 
-        GroupBox(L10n.t("settings.appearance")) {
-          VStack(alignment: .leading, spacing: 10) {
-            Toggle(L10n.t("settings.launchAtLogin"), isOn: Binding(
-              get: { store.launchAtLogin },
-              set: { _ in store.toggleLogin() }
-            ))
-            Toggle(L10n.t("settings.showDock"), isOn: Binding(
-              get: { store.showDock },
-              set: { _ in store.toggleDock() }
-            ))
-            Text(L10n.t("settings.followsSystemLanguage"))
-              .font(.caption)
-              .foregroundStyle(.secondary)
-          }
-          .padding(8)
-        }
-
-        GroupBox(UpdateCopy.settingsGroup) {
-          VStack(alignment: .leading, spacing: 10) {
-            Text(UpdateCopy.autoCheckNote)
-              .font(.caption)
-              .foregroundStyle(.secondary)
-              .fixedSize(horizontal: false, vertical: true)
-          }
-          .padding(8)
-        }
-
-        GroupBox(L10n.t("settings.helper")) {
-          VStack(alignment: .leading, spacing: 10) {
-            Text(helperStatus)
-              .font(.callout)
-            HStack {
-              if !Privileged.daemonReady {
-                Button(store.helperInstallBusy ? L10n.t("installing") : L10n.t("settings.install")) {
-                  Task { _ = await store.installHelper() }
-                }
-                .disabled(store.helperInstallBusy)
-              } else if Privileged.helperNeedsUpdate {
-                Button(store.helperInstallBusy ? L10n.t("installing") : L10n.t("settings.update")) {
-                  Task { _ = await store.installHelper() }
-                }
-                .disabled(store.helperInstallBusy)
-              }
-              if store.helperInstalled {
-                Button(L10n.t("settings.uninstall"), role: .destructive) { store.confirmUninstallHelper() }
-                  .disabled(store.helperInstallBusy)
-              }
-            }
-            Text(helperInstallHint)
-              .font(.caption)
-              .foregroundStyle(.secondary)
-            Text(L10n.t("helper.privilegeHint"))
-              .font(.caption)
-              .foregroundStyle(.secondary)
-              .fixedSize(horizontal: false, vertical: true)
-            Text(L10n.t("helper.fdaHint"))
-              .font(.caption)
-              .foregroundStyle(.secondary)
-              .fixedSize(horizontal: false, vertical: true)
-          }
-          .padding(8)
-        }
-
-        GroupBox(L10n.t("settings.fda")) {
-          VStack(alignment: .leading, spacing: 10) {
-            Text(L10n.t("fda.body"))
-              .font(.callout)
-              .foregroundStyle(.secondary)
-              .fixedSize(horizontal: false, vertical: true)
-            if fdaStatus != .unknown {
-              Text(fdaStatus == .granted
-                ? L10n.t("fda.statusGranted")
-                : L10n.t("fda.statusDenied"))
+          GroupBox(L10n.t("settings.appearance")) {
+            VStack(alignment: .leading, spacing: 10) {
+              Toggle(L10n.t("settings.launchAtLogin"), isOn: Binding(
+                get: { store.launchAtLogin },
+                set: { _ in store.toggleLogin() }
+              ))
+              Toggle(L10n.t("settings.showDock"), isOn: Binding(
+                get: { store.showDock },
+                set: { _ in store.toggleDock() }
+              ))
+              Text(L10n.t("settings.followsSystemLanguage"))
                 .font(.caption)
-                .foregroundStyle(fdaStatus == .granted ? Color.secondary : Color.orange)
+                .foregroundStyle(.secondary)
+            }
+            .padding(8)
+          }
+
+          GroupBox(UpdateCopy.settingsGroup) {
+            VStack(alignment: .leading, spacing: 10) {
+              Text(UpdateCopy.autoCheckNote)
+                .font(.caption)
+                .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             }
-            Text(L10n.format("fda.helperPath", FullDiskAccess.helperInstallPath))
-              .font(.caption)
+            .padding(8)
+          }
+
+          GroupBox(L10n.t("settings.helper")) {
+            VStack(alignment: .leading, spacing: 10) {
+              Text(helperStatus)
+                .font(.callout)
+              HStack {
+                if !Privileged.daemonReady {
+                  Button(store.helperInstallBusy ? L10n.t("installing") : L10n.t("settings.install")) {
+                    Task { _ = await store.installHelper() }
+                  }
+                  .disabled(store.helperInstallBusy)
+                } else if Privileged.helperNeedsUpdate {
+                  Button(store.helperInstallBusy ? L10n.t("installing") : L10n.t("settings.update")) {
+                    Task { _ = await store.installHelper() }
+                  }
+                  .disabled(store.helperInstallBusy)
+                }
+                if store.helperInstalled {
+                  Button(L10n.t("settings.uninstall"), role: .destructive) { store.confirmUninstallHelper() }
+                    .disabled(store.helperInstallBusy)
+                }
+              }
+              Text(helperInstallHint)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+              Text(L10n.t("helper.privilegeHint"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+              Text(L10n.t("helper.fdaHint"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(8)
+          }
+
+          GroupBox(L10n.t("settings.fda")) {
+            VStack(alignment: .leading, spacing: 10) {
+              Text(L10n.t("fda.body"))
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+              if fdaStatus != .unknown {
+                Text(fdaStatus == .granted
+                  ? L10n.t("fda.statusGranted")
+                  : L10n.t("fda.statusDenied"))
+                  .font(.caption)
+                  .foregroundStyle(fdaStatus == .granted ? Color.secondary : Color.orange)
+                  .fixedSize(horizontal: false, vertical: true)
+              }
+              Text(L10n.format("fda.helperPath", FullDiskAccess.helperInstallPath))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+              Button(L10n.t("fda.open")) { FullDiskAccessSettings.openPane() }
+            }
+            .padding(8)
+          }
+
+          GroupBox(L10n.t("settings.aboutPrivacy")) {
+            VStack(alignment: .leading, spacing: 8) {
+              Text(AppVersion.line())
+                .font(.headline)
+              Text(UpdateCopy.settingsAboutLine)
+                .font(.callout)
+              Text(SigningStatus.isNotarized
+                ? L10n.t("settings.notarized")
+                : (SigningStatus.isDeveloperID
+                  ? L10n.t("settings.signedNotNotarized")
+                  : L10n.t("settings.adHoc")))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+              HStack {
+                Button(L10n.t("settings.aboutButton")) { store.showAbout() }
+              }
+            }
+            .padding(8)
+          }
+
+          DisclosureGroup(L10n.t("settings.advanced")) {
+            VStack(alignment: .leading, spacing: 16) {
+              GroupBox(L10n.t("settings.compat")) {
+                VStack(alignment: .leading, spacing: 8) {
+                  Text(MacOSCompat.noticeBody)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(8)
+              }
+
+              GroupBox(Ntfs3gVersion.settingsGroupTitle) {
+                VStack(alignment: .leading, spacing: 8) {
+                  Text(store.driverVersionLine)
+                    .font(.callout)
+                    .foregroundStyle(store.driverVersionUntested ? Color.orange : .secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                  Text(Ntfs3gVersion.allowListCaption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(8)
+              }
+
+              GroupBox(L10n.t("settings.log")) {
+                VStack(alignment: .leading, spacing: 8) {
+                  ScrollView {
+                    Text(logText)
+                      .font(.system(.caption, design: .monospaced))
+                      .textSelection(.enabled)
+                      .frame(maxWidth: .infinity, alignment: .leading)
+                  }
+                  .frame(minHeight: 140, maxHeight: 220)
+                  HStack {
+                    Button(L10n.t("settings.refreshLog")) { logText = AppLog.tail() }
+                    Button(L10n.t("settings.openConsole")) { LogViewer.open() }
+                    Button(L10n.t("menu.diagnose")) { EnvironmentDiagnosePresenter.present(store: store) }
+                    Button(L10n.t("diagnose.export")) { EnvironmentDiagnosePresenter.exportReport(store: store) }
+                  }
+                  Text(L10n.t("settings.diagnoseHint"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+                .padding(8)
+              }
+            }
+            .padding(.top, 8)
+          }
+
+          if !store.message.isEmpty {
+            Text(store.message)
+              .font(.callout)
               .foregroundStyle(.secondary)
               .textSelection(.enabled)
-              .fixedSize(horizontal: false, vertical: true)
-            Button(L10n.t("fda.open")) { FullDiskAccessSettings.openPane() }
           }
-          .padding(8)
         }
-
-        GroupBox(L10n.t("settings.aboutPrivacy")) {
-          VStack(alignment: .leading, spacing: 8) {
-            Text(AppVersion.line())
-              .font(.headline)
-            Text(UpdateCopy.settingsAboutLine)
-              .font(.callout)
-            Text(SigningStatus.isNotarized
-              ? L10n.t("settings.notarized")
-              : (SigningStatus.isDeveloperID
-                ? L10n.t("settings.signedNotNotarized")
-                : L10n.t("settings.adHoc")))
-              .font(.caption)
-              .foregroundStyle(.secondary)
-            HStack {
-              Button(L10n.t("settings.aboutButton")) { store.showAbout() }
-            }
-          }
-          .padding(8)
-        }
-
-        DisclosureGroup(L10n.t("settings.advanced")) {
-          VStack(alignment: .leading, spacing: 16) {
-            GroupBox(L10n.t("settings.compat")) {
-              VStack(alignment: .leading, spacing: 8) {
-                Text(MacOSCompat.noticeBody)
-                  .font(.callout)
-                  .foregroundStyle(.secondary)
-                  .fixedSize(horizontal: false, vertical: true)
-              }
-              .padding(8)
-            }
-
-            GroupBox(Ntfs3gVersion.settingsGroupTitle) {
-              VStack(alignment: .leading, spacing: 8) {
-                Text(store.driverVersionLine)
-                  .font(.callout)
-                  .foregroundStyle(store.driverVersionUntested ? Color.orange : .secondary)
-                  .fixedSize(horizontal: false, vertical: true)
-                Text(Ntfs3gVersion.allowListCaption)
-                  .font(.caption)
-                  .foregroundStyle(.secondary)
-                  .fixedSize(horizontal: false, vertical: true)
-              }
-              .padding(8)
-            }
-
-            GroupBox(L10n.t("settings.log")) {
-              VStack(alignment: .leading, spacing: 8) {
-                ScrollView {
-                  Text(logText)
-                    .font(.system(.caption, design: .monospaced))
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .frame(minHeight: 140, maxHeight: 220)
-                HStack {
-                  Button(L10n.t("settings.refreshLog")) { logText = AppLog.tail() }
-                  Button(L10n.t("settings.openConsole")) { LogViewer.open() }
-                  Button(L10n.t("menu.diagnose")) { EnvironmentDiagnosePresenter.present(store: store) }
-                  Button(L10n.t("diagnose.export")) { EnvironmentDiagnosePresenter.exportReport(store: store) }
-                }
-                Text(L10n.t("settings.diagnoseHint"))
-                  .font(.caption)
-                  .foregroundStyle(.secondary)
-              }
-              .padding(8)
-            }
-          }
-          .padding(.top, 8)
-        }
-
-        if !store.message.isEmpty {
-          Text(store.message)
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            .textSelection(.enabled)
-        }
+        .padding(28)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
       }
-      .padding(28)
+      .frame(width: proxy.size.width, height: max(proxy.size.height, 1), alignment: .topLeading)
     }
-    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
     .background(Color(nsColor: .windowBackgroundColor))
     .onAppear {
       logText = AppLog.tail()
