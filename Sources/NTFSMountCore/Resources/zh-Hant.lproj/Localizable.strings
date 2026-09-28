@@ -187,6 +187,8 @@ Return 即同意。不同意請點「結束」。";
 
 "forceUnmount.body" = "無法正常卸載「%@」。磁碟可能仍被 Finder 或其他程式占用。強制卸載可能導致未寫入的資料遺失或磁碟損壞。\n請先關閉該磁碟上的視窗和檔案。仍要強制卸載嗎？";
 
+"forceUnmount.occupiers" = "占用行程：%@";
+
 "forceUnmount.action" = "強制卸載";
 
 "format.confirmTitle" = "抹掉「%@」並格式化為 NTFS？";
@@ -281,11 +283,11 @@ Return 即同意。不同意請點「結束」。";
 
 "helper.statusOK" = "已安裝。特權呼叫經守護程式校驗本 App 簽名。";
 
-"helper.hintNotarized" = "已公證：優先用系統服務授權；失敗再輸入管理員密碼。";
+"helper.hintNotarized" = "已公證：優先用 SMAppService；失敗則由 Authorization Services 跳出系統管理員對話框。SIP 保持開啟。";
 
-"helper.hintAdHoc" = "未公證套件無法穩定使用系統服務，安裝助手會要求管理員密碼。";
+"helper.hintAdHoc" = "ad-hoc / 未公證套件通常無法註冊 SMAppService。安裝走 Authorization Services（系統管理員對話框）。SIP 保持開啟，不使用核心延伸模組。";
 
-"helper.privilegeHint" = "掛載助手可以掛載、卸載、格式化外接碟。管理員密碼只用於一次性安裝，不會儲存。";
+"helper.privilegeHint" = "掛載助手以 root 執行，可以掛載、卸載、格式化外接碟。一次性安裝使用 macOS Authorization Services，不儲存密碼。SIP 保持開啟。本 App 不使用核心延伸模組，也不寫 sudoers。";
 
 "alert.updateHelperTitle" = "更新掛載助手";
 
@@ -357,6 +359,8 @@ Return 即同意。不同意請點「結束」。";
 
 "error.diskBusy" = "磁碟正被占用：請關閉 Finder 視窗／檔案後點推出";
 
+"error.diskBusyNamed" = "磁碟正被占用：%@。請關閉這些程式後重試。";
+
 "error.failedWithLog" = "操作失敗。詳情已寫入 %@";
 
 "error.failedLog" = "操作失敗。詳情已寫入紀錄。";
@@ -367,7 +371,7 @@ Return 即同意。不同意請點「結束」。";
 
 "privileged.missingInstallScript" = "App 套件內缺少安裝指令碼，請重新安裝。";
 
-"privileged.installedPassword" = "已用管理員密碼安裝 LaunchDaemon（未公證套件通常走這條路徑）。%@";
+"privileged.installedPassword" = "已用 macOS Authorization Services 安裝 LaunchDaemon（ad-hoc / 未公證套件通常走這條路徑）。%@";
 
 "privileged.installedSM" = "已用系統服務註冊掛載助手。";
 
@@ -378,6 +382,8 @@ Return 即同意。不同意請點「結束」。";
 "privileged.notFound" = "找不到掛載助手。請點「安裝掛載助手」。";
 
 "privileged.commFailed" = "與掛載助手通訊失敗。";
+
+"privileged.authUnavailable" = "Authorization Services 無法啟動特權安裝程式。SIP 保持開啟。請使用可註冊 SMAppService 的 Developer ID / 公證建置，或重試。";
 
 "privileged.timeout" = "掛載助手逾時。請查看紀錄後重試。";
 
@@ -425,6 +431,34 @@ Return 即同意。不同意請點「結束」。";
 "diagnose.checking" = "正在檢查內附元件與掛載助手…";
 
 "diagnose.copy" = "複製結果";
+
+"diagnose.export" = "匯出診斷報告";
+
+"diagnose.exporting" = "正在匯出診斷報告…";
+
+"diagnose.exportPrivacy" = "壓縮檔可能包含磁碟名稱與卷識別碼。統一日誌中的路徑可能已被系統遮罩。";
+
+"diagnose.exportSaved" = "已儲存診斷報告：%@";
+
+"diagnose.exportFailed" = "無法匯出診斷報告：%@";
+
+"diagnose.exportFailedSimple" = "無法建立 zip 壓縮檔。";
+
+"diagnose.exportHint" = "提交 GitHub Issue 時請匯出診斷報告並附上 zip。「複製結果」仍然可用。";
+
+"diagnose.exportReadmeHeader" = "本壓縮檔由 NTFSMount 產生。";
+
+"diagnose.exportReadmeFiles" = "包含的檔案：";
+
+"diagnose.exportNoVolumes" = "App 目前看不到 NTFS 卷。";
+
+"diagnose.exportDiskutilFailed" = "diskutil list 失敗或逾時。";
+
+"diagnose.exportLogUnavailable" = "log show 失敗或逾時。不要求「完整磁碟取用權限」；沒有該權限時統一日誌可能為空。";
+
+"diagnose.exportLogEmpty" = "最近 1 小時內沒有符合的統一日誌。不要求完整磁碟取用權限。";
+
+"menu.exportDiagnose" = "匯出診斷報告…";
 
 "diagnose.installHelper" = "安裝掛載助手…";
 
@@ -484,7 +518,7 @@ Return 即同意。不同意請點「結束」。";
 
 "diagnose.gatekeeper" = "Gatekeeper：%@";
 
-"settings.diagnoseHint" = "唯讀檢查內附元件與助手，不掛載、不裝助手。";
+"settings.diagnoseHint" = "唯讀檢查內附元件與助手，不掛載、不裝助手。提交 Issue 時可匯出 zip 附件。";
 
 "premount.dirtyTitle" = "NTFS 卷可能已損壞／未正常卸載";
 

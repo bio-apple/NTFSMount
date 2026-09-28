@@ -10,12 +10,12 @@ struct MenuRoot: View {
       .keyboardShortcut("o")
     if !store.helperInstalled || !Privileged.daemonReady {
       Button(store.helperInstallBusy ? L10n.t("installing") : L10n.t("menu.installHelper")) {
-        store.installHelper()
+        Task { _ = await store.installHelper() }
       }
       .disabled(store.helperInstallBusy)
     } else if Privileged.helperNeedsUpdate {
       Button(store.helperInstallBusy ? L10n.t("installing") : L10n.t("menu.updateHelper")) {
-        store.installHelper()
+        Task { _ = await store.installHelper() }
       }
       .disabled(store.helperInstallBusy)
     }
@@ -39,13 +39,13 @@ struct MenuRoot: View {
           Divider()
           if store.canOfferDirtyFix(vol) {
             Button(L10n.t("menu.fixDirty")) {
-              store.confirmDirtyFix(vol)
+              Task { await store.confirmDirtyFix(vol) }
             }
             .disabled(store.busyId != nil)
           }
           if !vol.isWritableFuse {
             Button(vol.isInternal ? L10n.t("menu.mountWritableInternal") : L10n.t("menu.mountWritable")) {
-              store.mount(vol)
+              Task { await store.mount(vol) }
             }
             .disabled(store.busyId != nil || !store.canMountWritable(vol))
             .help(store.helperInstalled ? store.writableMountHelp(vol) : L10n.t("menu.needHelper"))
@@ -55,17 +55,23 @@ struct MenuRoot: View {
           }
           .disabled(vol.mountPoint.isEmpty)
           Divider()
-          Button(L10n.t("menu.unmount")) { store.unmount(vol) }
+          Button(L10n.t("menu.unmount")) { Task { await store.unmount(vol) } }
             .disabled(vol.mountPoint.isEmpty || store.busyId != nil)
             .help(VolumeActionCopy.unmountHelp)
           if !vol.isInternal {
-            Button(L10n.t("menu.eject")) { store.eject(vol) }
+            Button(L10n.t("menu.eject")) { Task { await store.eject(vol) } }
               .disabled(store.busyId != nil)
               .help(VolumeActionCopy.ejectHelp)
           }
         } label: {
-          Text("\(store.statusLabel(vol))  ·  \(vol.name)  ·  \(vol.sizeLabel)")
-            .help(MenuBarTooltip.card(vol))
+          HStack(spacing: 6) {
+            if store.busyId == vol.id {
+              ProgressView()
+                .controlSize(.small)
+            }
+            Text("\(store.statusLabel(vol))  ·  \(vol.name)  ·  \(vol.sizeLabel)")
+          }
+          .help(MenuBarTooltip.card(vol))
         }
       }
       Divider()
@@ -94,6 +100,7 @@ struct MenuRoot: View {
     Button(L10n.t("menu.refresh")) { store.refresh() }
       .keyboardShortcut("r")
     Button(L10n.t("menu.diagnose")) { EnvironmentDiagnosePresenter.present(store: store) }
+    Button(L10n.t("menu.exportDiagnose")) { EnvironmentDiagnosePresenter.exportReport(store: store) }
     Button(L10n.t("menu.repairEnv")) { store.confirmRepairMountEnvironment() }
       .disabled(store.busyId != nil || !store.helperInstalled)
       .help(store.helperInstalled ? L10n.t("repairEnv.body") : L10n.t("error.helperMissing"))

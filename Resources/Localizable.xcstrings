@@ -3401,25 +3401,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Notarized: prefers system service authorization; falls back to an administrator password."
+            "value": "Notarized: prefers SMAppService; if that fails, Authorization Services shows the system admin dialog. SIP stays enabled."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已公证：优先用系统服务授权；失败再输入管理员密码。"
+            "value": "已公证：优先用 SMAppService；失败则由 Authorization Services 弹出系统管理员对话框。SIP 保持开启。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "已公證：優先用系統服務授權；失敗再輸入管理員密碼。"
+            "value": "已公證：優先用 SMAppService；失敗則由 Authorization Services 跳出系統管理員對話框。SIP 保持開啟。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "公証済み：システムサービスの承認を優先し、失敗時は管理者パスワードを求めます。"
+            "value": "公証済み：SMAppService を優先し、失敗時は Authorization Services がシステムの管理者ダイアログを出します。SIP は有効のままです。"
           }
         }
       }
@@ -3430,25 +3430,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Un-notarized builds cannot use system services reliably, so installing the helper asks for an administrator password."
+            "value": "Ad-hoc / un-notarized builds usually cannot register SMAppService. Install uses Authorization Services (system admin dialog). SIP stays enabled; no kext."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未公证包无法稳定使用系统服务，安装助手会请求管理员密码。"
+            "value": "ad-hoc / 未公证包通常无法注册 SMAppService。安装走 Authorization Services（系统管理员对话框）。SIP 保持开启，不使用内核扩展。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "未公證套件無法穩定使用系統服務，安裝助手會要求管理員密碼。"
+            "value": "ad-hoc / 未公證套件通常無法註冊 SMAppService。安裝走 Authorization Services（系統管理員對話框）。SIP 保持開啟，不使用核心延伸模組。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "未公証パッケージではシステムサービスを安定して使えないため、ヘルパーのインストールで管理者パスワードが必要です。"
+            "value": "ad-hoc / 未公証ビルドでは SMAppService を登録できないことがほとんどです。インストールは Authorization Services（システムの管理者ダイアログ）を使います。SIP は有効のまま、kext は使いません。"
           }
         }
       }
@@ -3459,25 +3459,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The mount helper runs as root and can mount, unmount, and format external disks. The administrator password is used only for one-time install and is not saved. The Unix socket is mode 0666 so this app can connect as a normal user; the daemon checks the caller against the CDHash written at install time and only runs the root-owned helper copy under /Library/Application Support/NTFSMount/. It does not write sudoers. Uninstall: “Uninstall Helper” above, or uninstall.sh in the repo. Logs are at ~/Library/Logs/ntfsmount.log and remain on this Mac after uninstall."
+            "value": "The mount helper runs as root and can mount, unmount, and format external disks. One-time install uses macOS Authorization Services; the password is not saved. SIP stays enabled. This app does not use a kernel extension and does not write sudoers."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "挂载助手以 root 运行，可以挂载、卸载、格式化外置盘。管理员密码只用于一次性安装，不会保存。Unix socket 权限为 0666，便于本应用以普通用户连接；守护进程用安装时写入的 CDHash 校验调用方，并只执行 /Library/Application Support/NTFSMount/ 下 root 所有的助手副本。不写 sudoers。卸载：上面的「卸载助手」，或仓库 uninstall.sh。日志在 ~/Library/Logs/ntfsmount.log，卸载后仍会留在本机。"
+            "value": "挂载助手以 root 运行，可以挂载、卸载、格式化外置盘。一次性安装使用 macOS Authorization Services，不保存密码。SIP 保持开启。本应用不使用内核扩展，也不写 sudoers。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "掛載助手以 root 執行，可以掛載、卸載、格式化外接碟。管理員密碼只用於一次性安裝，不會儲存。Unix socket 權限為 0666，便於本 App 以一般使用者連線；守護程式用安裝時寫入的 CDHash 校驗呼叫方，並只執行 /Library/Application Support/NTFSMount/ 下 root 所有的助手副本。不寫 sudoers。解除安裝：上面的「解除安裝助手」，或倉庫 uninstall.sh。紀錄在 ~/Library/Logs/ntfsmount.log，解除安裝後仍會留在本機。"
+            "value": "掛載助手以 root 執行，可以掛載、卸載、格式化外接碟。一次性安裝使用 macOS Authorization Services，不儲存密碼。SIP 保持開啟。本 App 不使用核心延伸模組，也不寫 sudoers。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "マウントヘルパーは root で動作し、外付けディスクのマウント、アンマウント、フォーマットができます。管理者パスワードは一度きりのインストールにだけ使い、保存しません。Unix socket の権限は 0666 で、このアプリが一般ユーザとして接続できます。デーモンはインストール時に書いた CDHash で呼び出し元を検証し、/Library/Application Support/NTFSMount/ にある root 所有のヘルパーだけを実行します。sudoers は書きません。アンインストール：上の「ヘルパーをアンインストール」、またはリポジトリの uninstall.sh。ログは ~/Library/Logs/ntfsmount.log にあり、アンインストール後もこの Mac に残ります。"
+            "value": "マウントヘルパーは root で動作し、外付けディスクのマウント、アンマウント、フォーマットができます。一度きりのインストールは macOS Authorization Services を使い、パスワードは保存しません。SIP は有効のままです。このアプリはカーネル拡張を使わず、sudoers も書きません。"
           }
         }
       }
@@ -4497,6 +4497,35 @@
         }
       }
     },
+    "error.diskBusyNamed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The disk is in use by %@. Close those programs, then retry."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "磁盘正被占用：%@。请关闭这些程序后重试。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "磁碟正被占用：%@。請關閉這些程式後重試。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ディスクは %@ が使用中です。それらのプログラムを閉じてから再試行してください。"
+          }
+        }
+      }
+    },
     "error.failedWithLog": {
       "extractionState": "manual",
       "localizations": {
@@ -4648,25 +4677,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Installed the LaunchDaemon with an administrator password (typical for un-notarized builds). %@"
+            "value": "Installed the LaunchDaemon via macOS Authorization Services (typical for ad-hoc / un-notarized builds). %@"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已用管理员密码安装 LaunchDaemon（未公证包通常走这条路径）。%@"
+            "value": "已用 macOS Authorization Services 安装 LaunchDaemon（ad-hoc / 未公证包通常走这条路径）。%@"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "已用管理員密碼安裝 LaunchDaemon（未公證套件通常走這條路徑）。%@"
+            "value": "已用 macOS Authorization Services 安裝 LaunchDaemon（ad-hoc / 未公證套件通常走這條路徑）。%@"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "管理者パスワードで LaunchDaemon をインストールしました（未公証ビルドではこの経路が一般的です）。%@"
+            "value": "macOS Authorization Services で LaunchDaemon をインストールしました（ad-hoc / 未公証ビルドではこの経路が一般的です）。%@"
           }
         }
       }
@@ -4812,6 +4841,35 @@
           "stringUnit": {
             "state": "translated",
             "value": "マウントヘルパーと通信できませんでした。"
+          }
+        }
+      }
+    },
+    "privileged.authUnavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Authorization Services could not start a privileged installer. SIP stays enabled. Use a Developer ID / notarized build that can register SMAppService, or try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Authorization Services 无法启动特权安装程序。SIP 保持开启。请使用可注册 SMAppService 的 Developer ID / 公证构建，或重试。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Authorization Services 無法啟動特權安裝程式。SIP 保持開啟。請使用可註冊 SMAppService 的 Developer ID / 公證建置，或重試。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Authorization Services が特権インストーラを起動できませんでした。SIP は有効のままです。SMAppService を登録できる Developer ID / 公証ビルドを使うか、再試行してください。"
           }
         }
       }
@@ -6156,25 +6214,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Read-only check of bundled components and the helper. Does not mount or install the helper."
+            "value": "Read-only check of bundled components and the helper. Does not mount or install the helper. Export a zip to attach to a GitHub issue."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "只读检查捆绑组件与助手，不挂载、不装助手。"
+            "value": "只读检查捆绑组件与助手，不挂载、不装助手。提交 Issue 时可导出 zip 附件。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "唯讀檢查內附元件與助手，不掛載、不裝助手。"
+            "value": "唯讀檢查內附元件與助手，不掛載、不裝助手。提交 Issue 時可匯出 zip 附件。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "同梱コンポーネントとヘルパーの読み取り専用チェック。マウントもヘルパー導入もしません。"
+            "value": "同梱コンポーネントとヘルパーの読み取り専用チェック。マウントもヘルパー導入もしません。Issue 用に ZIP を書き出せます。"
           }
         }
       }
@@ -7658,6 +7716,35 @@
         }
       }
     },
+    "forceUnmount.occupiers": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In use by: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "占用进程：%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "占用行程：%@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用中のプロセス：%@"
+          }
+        }
+      }
+    },
     "forceUnmount.title": {
       "extractionState": "manual",
       "localizations": {
@@ -8205,6 +8292,412 @@
           "stringUnit": {
             "state": "translated",
             "value": "マウント後に表示"
+          }
+        }
+      }
+    },
+    "diagnose.export": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export Diagnostic Report"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导出诊断报告"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "匯出診斷報告"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "診断レポートを書き出す"
+          }
+        }
+      }
+    },
+    "diagnose.exporting": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exporting diagnostic report…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在导出诊断报告…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在匯出診斷報告…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "診断レポートを書き出しています…"
+          }
+        }
+      }
+    },
+    "diagnose.exportPrivacy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The zip may include disk names and volume identifiers. Unified log paths may stay redacted."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "压缩包可能包含磁盘名称和卷标识符。统一日志里的路径可能已被系统打码。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "壓縮檔可能包含磁碟名稱與卷識別碼。統一日誌中的路徑可能已被系統遮罩。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ZIP にはディスク名やボリューム識別子が含まれる場合があります。統合ログのパスは非公開のままのことがあります。"
+          }
+        }
+      }
+    },
+    "diagnose.exportSaved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved diagnostic report: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已保存诊断报告：%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已儲存診斷報告：%@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "診断レポートを保存しました: %@"
+          }
+        }
+      }
+    },
+    "diagnose.exportFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not export the diagnostic report: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法导出诊断报告：%@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法匯出診斷報告：%@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "診断レポートを書き出せませんでした: %@"
+          }
+        }
+      }
+    },
+    "diagnose.exportFailedSimple": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not create the zip archive."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法创建 zip 压缩包。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法建立 zip 壓縮檔。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ZIP アーカイブを作成できませんでした。"
+          }
+        }
+      }
+    },
+    "diagnose.exportHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To file a GitHub issue, export a diagnostic report and attach the zip. Copy Results is still available."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "提交 GitHub Issue 时请导出诊断报告并附上 zip。「复制结果」仍然可用。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "提交 GitHub Issue 時請匯出診斷報告並附上 zip。「複製結果」仍然可用。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub の Issue を出すときは診断レポートの ZIP を添付してください。「結果をコピー」も使えます。"
+          }
+        }
+      }
+    },
+    "diagnose.exportReadmeHeader": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diagnostic archive created by NTFSMount."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本压缩包由 NTFSMount 生成。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本壓縮檔由 NTFSMount 產生。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NTFSMount が作成した診断アーカイブです。"
+          }
+        }
+      }
+    },
+    "diagnose.exportReadmeFiles": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Files:"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "包含的文件："
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "包含的檔案："
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "含まれるファイル:"
+          }
+        }
+      }
+    },
+    "diagnose.exportNoVolumes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No NTFS volumes were visible to the app."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用当前看不到 NTFS 卷。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App 目前看不到 NTFS 卷。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アプリから見える NTFS ボリュームはありません。"
+          }
+        }
+      }
+    },
+    "diagnose.exportDiskutilFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "diskutil list failed or timed out."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "diskutil list 失败或超时。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "diskutil list 失敗或逾時。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "diskutil list に失敗したかタイムアウトしました。"
+          }
+        }
+      }
+    },
+    "diagnose.exportLogUnavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "log show failed or timed out. Full Disk Access is not required; unified logs may be empty without it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "log show 失败或超时。不要求「完全磁盘访问权限」；没有该权限时统一日志可能为空。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "log show 失敗或逾時。不要求「完整磁碟取用權限」；沒有該權限時統一日誌可能為空。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "log show に失敗したかタイムアウトしました。フルディスクアクセスは必須ではありません。権限がないと統合ログは空になることがあります。"
+          }
+        }
+      }
+    },
+    "diagnose.exportLogEmpty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No matching unified logs in the last hour. Full Disk Access is not required."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近 1 小时内没有匹配的统一日志。不要求完全磁盘访问权限。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近 1 小時內沒有符合的統一日誌。不要求完整磁碟取用權限。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直近 1 時間に一致する統合ログはありませんでした。フルディスクアクセスは必須ではありません。"
+          }
+        }
+      }
+    },
+    "menu.exportDiagnose": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export Diagnostic Report…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导出诊断报告…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "匯出診斷報告…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "診断レポートを書き出す…"
           }
         }
       }

@@ -1,5 +1,3 @@
 /* NTFSMount InfoPlist */
 
 "CFBundleDisplayName" = "NTFS Read-Write";
-
-"NSAppleEventsUsageDescription" = "An administrator password is required to install or update the mount helper. Un-notarized builds show the system password dialog; notarized builds prefer system service authorization.";

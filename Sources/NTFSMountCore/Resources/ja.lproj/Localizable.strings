@@ -187,6 +187,8 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "forceUnmount.body" = "「%@」を通常アンマウントできませんでした。Finder や他のアプリが使用中の可能性があります。強制アンマウントは未書き込みデータの損失やディスク損傷の原因になります。\n先にこのディスクのウィンドウとファイルを閉じてください。それでも強制アンマウントしますか？";
 
+"forceUnmount.occupiers" = "使用中のプロセス：%@";
+
 "forceUnmount.action" = "強制アンマウント";
 
 "format.confirmTitle" = "「%@」を消去して NTFS にフォーマットしますか？";
@@ -281,11 +283,11 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "helper.statusOK" = "インストール済みです。特権呼び出しはデーモンがこのアプリの署名を検証します。";
 
-"helper.hintNotarized" = "公証済み：システムサービスの承認を優先し、失敗時は管理者パスワードを求めます。";
+"helper.hintNotarized" = "公証済み：SMAppService を優先し、失敗時は Authorization Services がシステムの管理者ダイアログを出します。SIP は有効のままです。";
 
-"helper.hintAdHoc" = "未公証パッケージではシステムサービスを安定して使えないため、ヘルパーのインストールで管理者パスワードが必要です。";
+"helper.hintAdHoc" = "ad-hoc / 未公証ビルドでは SMAppService を登録できないことがほとんどです。インストールは Authorization Services（システムの管理者ダイアログ）を使います。SIP は有効のまま、kext は使いません。";
 
-"helper.privilegeHint" = "マウントヘルパーは外付けディスクのマウント、アンマウント、フォーマットができます。管理者パスワードは一度きりのインストールにだけ使い、保存しません。";
+"helper.privilegeHint" = "マウントヘルパーは root で動作し、外付けディスクのマウント、アンマウント、フォーマットができます。一度きりのインストールは macOS Authorization Services を使い、パスワードは保存しません。SIP は有効のままです。このアプリはカーネル拡張を使わず、sudoers も書きません。";
 
 "alert.updateHelperTitle" = "マウントヘルパーを更新";
 
@@ -357,6 +359,8 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "error.diskBusy" = "ディスク使用中：Finder のウィンドウ／ファイルを閉じてから取り出してください";
 
+"error.diskBusyNamed" = "ディスクは %@ が使用中です。それらのプログラムを閉じてから再試行してください。";
+
 "error.failedWithLog" = "操作に失敗しました。詳細は %@ に書き込まれました";
 
 "error.failedLog" = "操作に失敗しました。詳細はログに書き込まれました。";
@@ -367,7 +371,7 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "privileged.missingInstallScript" = "アプリパッケージにインストールスクリプトがありません。再インストールしてください。";
 
-"privileged.installedPassword" = "管理者パスワードで LaunchDaemon をインストールしました（未公証ビルドではこの経路が一般的です）。%@";
+"privileged.installedPassword" = "macOS Authorization Services で LaunchDaemon をインストールしました（ad-hoc / 未公証ビルドではこの経路が一般的です）。%@";
 
 "privileged.installedSM" = "システムサービスでマウントヘルパーを登録しました。";
 
@@ -378,6 +382,8 @@ Return で同意します。同意しない場合は「終了」を押してく�
 "privileged.notFound" = "マウントヘルパーが見つかりません。「マウントヘルパーをインストール」を押してください。";
 
 "privileged.commFailed" = "マウントヘルパーと通信できませんでした。";
+
+"privileged.authUnavailable" = "Authorization Services が特権インストーラを起動できませんでした。SIP は有効のままです。SMAppService を登録できる Developer ID / 公証ビルドを使うか、再試行してください。";
 
 "privileged.timeout" = "マウントヘルパーがタイムアウトしました。ログを確認して再試行してください。";
 
@@ -425,6 +431,34 @@ Return で同意します。同意しない場合は「終了」を押してく�
 "diagnose.checking" = "同梱コンポーネントとヘルパーを確認しています…";
 
 "diagnose.copy" = "結果をコピー";
+
+"diagnose.export" = "診断レポートを書き出す";
+
+"diagnose.exporting" = "診断レポートを書き出しています…";
+
+"diagnose.exportPrivacy" = "ZIP にはディスク名やボリューム識別子が含まれる場合があります。統合ログのパスは非公開のままのことがあります。";
+
+"diagnose.exportSaved" = "診断レポートを保存しました: %@";
+
+"diagnose.exportFailed" = "診断レポートを書き出せませんでした: %@";
+
+"diagnose.exportFailedSimple" = "ZIP アーカイブを作成できませんでした。";
+
+"diagnose.exportHint" = "GitHub の Issue を出すときは診断レポートの ZIP を添付してください。「結果をコピー」も使えます。";
+
+"diagnose.exportReadmeHeader" = "NTFSMount が作成した診断アーカイブです。";
+
+"diagnose.exportReadmeFiles" = "含まれるファイル:";
+
+"diagnose.exportNoVolumes" = "アプリから見える NTFS ボリュームはありません。";
+
+"diagnose.exportDiskutilFailed" = "diskutil list に失敗したかタイムアウトしました。";
+
+"diagnose.exportLogUnavailable" = "log show に失敗したかタイムアウトしました。フルディスクアクセスは必須ではありません。権限がないと統合ログは空になることがあります。";
+
+"diagnose.exportLogEmpty" = "直近 1 時間に一致する統合ログはありませんでした。フルディスクアクセスは必須ではありません。";
+
+"menu.exportDiagnose" = "診断レポートを書き出す…";
 
 "diagnose.installHelper" = "マウントヘルパーをインストール…";
 
@@ -484,7 +518,7 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "diagnose.gatekeeper" = "Gatekeeper：%@";
 
-"settings.diagnoseHint" = "同梱コンポーネントとヘルパーの読み取り専用チェック。マウントもヘルパー導入もしません。";
+"settings.diagnoseHint" = "同梱コンポーネントとヘルパーの読み取り専用チェック。マウントもヘルパー導入もしません。Issue 用に ZIP を書き出せます。";
 
 "premount.dirtyTitle" = "NTFS ボリュームが破損しているか、正常にアンマウントされていません";
 

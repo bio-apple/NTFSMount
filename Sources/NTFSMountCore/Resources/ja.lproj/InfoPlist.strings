@@ -1,5 +1,3 @@
 /* NTFSMount InfoPlist */
 
 "CFBundleDisplayName" = "NTFS 読み書き";
-
-"NSAppleEventsUsageDescription" = "マウントヘルパーのインストールまたは更新には管理者権限が必要です。未公証ビルドではシステムのパスワードダイアログが表示されます。公証済みビルドではシステムサービスの承認を優先します。";

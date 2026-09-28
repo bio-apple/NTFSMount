@@ -32,6 +32,57 @@ if /usr/bin/grep -nE 'osascript|/usr/bin/sudo|[[:space:]]sudo[[:space:]]' "$ROOT
   echo "mount/unmount/format must go through the helper daemon, not sudo/osascript" >&2
   exit 1
 fi
+APP_SWIFT=()
+while IFS= read -r f; do
+  APP_SWIFT+=("$f")
+done < <(/usr/bin/find "$ROOT/Sources/NTFSMount" "$ROOT/Sources/NTFSMountCore" -name '*.swift' -print)
+if /usr/bin/grep -nE '/usr/bin/sudo|[[:space:]]sudo[[:space:]-]|sudo -S' "${APP_SWIFT[@]}" 2>/dev/null; then
+  echo "app Sources must not contain sudo" >&2
+  exit 1
+fi
+if /usr/bin/grep -nE 'osascript|do shell script' \
+  "$ROOT/Sources/NTFSMount/Privileged.swift" \
+  "$ROOT/Sources/NTFSMount/AdminAuthorization.swift" \
+  "$ROOT/Sources/NTFSMount/VolumeStore.swift" 2>/dev/null; then
+  echo "helper install/uninstall must not use osascript" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'AuthorizationCreate' "$ROOT/Sources/NTFSMount/AdminAuthorization.swift"; then
+  echo "ad-hoc helper install must call AuthorizationCreate" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'AuthorizationCopyRights' "$ROOT/Sources/NTFSMount/AdminAuthorization.swift"; then
+  echo "ad-hoc helper install must call AuthorizationCopyRights" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'system.privilege.admin' "$ROOT/Sources/NTFSMount/AdminAuthorization.swift"; then
+  echo "ad-hoc helper install must request kAuthorizationRightExecute" >&2
+  exit 1
+fi
+if /usr/bin/grep -nE 'with administrator privileges' "$ROOT/uninstall.sh" "$ROOT/helper/install-helper.sh" "$ROOT/helper/uninstall-helper.sh"; then
+  echo "user-facing install/uninstall must not use osascript administrator privileges" >&2
+  exit 1
+fi
+if /usr/bin/grep -nE '[[:space:]]sudo[[:space:]]|/usr/bin/sudo|^sudo ' "$ROOT/uninstall.sh" "$ROOT/helper/install-helper.sh" "$ROOT/helper/uninstall-helper.sh"; then
+  echo "user-facing install/uninstall scripts must not call sudo" >&2
+  exit 1
+fi
+if /usr/bin/grep -nE 'csrutil[[:space:]]+disable|turn off SIP|关闭 SIP|disable SIP' \
+  "$ROOT/README.md" "$ROOT/docs/DISTRIBUTION.md" "$ROOT/docs/DEVELOPMENT.md" \
+  "$ROOT/CONTRIBUTING.md" "$ROOT/uninstall.sh" \
+  "$ROOT"/Sources/NTFSMount/*.swift "$ROOT"/Sources/NTFSMount/Helpers/*.swift \
+  "$ROOT"/Sources/NTFSMountCore/*.swift 2>/dev/null; then
+  echo "must not document or script disabling SIP" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'SIP stays enabled' "$ROOT/README.md"; then
+  echo "README must say SIP stays enabled" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'Authorization Services' "$ROOT/docs/DISTRIBUTION.md"; then
+  echo "DISTRIBUTION.md must document Authorization Services fallback" >&2
+  exit 1
+fi
 if /usr/bin/grep -n 'ln -sf' "$ROOT/helper/install-helper.sh"; then
   echo "install-helper must not recreate /usr/local/sbin symlink" >&2
   exit 1
@@ -103,8 +154,9 @@ if ! /usr/bin/grep -q 'allowed.cdhash' "$HELPERD_C"; then
   echo "helperd must compare stored allowed.cdhash" >&2
   exit 1
 fi
-if ! /usr/bin/grep -q 'sealedHelperMatchesBundle' "$ROOT/Sources/NTFSMount/Privileged.swift"; then
-  echo "SMAppService install must confirm sealed helper pins" >&2
+if ! /usr/bin/grep -q 'AuthorizationCreate' "$ROOT/Sources/NTFSMount/AdminAuthorization.swift" \
+  || ! /usr/bin/grep -q 'sealedHelperMatchesBundle' "$ROOT/Sources/NTFSMount/Privileged.swift"; then
+  echo "SMAppService install must confirm sealed helper pins; ad-hoc uses Authorization Services" >&2
   exit 1
 fi
 if ! /usr/bin/grep -q 'kickstartUntilSocket' "$ROOT/Sources/NTFSMount/Privileged.swift"; then
@@ -248,6 +300,78 @@ if ! /usr/bin/grep -q 'ALLOW_FORCE=0' "$HELPER"; then
 fi
 if ! /usr/bin/grep -q 'log_force_warning' "$HELPER"; then
   echo "helper must log WARNING when force unmount is used" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'resolve_cmd lsof' "$HELPER"; then
+  echo "helper must resolve lsof from system dirs" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'resolve_cmd fuser' "$HELPER"; then
+  echo "helper must resolve fuser from system dirs" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'guard_unmount_busy' "$HELPER"; then
+  echo "helper must probe occupiers before unmount" >&2
+  exit 1
+fi
+if ! /usr/bin/awk '
+  $0 ~ /^unmount_any\(\)/ { inh=1 }
+  inh && $0 ~ /^[a-z_]+\(\)/ && $0 !~ /^unmount_any\(\)/ { inh=0 }
+  inh && /guard_unmount_busy/ { probed=1 }
+  inh && probed==0 && /try_unmount_target|DISKUTIL.*unmount/ { bad=1 }
+  END { exit (probed && !bad) ? 0 : 1 }
+' "$HELPER"; then
+  echo "unmount_any must call lsof/fuser busy probe before diskutil unmount" >&2
+  exit 1
+fi
+if ! /usr/bin/awk '
+  $0 ~ /^do_unmount\(\)/ { inh=1 }
+  inh && $0 ~ /^[a-z_]+\(\)/ && $0 !~ /^do_unmount\(\)/ { inh=0 }
+  inh && /guard_unmount_busy/ { probed=1 }
+  inh && probed==0 && /unmount_any|DISKUTIL.*unmount/ { bad=1 }
+  END { exit (probed && !bad) ? 0 : 1 }
+' "$HELPER"; then
+  echo "do_unmount must probe occupiers before unmount_any/diskutil" >&2
+  exit 1
+fi
+if ! /usr/bin/awk '
+  $0 ~ /^do_eject\(\)/ { inh=1 }
+  inh && $0 ~ /^[a-z_]+\(\)/ && $0 !~ /^do_eject\(\)/ { inh=0 }
+  inh && /guard_unmount_busy/ { probed=1 }
+  inh && probed==0 && /kill_ntfs3g|unmount_any|DISKUTIL/ { bad=1 }
+  END { exit (probed && !bad) ? 0 : 1 }
+' "$HELPER"; then
+  echo "do_eject must probe occupiers before kill/unmount/eject" >&2
+  exit 1
+fi
+if ! /usr/bin/awk '
+  $0 ~ /^ensure_unmounted\(\)/ { inh=1 }
+  inh && $0 ~ /^[a-z_]+\(\)/ && $0 !~ /^ensure_unmounted\(\)/ { inh=0 }
+  inh && /guard_unmount_busy/ { probed=1 }
+  inh && probed==0 && /unmount_any|DISKUTIL.*unmount/ { bad=1 }
+  END { exit (probed && !bad) ? 0 : 1 }
+' "$HELPER"; then
+  echo "ensure_unmounted (probe/automount/mount) must probe occupiers before unmount" >&2
+  exit 1
+fi
+if ! /usr/bin/awk '
+  $0 ~ /^repair_graceful_unmount_ident\(\)/ { inh=1 }
+  inh && $0 ~ /^[a-z_]+\(\)/ && $0 !~ /^repair_graceful_unmount_ident\(\)/ { inh=0 }
+  inh && /probe_mp_occupiers/ { probed=1 }
+  inh && probed==0 && /try_unmount_target|DISKUTIL.*unmount/ { bad=1 }
+  END { exit (probed && !bad) ? 0 : 1 }
+' "$HELPER"; then
+  echo "repair-env unmount must probe occupiers before diskutil" >&2
+  exit 1
+fi
+if ! /usr/bin/awk '
+  $0 ~ /^try_unmount_target\(\)/ { inh=1 }
+  inh && $0 ~ /^[a-z_]+\(\)/ && $0 !~ /^try_unmount_target\(\)/ { inh=0 }
+  inh && /probe_mp_occupiers/ { probed=1 }
+  inh && probed==0 && /DISKUTIL.*unmount/ { bad=1 }
+  END { exit (probed && !bad) ? 0 : 1 }
+' "$HELPER"; then
+  echo "try_unmount_target must probe occupiers before diskutil unmount" >&2
   exit 1
 fi
 if ! /usr/bin/awk '
@@ -407,6 +531,31 @@ for loc in en zh-Hans zh-Hant ja; do
 done
 if ! /usr/bin/grep -q '"menu.repairEnv"' "$ROOT/Resources/Localizable.xcstrings"; then
   echo "xcstrings must include menu.repairEnv" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'diagnose.export' "$ROOT/Sources/NTFSMount/UI/DiagnoseAlert.swift"; then
+  echo "diagnose window must offer Export Diagnostic Report" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'menu.exportDiagnose' "$ROOT/Sources/NTFSMount/UI/MenuRoot.swift"; then
+  echo "menu must offer Export Diagnostic Report" >&2
+  exit 1
+fi
+for loc in en zh-Hans zh-Hant ja; do
+  strings="$ROOT/Sources/NTFSMountCore/Resources/${loc}.lproj/Localizable.strings"
+  for key in diagnose.export diagnose.exporting diagnose.exportPrivacy diagnose.exportSaved diagnose.exportFailed diagnose.exportFailedSimple diagnose.exportHint diagnose.exportReadmeHeader diagnose.exportReadmeFiles diagnose.exportNoVolumes diagnose.exportDiskutilFailed diagnose.exportLogUnavailable diagnose.exportLogEmpty menu.exportDiagnose; do
+    /usr/bin/grep -q "\"$key\"" "$strings" || {
+      echo "missing $key in $loc Localizable.strings" >&2
+      exit 1
+    }
+  done
+done
+if ! /usr/bin/grep -q '"diagnose.export"' "$ROOT/Resources/Localizable.xcstrings"; then
+  echo "xcstrings must include diagnose.export" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'unified-log.txt' "$ROOT/Sources/NTFSMountCore/DiagnoseExport.swift"; then
+  echo "DiagnoseExport must document unified-log.txt in the zip" >&2
   exit 1
 fi
 if ! /usr/bin/grep -q 'volume_mount_point "$name"' "$HELPER"; then
@@ -859,6 +1008,7 @@ if /usr/bin/grep -n 'replacingOccurrences(of: "\\n", with: " ") + "\\n"' "$ROOT/
 fi
 
 export MACOSX_DEPLOYMENT_TARGET=13.0
-swift test --package-path "$ROOT"
+swift build --package-path "$ROOT" --target NTFSMountCoreTests
+swift test --package-path "$ROOT" --skip-build --filter NTFSMountCoreTests
 
 echo "ok tests"

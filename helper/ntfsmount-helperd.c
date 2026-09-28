@@ -22,6 +22,7 @@
 #include <sys/un.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <os/log.h>
 
 #define SOCK_PATH "/var/run/com.bioapple.ntfsmount.sock"
 #define SUPPORT_DIR "/Library/Application Support/NTFSMount"
@@ -42,6 +43,13 @@ static const char *kAllowed[] = {
     "enable-automount", "disable-automount", "repair-env", "version", "selftest",
     NULL};
 
+static os_log_t g_log;
+
+static os_log_t helperd_log(void) {
+  if (!g_log) g_log = os_log_create(BUNDLE_ID, "helperd");
+  return g_log;
+}
+
 static void die(const char *m) {
   int saved = errno;
   FILE *f = fopen("/Library/Logs/ntfsmount-helperd.log", "a");
@@ -50,6 +58,7 @@ static void die(const char *m) {
     fclose(f);
   }
   fprintf(stderr, "helperd: %s\n", m);
+  os_log_error(helperd_log(), "die %{public}s errno=%d", m, saved);
   exit(1);
 }
 
@@ -484,6 +493,7 @@ static void handle(int fd, const char *app) {
   setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
   if (!peer_ok(fd, app)) {
+    os_log_error(helperd_log(), "peer rejected app=%{private}s", app);
     const char *m = "ERR\n调用方未通过签名校验。\n";
     write_all(fd, m, strlen(m));
     return;
@@ -533,6 +543,9 @@ static void handle(int fd, const char *app) {
     argv[i + 1] = args[i];
   }
   argv[argc + 1] = NULL;
+  os_log(helperd_log(),
+         "cmd=%{public}s disk=%{public}s extra=%{private}s app=%{private}s helper=%{private}s",
+         args[0], argc > 1 ? args[1] : "-", argc > 2 ? args[2] : "-", app, helper);
   if (access(helper, X_OK) != 0) {
     const char *m = "ERR\n找不到已钉扎的挂载助手，请重新安装助手。\n";
     write_all(fd, m, strlen(m));
@@ -554,6 +567,7 @@ static void handle(int fd, const char *app) {
     dup2(pipefd[1], STDERR_FILENO);
     close(pipefd[1]);
     execv(helper, argv);
+    os_log_error(helperd_log(), "exec %{private}s errno=%d", helper, errno);
     perror("exec");
     _exit(127);
   }
@@ -564,14 +578,20 @@ static void handle(int fd, const char *app) {
   int wr = wait_helper(fd, pipefd[0], pid, wait_sec_for_cmd(args[0]), &st, body, sizeof(body), &n);
   body[n] = 0;
   close(pipefd[0]);
-  if (wr == -3) return;
+  if (wr == -3) {
+    os_log(helperd_log(), "cmd=%{public}s client hung up", args[0]);
+    return;
+  }
   int ok = wr == 0 && WIFEXITED(st) && WEXITSTATUS(st) == 0;
   if (wr == -2) {
+    os_log_error(helperd_log(), "cmd=%{public}s timeout", args[0]);
     const char *m = "ERR\n挂载助手执行超时。\n";
     write_all(fd, m, strlen(m));
     write_all(fd, body, n);
     return;
   }
+  os_log(helperd_log(), "cmd=%{public}s ok=%{public}s status=%d", args[0],
+         ok ? "yes" : "no", WIFEXITED(st) ? WEXITSTATUS(st) : -1);
   const char *head = ok ? "OK\n" : "ERR\n";
   write_all(fd, head, strlen(head));
   write_all(fd, body, n);
@@ -579,11 +599,13 @@ static void handle(int fd, const char *app) {
 
 int main(void) {
   fprintf(stderr, "helperd: start pid=%d uid=%d\n", (int)getpid(), (int)getuid());
+  os_log(helperd_log(), "start pid=%d uid=%d", (int)getpid(), (int)getuid());
   if (getuid() != 0) die("need root");
   signal(SIGPIPE, SIG_IGN);
   signal(SIGCHLD, reap_children);
   char app[4096];
   if (read_app_path(app, sizeof(app)) != 0) die("no app.path");
+  os_log(helperd_log(), "app.path %{private}s", app);
   /* First SMAppService start writes the install pins. Never recopy from a
    * user-writable .app just because the live bundle CDHash changed. */
   if (!sealed_ready()) {

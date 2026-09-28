@@ -1,5 +1,3 @@
 /* NTFSMount InfoPlist */
 
 "CFBundleDisplayName" = "NTFS 读写";
-
-"NSAppleEventsUsageDescription" = "安装或更新挂载助手时需要管理员权限。未公证包会弹出系统密码框；已公证包优先使用系统服务授权。";

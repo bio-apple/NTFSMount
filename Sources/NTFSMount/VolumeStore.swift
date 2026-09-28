@@ -2,6 +2,7 @@ import AppKit
 import NTFSMountCore
 import ServiceManagement
 import SwiftUI
+import os
 
 /// Sendable hop so Timer / DiskWatch do not capture isolated `self` in a concurrent Task.
 private final class RefreshHop: @unchecked Sendable {
@@ -116,7 +117,7 @@ final class VolumeStore: ObservableObject {
     alert.addButton(withTitle: L10n.t("alert.update"))
     alert.addButton(withTitle: L10n.t("later"))
     guard alert.runModal() == .alertFirstButtonReturn else { return }
-    installHelper()
+    Task { _ = await installHelper() }
   }
 
   func statusLabel(_ vol: NTFSVolume) -> String {
@@ -186,29 +187,24 @@ final class VolumeStore: ObservableObject {
     alert.runModal()
   }
 
-  func installHelper(then completion: ((Privileged.Outcome) -> Void)? = nil) {
-    guard !helperInstallBusy else { return }
+  @discardableResult
+  func installHelper(then completion: ((Privileged.Outcome) -> Void)? = nil) async -> Privileged.Outcome {
+    guard !helperInstallBusy else {
+      let busy = Privileged.Outcome(ok: false, text: L10n.t("installing"))
+      completion?(busy)
+      return busy
+    }
     helperInstallBusy = true
     setMessage(L10n.t("installing"))
     Privileged.prepareForAdminPrompt()
-    DispatchQueue.main.async { [weak self] in
-      DispatchQueue.global(qos: .userInitiated).async {
-        let result = Privileged.installHelper()
-        DispatchQueue.main.async {
-          guard let self else {
-            completion?(result)
-            return
-          }
-          self.finishInstallHelper(result, then: completion)
-        }
-      }
-    }
+    await Task.yield()
+    let result = await Privileged.installHelper()
+    let finished = await finishInstallHelper(result)
+    completion?(finished)
+    return finished
   }
 
-  private func finishInstallHelper(
-    _ result: Privileged.Outcome,
-    then completion: ((Privileged.Outcome) -> Void)?
-  ) {
+  private func finishInstallHelper(_ result: Privileged.Outcome) async -> Privileged.Outcome {
     helperInstalled = Privileged.systemHelperInstalled
     if result.ok {
       UserDefaults.standard.set(false, forKey: AppIdentity.Defaults.autoMountUserOff)
@@ -217,16 +213,15 @@ final class VolumeStore: ObservableObject {
         markHelperSHAMatched()
         helperInstallBusy = false
         enableAutoMountDefault()
-        completion?(result)
-      } else {
-        waitForHelperSocketThenFinishInstall(successText: result.text, then: completion)
+        return result
       }
-    } else {
-      helperInstallBusy = false
-      AppLog.append("install-helper failed: \(result.text)")
-      setMessage(installFailureMessage(result.text))
-      completion?(result)
+      return await waitForHelperSocketThenFinishInstall(successText: result.text)
     }
+    helperInstallBusy = false
+    AppLog.append("install-helper failed: \(result.text)")
+    AppLog.helper.error("install-helper failed")
+    setMessage(installFailureMessage(result.text))
+    return result
   }
 
   private func markHelperSHAMatched() {
@@ -239,39 +234,35 @@ final class VolumeStore: ObservableObject {
     UserFacingError.message(from: raw, logPath: AppLog.url.path)
   }
 
-  private func waitForHelperSocketThenFinishInstall(
-    successText: String,
-    then completion: ((Privileged.Outcome) -> Void)?
-  ) {
+  private func waitForHelperSocketThenFinishInstall(successText: String) async -> Privileged.Outcome {
     let path = AppIdentity.helperSocket
-    DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-      let deadline = Date().addingTimeInterval(5)
-      while !FileManager.default.fileExists(atPath: path), Date() < deadline {
-        Thread.sleep(forTimeInterval: 0.1)
-      }
-      DispatchQueue.main.async {
-        guard let self else {
-          completion?(Privileged.Outcome(ok: false, text: successText))
-          return
+    await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+      DispatchQueue.global(qos: .userInitiated).async {
+        let deadline = Date().addingTimeInterval(5)
+        while !FileManager.default.fileExists(atPath: path), Date() < deadline {
+          Thread.sleep(forTimeInterval: 0.1)
         }
-        self.helperInstalled = Privileged.systemHelperInstalled
-        self.helperInstallBusy = false
-        if Privileged.daemonReady {
-          self.markHelperSHAMatched()
-          self.enableAutoMountDefault()
-          completion?(Privileged.Outcome(ok: true, text: successText))
-        } else {
-          let fail = Privileged.Outcome(ok: false, text: Privileged.failedInstallText(successText))
-          AppLog.append("install-helper: socket missing after wait")
-          self.setMessage(self.installFailureMessage(fail.text))
-          completion?(fail)
-        }
+        continuation.resume()
       }
     }
+    helperInstalled = Privileged.systemHelperInstalled
+    helperInstallBusy = false
+    if Privileged.daemonReady {
+      markHelperSHAMatched()
+      enableAutoMountDefault()
+      return Privileged.Outcome(ok: true, text: successText)
+    }
+    let fail = Privileged.Outcome(ok: false, text: Privileged.failedInstallText(successText))
+    AppLog.append("install-helper: socket missing after wait")
+    AppLog.helper.error("install-helper socket missing after wait")
+    setMessage(installFailureMessage(fail.text))
+    return fail
   }
 
-  func uninstallHelper() {
-    let result = Privileged.uninstallHelper()
+  func uninstallHelper() async {
+    helperInstallBusy = true
+    defer { helperInstallBusy = false }
+    let result = await Privileged.uninstallHelper()
     helperInstalled = Privileged.systemHelperInstalled
     autoMount = Privileged.autoMountEnabled
     setMessage(display(result.text))
@@ -287,7 +278,7 @@ final class VolumeStore: ObservableObject {
     alert.addButton(withTitle: L10n.t("alert.uninstall"))
     makeCancelDefault(alert)
     guard alert.runModal() == .alertSecondButtonReturn else { return }
-    uninstallHelper()
+    Task { await uninstallHelper() }
   }
 
   @discardableResult
@@ -307,49 +298,47 @@ final class VolumeStore: ObservableObject {
     alert.addButton(withTitle: RepairMountCopy.actionTitle)
     makeCancelDefault(alert)
     guard alert.runModal() == .alertSecondButtonReturn else { return false }
-    repairMountEnvironment(then: completion)
+    Task { @MainActor in
+      let result = await self.repairMountEnvironment()
+      completion?(result)
+    }
     return true
   }
 
-  func repairMountEnvironment(then completion: ((Privileged.Outcome) -> Void)? = nil) {
-    if busyId != nil { return }
+  func repairMountEnvironment() async -> Privileged.Outcome {
+    if busyId != nil {
+      return Privileged.Outcome(ok: false, text: message)
+    }
     busyId = "repair"
     setMessage(L10n.t("repairEnv.working"))
-    DispatchQueue.global(qos: .userInitiated).async {
-      if Privileged.helperNeedsUpdate {
-        let shown = L10n.t("privileged.mismatch")
-        DispatchQueue.main.async {
-          self.busyId = nil
-          self.setMessage(shown)
-          completion?(Privileged.Outcome(ok: false, text: shown))
-        }
-        return
-      }
-      var helper = Privileged.run("repair-env")
-      var restarted = false
-      if Privileged.systemHelperInstalled {
-        if !helper.ok {
-          _ = Privileged.restartHelper()
-          if Privileged.daemonReady {
-            helper = Privileged.run("repair-env")
-          }
-        }
-        restarted = Privileged.restartHelper().ok
-      }
-      let shown = RepairMountCopy.userMessage(
-        helperText: helper.text,
-        helperOK: helper.ok,
-        helperRestarted: restarted
-      )
-      DispatchQueue.main.async {
-        self.busyId = nil
-        self.helperInstalled = Privileged.systemHelperInstalled
-        AppLog.append("repair-env\n\(helper.text)\n\(shown)")
-        self.setMessage(shown)
-        self.refresh()
-        completion?(Privileged.Outcome(ok: helper.ok, text: shown))
-      }
+    defer { busyId = nil }
+    if Privileged.helperNeedsUpdate {
+      let shown = L10n.t("privileged.mismatch")
+      setMessage(shown)
+      return Privileged.Outcome(ok: false, text: shown)
     }
+    var helper = await Privileged.run("repair-env")
+    var restarted = false
+    if Privileged.systemHelperInstalled {
+      if !helper.ok {
+        _ = await Privileged.restartHelper()
+        if Privileged.daemonReady {
+          helper = await Privileged.run("repair-env")
+        }
+      }
+      restarted = (await Privileged.restartHelper()).ok
+    }
+    let shown = RepairMountCopy.userMessage(
+      helperText: helper.text,
+      helperOK: helper.ok,
+      helperRestarted: restarted
+    )
+    helperInstalled = Privileged.systemHelperInstalled
+    AppLog.append("repair-env\n\(helper.text)\n\(shown)")
+    AppLog.helper.info("repair-env ok=\(helper.ok, privacy: .public)")
+    setMessage(shown)
+    refresh()
+    return Privileged.Outcome(ok: helper.ok, text: shown)
   }
 
   func showAbout() {
@@ -444,10 +433,10 @@ final class VolumeStore: ObservableObject {
       && VolumeHealth.canOfferDirtyFix(lastHelperText[vol.id] ?? "")
   }
 
-  func confirmDirtyFix(_ vol: NTFSVolume) {
+  func confirmDirtyFix(_ vol: NTFSVolume) async {
     guard canOfferDirtyFix(vol) else { return }
     guard presentNtfsfixConsent(vol) else { return }
-    fixDirtyThenMount(vol)
+    await fixDirtyThenMount(vol)
   }
 
   @discardableResult
@@ -463,33 +452,26 @@ final class VolumeStore: ObservableObject {
     return alert.runModal() == .alertSecondButtonReturn
   }
 
-  private func fixDirtyThenMount(_ vol: NTFSVolume) {
+  private func fixDirtyThenMount(_ vol: NTFSVolume) async {
     busyId = vol.id
     setMessage("", volumeId: vol.id)
-    DispatchQueue.global(qos: .userInitiated).async {
-      let fixResult = Privileged.run("fix", vol.id)
-      if !fixResult.ok {
-        DispatchQueue.main.async {
-          self.busyId = nil
-          self.rememberHealthOutput(vol.id, fixResult.text)
-          if VolumeHealth.looksDirtyOrHibernated(fixResult.text) {
-            self.lastAdvice[vol.id] = .readOnlyDirty
-          }
-          self.finishVolume(vol, cmd: "fix", result: fixResult, openFinder: false)
-        }
-        return
+    defer { busyId = nil }
+    let fixResult = await Privileged.run("fix", vol.id)
+    if !fixResult.ok {
+      rememberHealthOutput(vol.id, fixResult.text)
+      if VolumeHealth.looksDirtyOrHibernated(fixResult.text) {
+        lastAdvice[vol.id] = .readOnlyDirty
       }
-      let mountResult = Privileged.run("mount", vol.id)
-      DispatchQueue.main.async {
-        self.busyId = nil
-        self.lastAdvice[vol.id] = VolumeHealth.advice(for: mountResult.text, success: mountResult.ok)
-        self.rememberHealthOutput(vol.id, mountResult.text)
-        self.finishVolume(vol, cmd: "mount", result: mountResult, openFinder: true)
-      }
+      await finishVolume(vol, cmd: "fix", result: fixResult, openFinder: false)
+      return
     }
+    let mountResult = await Privileged.run("mount", vol.id)
+    lastAdvice[vol.id] = VolumeHealth.advice(for: mountResult.text, success: mountResult.ok)
+    rememberHealthOutput(vol.id, mountResult.text)
+    await finishVolume(vol, cmd: "mount", result: mountResult, openFinder: true)
   }
 
-  func mount(_ vol: NTFSVolume, openFinder: Bool = true, fromAutoMount: Bool = false) {
+  func mount(_ vol: NTFSVolume, openFinder: Bool = true, fromAutoMount: Bool = false) async {
     if vol.isInternal {
       if fromAutoMount {
         markAutoMountFinished(vol.id, userRefused: true, helperReturned: false)
@@ -507,78 +489,78 @@ final class VolumeStore: ObservableObject {
     }
     skippedUnmount.remove(vol.id)
     if fromAutoMount {
-      run("mount", vol, openFinder: openFinder, fromAutoMount: true)
+      await run("mount", vol, openFinder: openFinder, fromAutoMount: true)
       return
     }
-    probeThenMount(vol, openFinder: openFinder)
+    await probeThenMount(vol, openFinder: openFinder)
   }
 
-  private func probeThenMount(_ vol: NTFSVolume, openFinder: Bool) {
+  private func probeThenMount(_ vol: NTFSVolume, openFinder: Bool) async {
     busyId = vol.id
     setMessage(VolumeHealth.PreMountCopy.probingStatus, volumeId: vol.id)
-    DispatchQueue.global(qos: .userInitiated).async {
-      let probe = Privileged.run("probe", vol.id)
-      DispatchQueue.main.async {
-        self.rememberHealthOutput(vol.id, probe.text, fromProbe: true)
-        if !probe.ok {
-          self.busyId = nil
-          self.finishVolume(vol, cmd: "mount", result: probe, openFinder: false)
-          self.restoreSystemMount(vol)
-          return
+    let probe = await Privileged.run("probe", vol.id)
+    rememberHealthOutput(vol.id, probe.text, fromProbe: true)
+    if !probe.ok {
+      busyId = nil
+      await finishVolume(vol, cmd: "mount", result: probe, openFinder: false)
+      await restoreSystemMount(vol)
+      return
+    }
+    let kind = VolumeHealth.probeKind(from: probe.text)
+    if kind == .hibernated || kind == .dirty || kind == .corrupt {
+      lastAdvice[vol.id] = .readOnlyDirty
+    }
+    switch VolumeHealth.preMountDialog(for: kind) {
+    case .none:
+      await run("mount", vol, openFinder: openFinder)
+    case .hibernated:
+      if confirmHiberReadOnly(vol) {
+        await run("mount", vol, openFinder: openFinder)
+      } else {
+        await cancelAfterProbe(vol)
+      }
+    case .dirtyOrCorrupt:
+      switch confirmDirtyOrCorrupt(vol) {
+      case .readOnly:
+        await run("mount", vol, openFinder: openFinder)
+      case .fixThenWritable:
+        if presentNtfsfixConsent(vol) {
+          await fixDirtyThenMount(vol)
+        } else {
+          await cancelAfterProbe(vol)
         }
-        let kind = VolumeHealth.probeKind(from: probe.text)
-        if kind == .hibernated || kind == .dirty || kind == .corrupt {
-          self.lastAdvice[vol.id] = .readOnlyDirty
-        }
-        switch VolumeHealth.preMountDialog(for: kind) {
-        case .none:
-          self.run("mount", vol, openFinder: openFinder)
-        case .hibernated:
-          if self.confirmHiberReadOnly(vol) {
-            self.run("mount", vol, openFinder: openFinder)
-          } else {
-            self.cancelAfterProbe(vol)
-          }
-        case .dirtyOrCorrupt:
-          switch self.confirmDirtyOrCorrupt(vol) {
-          case .readOnly:
-            self.run("mount", vol, openFinder: openFinder)
-          case .fixThenWritable:
-            if self.presentNtfsfixConsent(vol) {
-              self.fixDirtyThenMount(vol)
-            } else {
-              self.cancelAfterProbe(vol)
-            }
-          case .cancel:
-            self.cancelAfterProbe(vol)
-          }
-        }
+      case .cancel:
+        await cancelAfterProbe(vol)
       }
     }
   }
 
-  private func cancelAfterProbe(_ vol: NTFSVolume) {
+  private func cancelAfterProbe(_ vol: NTFSVolume) async {
     busyId = nil
     setMessage(L10n.t("error.canceled"), volumeId: vol.id)
-    restoreSystemMount(vol)
+    await restoreSystemMount(vol)
     advanceMountAll(after: vol.id)
   }
 
-  private func restoreSystemMount(_ vol: NTFSVolume) {
-    DispatchQueue.global(qos: .utility).async {
-      let proc = Process()
-      guard let diskutil = CommandPath.find("diskutil") else {
-        DispatchQueue.main.async { self.refresh() }
-        return
+  private func restoreSystemMount(_ vol: NTFSVolume) async {
+    let id = vol.id
+    await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+      DispatchQueue.global(qos: .utility).async {
+        guard let diskutil = CommandPath.find("diskutil") else {
+          continuation.resume()
+          return
+        }
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: diskutil)
+        proc.arguments = ["mount", id]
+        proc.standardOutput = Pipe()
+        proc.standardError = Pipe()
+        try? proc.run()
+        proc.waitUntilExit()
+        continuation.resume()
       }
-      proc.executableURL = URL(fileURLWithPath: diskutil)
-      proc.arguments = ["mount", vol.id]
-      proc.standardOutput = Pipe()
-      proc.standardError = Pipe()
-      try? proc.run()
-      proc.waitUntilExit()
-      DispatchQueue.main.async { self.refresh() }
     }
+    refresh()
   }
 
   private func confirmHiberReadOnly(_ vol: NTFSVolume) -> Bool {
@@ -610,28 +592,28 @@ final class VolumeStore: ObservableObject {
     }
   }
 
-  func retry(_ vol: NTFSVolume) {
+  func retry(_ vol: NTFSVolume) async {
     let cmd = lastFailedCmd[vol.id] ?? "mount"
     switch cmd {
-    case "eject": eject(vol)
-    case "unmount": unmount(vol)
-    case "fix": confirmDirtyFix(vol)
-    default: mount(vol)
+    case "eject": await eject(vol)
+    case "unmount": await unmount(vol)
+    case "fix": await confirmDirtyFix(vol)
+    default: await mount(vol)
     }
   }
 
-  func unmount(_ vol: NTFSVolume) {
+  func unmount(_ vol: NTFSVolume) async {
     skippedUnmount.insert(vol.id)
-    run("unmount", vol)
+    await run("unmount", vol)
   }
 
-  func eject(_ vol: NTFSVolume) {
+  func eject(_ vol: NTFSVolume) async {
     if vol.isInternal {
       setMessage(L10n.t("eject.refuseInternal"), volumeId: vol.id)
       return
     }
     skippedUnmount.insert(vol.id)
-    run("eject", vol)
+    await run("eject", vol)
   }
 
   func mountAll() {
@@ -655,7 +637,7 @@ final class VolumeStore: ObservableObject {
     }
     guard let id = mountAllQueue.first, let vol = volumes.first(where: { $0.id == id }) else { return }
     mountAllPumping = true
-    probeThenMount(vol, openFinder: false)
+    Task { await probeThenMount(vol, openFinder: false) }
   }
 
   private func advanceMountAll(after id: String) {
@@ -721,7 +703,7 @@ final class VolumeStore: ObservableObject {
     again.addButton(withTitle: FormatPolicy.formatTitle)
     makeCancelDefault(again)
     guard again.runModal() == .alertSecondButtonReturn else { return }
-    format(disk, label: FormatPolicy.sanitizeLabel(fields.label.stringValue))
+    Task { await format(disk, label: FormatPolicy.sanitizeLabel(fields.label.stringValue)) }
   }
 
   private func makeCancelDefault(_ alert: NSAlert) {
@@ -739,19 +721,15 @@ final class VolumeStore: ObservableObject {
     }
   }
 
-  func format(_ disk: FormatDisk, label: String) {
+  func format(_ disk: FormatDisk, label: String) async {
     busyId = disk.id
     setMessage("")
-    DispatchQueue.global(qos: .userInitiated).async {
-      let result = Privileged.run("format", disk.id, extra: [label])
-      DispatchQueue.main.async {
-        self.busyId = nil
-        self.setMessage(self.display(result.text))
-        self.refresh()
-        if result.ok, let vol = self.volumes.first(where: { wholeDiskId($0.id) == disk.id }) {
-          self.mount(vol)
-        }
-      }
+    let result = await Privileged.run("format", disk.id, extra: [label])
+    busyId = nil
+    setMessage(display(result.text))
+    refresh()
+    if result.ok, let vol = volumes.first(where: { wholeDiskId($0.id) == disk.id }) {
+      await mount(vol)
     }
   }
 
@@ -796,13 +774,11 @@ final class VolumeStore: ObservableObject {
       userOptedOff: UserDefaults.standard.bool(forKey: AppIdentity.Defaults.autoMountUserOff)
     ) else { return }
     busyId = "automount"
-    DispatchQueue.global(qos: .userInitiated).async {
-      let result = Privileged.run("enable-automount")
-      DispatchQueue.main.async {
-        self.busyId = nil
-        self.autoMount = Privileged.autoMountEnabled
-        if !result.ok { self.setMessage(self.display(result.text)) } else { self.mountDefaultWritableIfNeeded() }
-      }
+    Task {
+      let result = await Privileged.run("enable-automount")
+      self.busyId = nil
+      self.autoMount = Privileged.autoMountEnabled
+      if !result.ok { self.setMessage(self.display(result.text)) } else { self.mountDefaultWritableIfNeeded() }
     }
   }
 
@@ -834,7 +810,7 @@ final class VolumeStore: ObservableObject {
     }
     guard let id = autoMountQueue.first, let vol = volumes.first(where: { $0.id == id }) else { return }
     autoMountPumping = true
-    mount(vol, openFinder: false, fromAutoMount: true)
+    Task { await mount(vol, openFinder: false, fromAutoMount: true) }
   }
 
   private func markAutoMountFinished(_ id: String, userRefused: Bool, helperReturned: Bool) {
@@ -846,7 +822,7 @@ final class VolumeStore: ObservableObject {
     if userRefused { pumpAutoMount() }
   }
 
-  func toggleAutoMount() {
+  func toggleAutoMount() async {
     let turningOff = autoMount
     if !turningOff {
       guard helperInstalled, !Privileged.helperNeedsUpdate else { return }
@@ -857,19 +833,15 @@ final class VolumeStore: ObservableObject {
     let cmd = turningOff ? "disable-automount" : "enable-automount"
     busyId = "automount"
     setMessage("")
-    DispatchQueue.global(qos: .userInitiated).async {
-      let result = Privileged.run(cmd)
-      DispatchQueue.main.async {
-        self.busyId = nil
-        self.autoMount = Privileged.autoMountEnabled
-        if result.ok {
-          UserDefaults.standard.set(turningOff, forKey: AppIdentity.Defaults.autoMountUserOff)
-          self.setMessage(self.autoMount ? L10n.t("automount.enabled") : L10n.t("automount.disabled"))
-          if self.autoMount { self.mountDefaultWritableIfNeeded() }
-        } else {
-          self.setMessage(self.display(result.text))
-        }
-      }
+    defer { busyId = nil }
+    let result = await Privileged.run(cmd)
+    autoMount = Privileged.autoMountEnabled
+    if result.ok {
+      UserDefaults.standard.set(turningOff, forKey: AppIdentity.Defaults.autoMountUserOff)
+      setMessage(autoMount ? L10n.t("automount.enabled") : L10n.t("automount.disabled"))
+      if autoMount { mountDefaultWritableIfNeeded() }
+    } else {
+      setMessage(display(result.text))
     }
   }
 
@@ -879,23 +851,19 @@ final class VolumeStore: ObservableObject {
     openFinder: Bool = false,
     fromAutoMount: Bool = false,
     extra: [String] = []
-  ) {
+  ) async {
     busyId = vol.id
     setMessage("", volumeId: vol.id)
-    DispatchQueue.global(qos: .userInitiated).async {
-      let result = Privileged.run(cmd, vol.id, extra: extra)
-      DispatchQueue.main.async {
-        self.busyId = nil
-        if cmd == "mount" {
-          self.lastAdvice[vol.id] = VolumeHealth.advice(for: result.text, success: result.ok)
-          self.rememberHealthOutput(vol.id, result.text)
-        }
-        if fromAutoMount {
-          self.markAutoMountFinished(vol.id, userRefused: false, helperReturned: true)
-        }
-        self.finishVolume(vol, cmd: cmd, result: result, openFinder: openFinder, extra: extra)
-      }
+    let result = await Privileged.run(cmd, vol.id, extra: extra)
+    busyId = nil
+    if cmd == "mount" {
+      lastAdvice[vol.id] = VolumeHealth.advice(for: result.text, success: result.ok)
+      rememberHealthOutput(vol.id, result.text)
     }
+    if fromAutoMount {
+      markAutoMountFinished(vol.id, userRefused: false, helperReturned: true)
+    }
+    await finishVolume(vol, cmd: cmd, result: result, openFinder: openFinder, extra: extra)
   }
 
   private func finishVolume(
@@ -904,8 +872,11 @@ final class VolumeStore: ObservableObject {
     result: Privileged.Outcome,
     openFinder: Bool,
     extra: [String] = []
-  ) {
+  ) async {
     let shown = display(result.text)
+    AppLog.volume.info(
+      "\(cmd, privacy: .public) \(vol.id, privacy: .public) ok=\(result.ok, privacy: .public) name=\(vol.name, privacy: .private) mount=\(vol.mountPoint, privacy: .private)"
+    )
     setMessage(shown, volumeId: vol.id)
     if result.ok {
       lastFailedCmd[vol.id] = nil
@@ -917,8 +888,8 @@ final class VolumeStore: ObservableObject {
        cmd == "unmount",
        !extra.contains("force"),
        UserFacingError.kind(from: result.text) == .diskBusy,
-       confirmForceUnmount(vol) {
-      run("unmount", vol, extra: ["force"])
+       confirmForceUnmount(vol, helperText: result.text) {
+      await run("unmount", vol, extra: ["force"])
       return
     }
     if result.ok, cmd == "mount", openFinder {
@@ -930,12 +901,15 @@ final class VolumeStore: ObservableObject {
     if autoMountPumping == false { pumpAutoMount() }
   }
 
-  private func confirmForceUnmount(_ vol: NTFSVolume) -> Bool {
+  private func confirmForceUnmount(_ vol: NTFSVolume, helperText: String = "") -> Bool {
     NSApp.activate(ignoringOtherApps: true)
     let alert = NSAlert()
     alert.alertStyle = .critical
     alert.messageText = ForceUnmountCopy.title(volumeName: vol.name)
-    alert.informativeText = ForceUnmountCopy.body(volumeName: vol.name)
+    alert.informativeText = ForceUnmountCopy.body(
+      volumeName: vol.name,
+      occupiers: UserFacingError.occupierPids(from: helperText)
+    )
     alert.addButton(withTitle: ForceUnmountCopy.cancelTitle)
     alert.addButton(withTitle: ForceUnmountCopy.forceTitle)
     makeCancelDefault(alert)

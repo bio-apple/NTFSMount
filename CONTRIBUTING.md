@@ -2,7 +2,7 @@
 
 NTFSMount is a **personal-use pre-release**. Do not ship or sell it without a written FUSE-T license **and** Developer ID notarization. See [docs/DISTRIBUTION.md](docs/DISTRIBUTION.md).
 
-How to build and run: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). User-facing history: [CHANGELOG.md](CHANGELOG.md) (do not list uncommitted WIP as shipped). Bug reports: use [.github/ISSUE_TEMPLATE/bug_report.md](.github/ISSUE_TEMPLATE/bug_report.md) (paste `./scripts/ntfsmount diagnose --json`).
+How to build and run: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). User-facing history: [CHANGELOG.md](CHANGELOG.md) (do not list uncommitted WIP as shipped). Bug reports: use [.github/ISSUE_TEMPLATE/bug_report.md](.github/ISSUE_TEMPLATE/bug_report.md) (attach the in-app diagnostic zip, or paste `./scripts/ntfsmount diagnose --json`).
 
 ## SwiftLint
 
@@ -31,5 +31,7 @@ Real-disk, Gatekeeper, and Finder checks are **manual**: [docs/MANUAL_TEST.md](d
 - Branch off `main`. Do not force-push shared `main`.
 - PRs that change helper or mount behavior must include a **test plan** (`swift test` / `./scripts/test-helper.sh` / which items from `docs/MANUAL_TEST.md` you ran).
 - Do not add sudoers `NOPASSWD` (nothing under `/etc/sudoers.d`).
+- SIP stays enabled. Do not add csrutil commands. The app does not use a kext.
+- Do not embed `sudo` or `osascript` elevation in the app. Helper install/uninstall uses `SMAppService` or Authorization Services.
 - Do not silently clear the NTFS hibernation file (`hiberfile`).
 - Format / ntfsfix / writable-confirm dialogs stay **Cancel-default**: Return must not confirm a destructive action.

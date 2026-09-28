@@ -33,7 +33,7 @@ usage() {
                FUSE-T 请用 ./scripts/prepare-runtime.sh（官方 pkg，钉死 ${FUSE_T_VERSION}）
 
 不要:
-  brew install macfuse     # kext；macOS 11+ / Apple Silicon 常需降低 SIP
+  brew install macfuse     # kext；本项目不用。SIP 保持开启
   brew install fuse-t      # 本仓库钉死官方 pkg ${FUSE_T_VERSION}，不用 Homebrew 配方
 EOF
 }
@@ -54,7 +54,7 @@ for arg in "$@"; do
       INSTALL=1
       ;;
     --install-macfuse|macfuse)
-      die "本项目不安装 macFUSE / osxfuse 内核扩展，也不要求降低 SIP。请用 FUSE-T：./scripts/prepare-runtime.sh"
+      die "本项目不安装 macFUSE / osxfuse 内核扩展。SIP 保持开启。请用 FUSE-T：./scripts/prepare-runtime.sh"
       ;;
     *)
       die "未知参数: $arg（见 --help）"
@@ -200,9 +200,9 @@ fi
 
 # --- 弃用 kext ---
 if kext_macfuse_present; then
-  warn "检测到 macFUSE / osxfuse 内核扩展。本应用不使用 kext，可能干扰 FUSE-T。不要为了本应用关闭 SIP。"
+  warn "检测到 macFUSE / osxfuse 内核扩展。本应用不使用 kext，可能干扰 FUSE-T。SIP 必须保持开启。"
 elif brew_macfuse_listed; then
-  warn "Homebrew 列出了 macfuse。本应用不需要它。不要 brew install macfuse，不要降低 SIP。"
+  warn "Homebrew 列出了 macfuse。本应用不需要它。不要 brew install macfuse。SIP 保持开启。"
 fi
 
 echo

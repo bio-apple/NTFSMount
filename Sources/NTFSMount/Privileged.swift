@@ -4,10 +4,12 @@ import Foundation
 import NTFSMountCore
 import Security
 import ServiceManagement
+import os
 
-/// 持续提权走 SMAppService + LaunchDaemon（Cocoa 原生平权）。
-/// osascript「do shell script … with administrator privileges」仅用于一次性安装/卸载。
-/// 不引入 AuthorizationServices 平行 API，也不写 sudoers NOPASSWD。
+/// Ongoing privilege: SMAppService + LaunchDaemon over a Unix socket (CDHash pin).
+/// One-shot helper install/uninstall: SMAppService when signing allows; otherwise
+/// Authorization Services (`kAuthorizationRightExecute`), not AppleScript.
+/// SIP stays enabled. No sudoers NOPASSWD.
 enum Privileged {
   static var systemHelperInstalled: Bool {
     FileManager.default.fileExists(atPath: AppIdentity.helperDaemonPath)
@@ -55,7 +57,7 @@ enum Privileged {
     )
   }
 
-  /// LSUIElement agents must become a regular app before osascript / SMAppService password UI.
+  /// LSUIElement agents must become a regular app before Authorization / SMAppService UI.
   static func prepareForAdminPrompt() {
     let apply = {
       NSApp.setActivationPolicy(.regular)
@@ -68,7 +70,7 @@ enum Privileged {
     }
   }
 
-  /// Ad-hoc LaunchDaemons cannot use SMAppService's BundleProgram; osascript installs a bash trampoline.
+  /// Ad-hoc LaunchDaemons cannot use SMAppService's BundleProgram; Authorization installs a bash trampoline.
   private static var bundleIsAdHoc: Bool {
     var staticCode: SecStaticCode?
     guard SecStaticCodeCreateWithPath(Bundle.main.bundleURL as CFURL, [], &staticCode) == errSecSuccess,
@@ -85,7 +87,7 @@ enum Privileged {
     return certs == nil || certs?.isEmpty == true
   }
 
-  /// SMAppService and osascript must both leave the same root-owned pins.
+  /// SMAppService and the Authorization fallback must both leave the same root-owned pins.
   private static var sealedHelperMatchesBundle: Bool {
     let fm = FileManager.default
     guard fm.isReadableFile(atPath: AppIdentity.helperSupportPath),
@@ -99,12 +101,17 @@ enum Privileged {
     return stamp.contains(sha)
   }
 
-  struct Outcome {
+  struct Outcome: Sendable {
     let ok: Bool
     let text: String
   }
 
-  static func installHelper() -> Outcome {
+  static func installHelper() async -> Outcome {
+    await offMain { installHelperBlocking() }
+  }
+
+  private static func installHelperBlocking() -> Outcome {
+    AppLog.helper.info("install-helper user=\(NSUserName(), privacy: .private)")
     prepareForAdminPrompt()
     guard let helper = Bundle.main.path(forResource: "ntfs-rw-helper", ofType: nil)
     else {
@@ -131,14 +138,19 @@ enum Privileged {
         files: [installer, helper, helperd],
         extra: [NSUserName(), Bundle.main.bundlePath]
       )
-      if !fallback.ok { return fallback }
+      if !fallback.ok {
+        AppLog.helper.error("install-helper authorization failed: \(fallback.text, privacy: .private)")
+        return fallback
+      }
       kickstartUntilSocket()
       if hasLegacySudoers || FileManager.default.fileExists(atPath: AppIdentity.legacyHelperPath) {
         _ = removeLegacySudoers()
       }
       if !daemonReady {
+        AppLog.helper.error("install-helper socket missing path=\(AppIdentity.helperSocket, privacy: .private)")
         return Outcome(ok: false, text: failedInstallText(fallback.text))
       }
+      AppLog.helper.info("install-helper authorization ok helperVersion=\(AppIdentity.helperVersion, privacy: .public)")
       return Outcome(
         ok: true,
         text: L10n.format("privileged.installedPassword", fallback.text)
@@ -148,6 +160,7 @@ enum Privileged {
     if hasLegacySudoers || FileManager.default.fileExists(atPath: AppIdentity.legacyHelperPath) {
       _ = removeLegacySudoers()
     }
+    AppLog.helper.info("install-helper SMAppService ok helperVersion=\(AppIdentity.helperVersion, privacy: .public)")
     return Outcome(ok: true, text: L10n.t("privileged.installedSM"))
   }
 
@@ -188,7 +201,11 @@ enum Privileged {
 
   /// Restart the LaunchDaemon after a repair. Does not change firewall rules.
   @discardableResult
-  static func restartHelper() -> Outcome {
+  static func restartHelper() async -> Outcome {
+    await offMain { restartHelperBlocking() }
+  }
+
+  private static func restartHelperBlocking() -> Outcome {
     guard systemHelperInstalled else {
       return Outcome(ok: false, text: L10n.t("privileged.notFound"))
     }
@@ -210,7 +227,12 @@ enum Privileged {
     ])
   }
 
-  static func uninstallHelper() -> Outcome {
+  static func uninstallHelper() async -> Outcome {
+    await offMain { uninstallHelperBlocking() }
+  }
+
+  private static func uninstallHelperBlocking() -> Outcome {
+    AppLog.helper.info("uninstall-helper")
     guard let script = Bundle.main.path(forResource: "uninstall-helper", ofType: "sh") else {
       return Outcome(ok: false, text: L10n.t("privileged.missingUninstallScript"))
     }
@@ -239,28 +261,51 @@ enum Privileged {
     }
   }
 
-  static func run(_ cmd: String, extra: [String] = []) -> Outcome {
-    runArgs([cmd] + extra)
+  static func run(_ cmd: String, extra: [String] = []) async -> Outcome {
+    await runArgs([cmd] + extra)
   }
 
-  static func run(_ cmd: String, _ deviceId: String, extra: [String] = []) -> Outcome {
-    runArgs([cmd, deviceId] + extra)
+  static func run(_ cmd: String, _ deviceId: String, extra: [String] = []) async -> Outcome {
+    await runArgs([cmd, deviceId] + extra)
   }
 
   private static let helperClientQueue = DispatchQueue(label: "com.bioapple.ntfsmount.helper-client")
 
-  private static func runArgs(_ args: [String]) -> Outcome {
-    if systemHelperInstalled && helperNeedsUpdate {
-      return Outcome(ok: false, text: L10n.t("privileged.mismatch"))
+  /// Hop off the caller (often `@MainActor`) so socket IPC / admin prompts cannot freeze the menu spinner.
+  private static func offMain(_ work: @escaping @Sendable () -> Outcome) async -> Outcome {
+    await withCheckedContinuation { continuation in
+      DispatchQueue.global(qos: .userInitiated).async {
+        continuation.resume(returning: work())
+      }
     }
-    if let via = runViaDaemon(args) {
-      return via
-    }
-    return Outcome(ok: false, text: L10n.t("privileged.notFound"))
   }
 
-  private static func runViaDaemon(_ args: [String]) -> Outcome? {
-    helperClientQueue.sync { transactViaDaemon(args) }
+  private static func runArgs(_ args: [String]) async -> Outcome {
+    await withCheckedContinuation { continuation in
+      helperClientQueue.async {
+        continuation.resume(returning: runArgsSync(args))
+      }
+    }
+  }
+
+  private static func runArgsSync(_ args: [String]) -> Outcome {
+    let cmd = args.first ?? ""
+    let disk = args.count > 1 ? args[1] : ""
+    let extra = args.dropFirst(2).joined(separator: " ")
+    if systemHelperInstalled && helperNeedsUpdate {
+      AppLog.helper.error("\(cmd, privacy: .public) disk=\(disk, privacy: .public) extra=\(extra, privacy: .private) helper mismatch")
+      return Outcome(ok: false, text: L10n.t("privileged.mismatch"))
+    }
+    if let via = transactViaDaemon(args) {
+      if via.ok {
+        AppLog.helper.info("\(cmd, privacy: .public) disk=\(disk, privacy: .public) extra=\(extra, privacy: .private) ok")
+      } else {
+        AppLog.helper.error("\(cmd, privacy: .public) disk=\(disk, privacy: .public) extra=\(extra, privacy: .private) failed: \(via.text, privacy: .private)")
+      }
+      return via
+    }
+    AppLog.helper.error("\(cmd, privacy: .public) helper not found")
+    return Outcome(ok: false, text: L10n.t("privileged.notFound"))
   }
 
   private static func transactViaDaemon(_ args: [String]) -> Outcome? {
@@ -345,40 +390,7 @@ enum Privileged {
     if !Thread.isMainThread {
       Thread.sleep(forTimeInterval: 0.05)
     }
-    guard let osascript = CommandPath.find("osascript") else {
-      return Outcome(ok: false, text: L10n.t("privileged.commFailed"))
-    }
-    let source = """
-    on run argv
-      set cmd to ""
-      repeat with a in argv
-        set cmd to cmd & quoted form of (contents of a) & space
-      end repeat
-      do shell script cmd with administrator privileges
-    end run
-    """
-    let osa = Process()
-    osa.executableURL = URL(fileURLWithPath: osascript)
-    osa.arguments = ["-"] + parts
-    let stdin = Pipe()
-    let osaOut = Pipe()
-    let osaErr = Pipe()
-    osa.standardInput = stdin
-    osa.standardOutput = osaOut
-    osa.standardError = osaErr
-    do {
-      try osa.run()
-      stdin.fileHandleForWriting.write(Data(source.utf8))
-      stdin.fileHandleForWriting.closeFile()
-      osa.waitUntilExit()
-      let out = String(data: osaOut.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-      let err = String(data: osaErr.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-      if osa.terminationStatus == 0 {
-        return Outcome(ok: true, text: out.trimmingCharacters(in: .whitespacesAndNewlines))
-      }
-      return Outcome(ok: false, text: (err.isEmpty ? out : err).trimmingCharacters(in: .whitespacesAndNewlines))
-    } catch {
-      return Outcome(ok: false, text: error.localizedDescription)
-    }
+    let result = AdminAuthorization.run(parts: parts)
+    return Outcome(ok: result.ok, text: result.text)
   }
 }

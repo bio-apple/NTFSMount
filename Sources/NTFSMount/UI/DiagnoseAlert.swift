@@ -1,5 +1,6 @@
 import AppKit
 import NTFSMountCore
+import os
 
 /// Scrollable diagnose window. Scan is read-only (never installs). After the report,
 /// the user can repair leftover NTFSMount mounts or install the mount helper.
@@ -7,6 +8,11 @@ enum EnvironmentDiagnosePresenter {
   @MainActor
   static func present(store: VolumeStore) {
     DiagnoseWindowController.shared.show(store: store)
+  }
+
+  @MainActor
+  static func exportReport(store: VolumeStore) {
+    DiagnoseWindowController.shared.exportReport(store: store)
   }
 }
 
@@ -18,6 +24,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
   private var textView: NSTextView?
   private var spinner: NSProgressIndicator?
   private var copyButton: NSButton?
+  private var exportButton: NSButton?
   private var repairButton: NSButton?
   private var installButton: NSButton?
   private var hintField: NSTextField?
@@ -27,6 +34,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
   private var running = false
   private var installing = false
   private var repairing = false
+  private var exporting = false
   private var report = ""
   private var lastSnap: DiagnoseSnapshot?
   private var generation = 0
@@ -38,7 +46,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     }
     Privileged.prepareForAdminPrompt()
     window?.makeKeyAndOrderFront(nil)
-    if !running && !installing && !repairing {
+    if !running && !installing && !repairing && !exporting {
       start()
     }
   }
@@ -64,6 +72,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     spinner?.startAnimation(nil)
     spinner?.isHidden = false
     copyButton?.isEnabled = false
+    exportButton?.isEnabled = false
     setHint(nil)
     setInstallVisible(false)
     updateRepairButton()
@@ -71,7 +80,8 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
       let snap = EnvironmentDiagnoseRunner.snapshot()
       let lines = EnvironmentDiagnose.lines(from: snap)
       let text = EnvironmentDiagnose.reportText(from: lines)
-      AppLog.append("diagnose\n\(text)")
+      AppLog.append("diagnose\n\(text)", unified: false)
+      AppLog.diagnose.info("diagnose completed")
       DispatchQueue.main.async {
         guard let self, self.generation == token else { return }
         self.running = false
@@ -81,6 +91,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
         self.spinner?.stopAnimation(nil)
         self.spinner?.isHidden = true
         self.copyButton?.isEnabled = true
+        self.exportButton?.isEnabled = true
         self.updateActions(snap)
       }
     }
@@ -90,7 +101,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     if EnvironmentDiagnose.bundledComponentsBroken(snap) {
       setHint(L10n.t("diagnose.brokenBundle"))
     } else {
-      setHint(nil)
+      setHint(L10n.t("diagnose.exportHint"))
     }
 
     let helperOffer = EnvironmentDiagnose.helperNeedsInstall(snap)
@@ -118,6 +129,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
       && !repairing
       && !running
       && !installing
+      && !exporting
       && !(store?.helperInstallBusy ?? false)
       && store?.busyId == nil
   }
@@ -138,6 +150,10 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     NSPasteboard.general.setString(text, forType: .string)
   }
 
+  @objc private func exportClicked() {
+    exportReport()
+  }
+
   @objc private func installHelper() {
     guard !installing else { return }
     guard let store else {
@@ -150,8 +166,9 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     installing = true
     installButton?.title = L10n.t("installing")
     installButton?.isEnabled = false
-    store.installHelper { [weak self] outcome in
-      guard let self else { return }
+    Task { @MainActor [weak self] in
+      guard let self, let store = self.store else { return }
+      let outcome = await store.installHelper()
       self.installing = false
       guard self.window?.isVisible == true else { return }
       if outcome.ok, Privileged.daemonReady {
@@ -207,6 +224,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     report = body
     setBody(body)
     copyButton?.isEnabled = true
+    exportButton?.isEnabled = true
     spinner?.stopAnimation(nil)
     spinner?.isHidden = true
     setHint(trimmed.split(whereSeparator: \.isNewline).first.map(String.init))
@@ -224,8 +242,62 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     report = body
     setBody(body)
     copyButton?.isEnabled = true
+    exportButton?.isEnabled = true
     let hint = shown.split(whereSeparator: \.isNewline).first.map(String.init)
     setHint(hint)
+  }
+
+  func exportReport(store: VolumeStore? = nil) {
+    if let store {
+      self.store = store
+    }
+    guard let store = self.store else { return }
+    guard !exporting, !running else { return }
+    DiagnoseReportExporter.beginExport(
+      store: store,
+      snap: lastSnap,
+      report: report,
+      sheetWindow: window,
+      onStart: { [weak self] in
+        self?.beginExportProgress()
+      },
+      onFinish: { [weak self] result in
+        self?.finishExport(result)
+      }
+    )
+  }
+
+  private func beginExportProgress() {
+    exporting = true
+    exportButton?.isEnabled = false
+    setHint(L10n.t("diagnose.exporting"))
+    spinner?.startAnimation(nil)
+    spinner?.isHidden = false
+    AppLog.diagnose.info("diagnose export started")
+  }
+
+  private func finishExport(_ result: Result<URL, Error>) {
+    exporting = false
+    exportButton?.isEnabled = lastSnap != nil || !report.isEmpty
+    spinner?.stopAnimation(nil)
+    spinner?.isHidden = true
+    switch result {
+    case .success(let url):
+      setHint(L10n.format("diagnose.exportSaved", url.path))
+      AppLog.diagnose.info("diagnose export saved")
+      NSWorkspace.shared.activateFileViewerSelecting([url])
+    case .failure(let error):
+      let detail = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+      setHint(L10n.format("diagnose.exportFailed", detail))
+      AppLog.diagnose.error("diagnose export failed")
+      if window?.isVisible != true {
+        let alert = NSAlert()
+        alert.messageText = L10n.t("diagnose.export")
+        alert.informativeText = L10n.format("diagnose.exportFailed", detail)
+        alert.addButton(withTitle: L10n.t("ok.gotIt"))
+        alert.runModal()
+      }
+    }
   }
 
   @objc private func closeWindow() {
@@ -234,18 +306,18 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
 
   private func buildWindow() {
     let win = NSWindow(
-      contentRect: NSRect(x: 0, y: 0, width: 560, height: 440),
+      contentRect: NSRect(x: 0, y: 0, width: 600, height: 480),
       styleMask: [.titled, .closable, .resizable, .miniaturizable],
       backing: .buffered,
       defer: false
     )
     win.title = L10n.t("diagnose.alertTitle")
-    win.minSize = NSSize(width: 420, height: 300)
+    win.minSize = NSSize(width: 480, height: 340)
     win.isReleasedWhenClosed = false
     win.delegate = self
     win.center()
 
-    let content = NSView(frame: NSRect(x: 0, y: 0, width: 560, height: 440))
+    let content = NSView(frame: NSRect(x: 0, y: 0, width: 600, height: 480))
 
     let spinner = NSProgressIndicator()
     spinner.style = .spinning
@@ -272,12 +344,70 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     hint.textColor = NSColor.secondaryLabelColor
     hint.translatesAutoresizingMaskIntoConstraints = false
     hint.isHidden = true
-    hint.preferredMaxLayoutWidth = 520
+    hint.preferredMaxLayoutWidth = 560
     hint.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
+    let chrome = makeButtonChrome()
+    content.addSubview(spinner)
+    content.addSubview(scroll)
+    content.addSubview(hint)
+    content.addSubview(chrome.column)
+
+    let hintCollapse = hint.heightAnchor.constraint(equalToConstant: 0)
+    hintCollapse.isActive = true
+
+    NSLayoutConstraint.activate([
+      spinner.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),
+      spinner.topAnchor.constraint(equalTo: content.topAnchor, constant: 14),
+      scroll.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),
+      scroll.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),
+      scroll.topAnchor.constraint(equalTo: spinner.bottomAnchor, constant: 10),
+      scroll.bottomAnchor.constraint(equalTo: hint.topAnchor, constant: -8),
+      hint.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),
+      hint.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),
+      hint.bottomAnchor.constraint(equalTo: chrome.column.topAnchor, constant: -12),
+      chrome.column.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),
+      chrome.column.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),
+      chrome.column.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -14),
+      chrome.shareRow.widthAnchor.constraint(equalTo: chrome.column.widthAnchor),
+      chrome.actionRow.widthAnchor.constraint(equalTo: chrome.column.widthAnchor),
+    ])
+
+    win.contentView = content
+    self.window = win
+    self.textView = text
+    self.spinner = spinner
+    self.copyButton = chrome.copy
+    self.exportButton = chrome.export
+    self.repairButton = chrome.repair
+    self.installButton = chrome.install
+    self.hintField = hint
+    self.hintCollapse = hintCollapse
+    self.buttonRow = chrome.actionRow
+  }
+
+  private struct ButtonChrome {
+    let copy: NSButton
+    let export: NSButton
+    let repair: NSButton
+    let install: NSButton
+    let shareRow: NSStackView
+    let actionRow: NSStackView
+    let column: NSStackView
+  }
+
+  private func makeButtonChrome() -> ButtonChrome {
     let copy = NSButton(title: L10n.t("diagnose.copy"), target: self, action: #selector(copyReport))
     copy.bezelStyle = .rounded
     copy.isEnabled = false
+
+    let export = NSButton(
+      title: L10n.t("diagnose.export"),
+      target: self,
+      action: #selector(exportClicked)
+    )
+    export.bezelStyle = .rounded
+    export.isEnabled = false
 
     let repair = NSButton(
       title: L10n.t("menu.repairEnv"),
@@ -302,45 +432,31 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     spacer.setContentHuggingPriority(.fittingSizeCompression, for: .horizontal)
     spacer.setContentCompressionResistancePriority(.fittingSizeCompression, for: .horizontal)
 
-    let row = NSStackView(views: [copy, repair, install, spacer, close])
-    row.orientation = .horizontal
-    row.alignment = .centerY
-    row.spacing = 12
-    row.translatesAutoresizingMaskIntoConstraints = false
-    row.setVisibilityPriority(.notVisible, for: install)
+    let shareRow = NSStackView(views: [copy, export])
+    shareRow.orientation = .horizontal
+    shareRow.alignment = .centerY
+    shareRow.spacing = 12
 
-    content.addSubview(spinner)
-    content.addSubview(scroll)
-    content.addSubview(hint)
-    content.addSubview(row)
+    let actionRow = NSStackView(views: [repair, install, spacer, close])
+    actionRow.orientation = .horizontal
+    actionRow.alignment = .centerY
+    actionRow.spacing = 12
+    actionRow.setVisibilityPriority(.notVisible, for: install)
 
-    let hintCollapse = hint.heightAnchor.constraint(equalToConstant: 0)
-    hintCollapse.isActive = true
+    let column = NSStackView(views: [shareRow, actionRow])
+    column.orientation = .vertical
+    column.alignment = .leading
+    column.spacing = 8
+    column.translatesAutoresizingMaskIntoConstraints = false
 
-    NSLayoutConstraint.activate([
-      spinner.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),
-      spinner.topAnchor.constraint(equalTo: content.topAnchor, constant: 14),
-      scroll.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),
-      scroll.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),
-      scroll.topAnchor.constraint(equalTo: spinner.bottomAnchor, constant: 10),
-      scroll.bottomAnchor.constraint(equalTo: hint.topAnchor, constant: -8),
-      hint.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),
-      hint.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),
-      hint.bottomAnchor.constraint(equalTo: row.topAnchor, constant: -12),
-      row.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),
-      row.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),
-      row.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -14),
-    ])
-
-    win.contentView = content
-    self.window = win
-    self.textView = text
-    self.spinner = spinner
-    self.copyButton = copy
-    self.repairButton = repair
-    self.installButton = install
-    self.hintField = hint
-    self.hintCollapse = hintCollapse
-    self.buttonRow = row
+    return ButtonChrome(
+      copy: copy,
+      export: export,
+      repair: repair,
+      install: install,
+      shareRow: shareRow,
+      actionRow: actionRow,
+      column: column
+    )
   }
 }

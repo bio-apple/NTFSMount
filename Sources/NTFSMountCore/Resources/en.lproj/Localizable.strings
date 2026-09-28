@@ -187,6 +187,8 @@ Return means you agree. Click “Quit” if you do not.";
 
 "forceUnmount.body" = "Could not gracefully unmount “%@”. The disk may still be in use by Finder or another program. Force unmount can lose unsaved data or damage the volume.\nClose windows and files on this disk first. Force unmount anyway?";
 
+"forceUnmount.occupiers" = "In use by: %@";
+
 "forceUnmount.action" = "Force Unmount";
 
 "format.confirmTitle" = "Erase “%@” and format as NTFS?";
@@ -281,11 +283,11 @@ Return means you agree. Click “Quit” if you do not.";
 
 "helper.statusOK" = "Installed. Privileged calls go through the daemon, which verifies this app’s signature.";
 
-"helper.hintNotarized" = "Notarized: prefers system service authorization; falls back to an administrator password.";
+"helper.hintNotarized" = "Notarized: prefers SMAppService; if that fails, Authorization Services shows the system admin dialog. SIP stays enabled.";
 
-"helper.hintAdHoc" = "Un-notarized builds cannot use system services reliably, so installing the helper asks for an administrator password.";
+"helper.hintAdHoc" = "Ad-hoc / un-notarized builds usually cannot register SMAppService. Install uses Authorization Services (system admin dialog). SIP stays enabled; no kext.";
 
-"helper.privilegeHint" = "The mount helper can mount, unmount, and format external disks. Your administrator password is used only for one-time install and is not saved.";
+"helper.privilegeHint" = "The mount helper runs as root and can mount, unmount, and format external disks. One-time install uses macOS Authorization Services; the password is not saved. SIP stays enabled. This app does not use a kernel extension and does not write sudoers.";
 
 "alert.updateHelperTitle" = "Update Mount Helper";
 
@@ -357,6 +359,8 @@ Return means you agree. Click “Quit” if you do not.";
 
 "error.diskBusy" = "The disk is in use: close Finder windows/files, then click Eject";
 
+"error.diskBusyNamed" = "The disk is in use by %@. Close those programs, then retry.";
+
 "error.failedWithLog" = "The operation failed. Details were written to %@";
 
 "error.failedLog" = "The operation failed. Details were written to the log.";
@@ -367,7 +371,7 @@ Return means you agree. Click “Quit” if you do not.";
 
 "privileged.missingInstallScript" = "The app package is missing the install script. Please reinstall.";
 
-"privileged.installedPassword" = "Installed the LaunchDaemon with an administrator password (typical for un-notarized builds). %@";
+"privileged.installedPassword" = "Installed the LaunchDaemon via macOS Authorization Services (typical for ad-hoc / un-notarized builds). %@";
 
 "privileged.installedSM" = "Registered the mount helper with the system service.";
 
@@ -378,6 +382,8 @@ Return means you agree. Click “Quit” if you do not.";
 "privileged.notFound" = "Mount helper not found. Click “Install Mount Helper”.";
 
 "privileged.commFailed" = "Could not talk to the mount helper.";
+
+"privileged.authUnavailable" = "Authorization Services could not start a privileged installer. SIP stays enabled. Use a Developer ID / notarized build that can register SMAppService, or try again.";
 
 "privileged.timeout" = "The mount helper timed out. Check the log and try again.";
 
@@ -425,6 +431,34 @@ Return means you agree. Click “Quit” if you do not.";
 "diagnose.checking" = "Checking bundled components and helper…";
 
 "diagnose.copy" = "Copy Results";
+
+"diagnose.export" = "Export Diagnostic Report";
+
+"diagnose.exporting" = "Exporting diagnostic report…";
+
+"diagnose.exportPrivacy" = "The zip may include disk names and volume identifiers. Unified log paths may stay redacted.";
+
+"diagnose.exportSaved" = "Saved diagnostic report: %@";
+
+"diagnose.exportFailed" = "Could not export the diagnostic report: %@";
+
+"diagnose.exportFailedSimple" = "Could not create the zip archive.";
+
+"diagnose.exportHint" = "To file a GitHub issue, export a diagnostic report and attach the zip. Copy Results is still available.";
+
+"diagnose.exportReadmeHeader" = "Diagnostic archive created by NTFSMount.";
+
+"diagnose.exportReadmeFiles" = "Files:";
+
+"diagnose.exportNoVolumes" = "No NTFS volumes were visible to the app.";
+
+"diagnose.exportDiskutilFailed" = "diskutil list failed or timed out.";
+
+"diagnose.exportLogUnavailable" = "log show failed or timed out. Full Disk Access is not required; unified logs may be empty without it.";
+
+"diagnose.exportLogEmpty" = "No matching unified logs in the last hour. Full Disk Access is not required.";
+
+"menu.exportDiagnose" = "Export Diagnostic Report…";
 
 "diagnose.installHelper" = "Install Mount Helper…";
 
@@ -484,7 +518,7 @@ Return means you agree. Click “Quit” if you do not.";
 
 "diagnose.gatekeeper" = "Gatekeeper: %@";
 
-"settings.diagnoseHint" = "Read-only check of bundled components and the helper. Does not mount or install the helper.";
+"settings.diagnoseHint" = "Read-only check of bundled components and the helper. Does not mount or install the helper. Export a zip to attach to a GitHub issue.";
 
 "premount.dirtyTitle" = "NTFS volume may be damaged or was not unmounted cleanly";
 

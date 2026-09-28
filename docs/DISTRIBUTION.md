@@ -109,7 +109,7 @@ git push origin v0.1.0
 - **当作产品对外再分发**仅当已公证并且 FUSE-T 许可证允许再分发（仓库变量 `vars.FUSE_T_REDISTRIBUTION_OK=1`）。缺一不可。
 - 正式对外下载页必须同时完成 Developer ID 公证与 FUSE-T 书面授权。许可证拆分见仓库根目录 [NOTICE](../NOTICE)。
 
-macFUSE / osxfuse 依赖内核扩展；macOS 11+ 与 Apple Silicon 常需降低 SIP。本项目用 FUSE-T（用户态 NFS/WebDAV），不改用 kext。开发机检查：`./scripts/check-fuse-deps.sh`（不要 `brew install macfuse`）。在取得可再分发的用户态后端或 FUSE-T 授权之前，**不把本应用当作可商用产品对外销售**。
+macFUSE / osxfuse 依赖内核扩展，与 **SIP 保持开启** 不兼容。本项目用 FUSE-T（用户态 NFS/WebDAV），不改用 kext。开发机检查：`./scripts/check-fuse-deps.sh`（不要 `brew install macfuse`）。在取得可再分发的用户态后端或 FUSE-T 授权之前，**不把本应用当作可商用产品对外销售**。
 
 ## 3. 特权模型
 
@@ -117,7 +117,7 @@ macFUSE / osxfuse 依赖内核扩展；macOS 11+ 与 Apple Silicon 常需降低 
 
 **不会**写入 `/etc/sudoers.d`。安装/更新/卸载都会删除旧版 `/etc/sudoers.d/ntfs-rw` 和 `/usr/local/sbin/ntfs-rw-helper`。仓库里已删除会写 NOPASSWD 的 `scripts/repair-and-mount.sh`。
 
-持续提权走 `SMAppService` + LaunchDaemon（Cocoa 原生平权）。`osascript` 的 `do shell script … with administrator privileges` **只用于一次性安装/卸载**（ad-hoc 回退）。助手装好后，挂载、卸载、格式化只经 Unix socket，不再弹管理员密码。不引入 `AuthorizationServices` 平行 API。
+持续提权走 `SMAppService` + LaunchDaemon（Cocoa 原生平权）。**ad-hoc / 未公证包上 `SMAppService` 通常失败**，一次性安装/卸载回退为 Security.framework **Authorization Services**（`AuthorizationCreate` / `AuthorizationCopyRights` 申请 `kAuthorizationRightExecute`，再以特权运行捆绑的 `install-helper.sh` / `uninstall-helper.sh`）。不嵌入 `sudo`，也不使用 `osascript` 的 `do shell script … with administrator privileges`。`AuthorizationExecuteWithPrivileges` 已弃用，仅作为 ad-hoc 回退经 `dlsym` 解析；已公证 Developer ID 包优先 `SMAppService`，不依赖公证才能个人使用。助手装好后，挂载、卸载、格式化只经 Unix socket，不再弹管理员对话框。不写 sudoers，**SIP 保持开启，不装 kext**。
 
 `helper/ntfs-rw-helper` 是本仓库维护的 **bash 源码**（不是第三方预编译二进制，`HELPER_VERSION=10`）。`scripts/build.sh` 计算 SHA-256 写入 `Contents/Resources/ntfs-rw-helper.sha256`，并对脚本与 `ntfsmount-helperd` 做 codesign。运行时用该哈希对照 `helper.stamp` / UserDefaults，不匹配则拒绝执行并提示更新助手。`.app` 内同时放入 `LICENSE`、`NOTICE`、`THIRD_PARTY_LICENSES.md`、`DISTRIBUTION.md`。
 

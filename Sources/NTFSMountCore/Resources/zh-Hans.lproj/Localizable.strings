@@ -187,6 +187,8 @@
 
 "forceUnmount.body" = "无法优雅卸载「%@」。磁盘可能仍被访达或其他程序占用。强制卸载可能导致未写入的数据丢失或磁盘损坏。\n请先关闭该磁盘上的窗口和文件。确定仍要强制卸载吗？";
 
+"forceUnmount.occupiers" = "占用进程：%@";
+
 "forceUnmount.action" = "强制卸载";
 
 "format.confirmTitle" = "抹掉「%@」并格式化为 NTFS？";
@@ -281,11 +283,11 @@
 
 "helper.statusOK" = "已安装。特权调用经守护进程校验本应用签名。";
 
-"helper.hintNotarized" = "已公证：优先用系统服务授权；失败再输入管理员密码。";
+"helper.hintNotarized" = "已公证：优先用 SMAppService；失败则由 Authorization Services 弹出系统管理员对话框。SIP 保持开启。";
 
-"helper.hintAdHoc" = "未公证包无法稳定使用系统服务，安装助手会请求管理员密码。";
+"helper.hintAdHoc" = "ad-hoc / 未公证包通常无法注册 SMAppService。安装走 Authorization Services（系统管理员对话框）。SIP 保持开启，不使用内核扩展。";
 
-"helper.privilegeHint" = "挂载助手可以挂载、卸载、格式化外置盘。管理员密码只用于一次性安装，不会保存。";
+"helper.privilegeHint" = "挂载助手以 root 运行，可以挂载、卸载、格式化外置盘。一次性安装使用 macOS Authorization Services，不保存密码。SIP 保持开启。本应用不使用内核扩展，也不写 sudoers。";
 
 "alert.updateHelperTitle" = "更新挂载助手";
 
@@ -357,6 +359,8 @@
 
 "error.diskBusy" = "磁盘正被占用：请关闭访达窗口/文件后点推出";
 
+"error.diskBusyNamed" = "磁盘正被占用：%@。请关闭这些程序后重试。";
+
 "error.failedWithLog" = "操作失败。详情已写入 %@";
 
 "error.failedLog" = "操作失败。详情已写入日志。";
@@ -367,7 +371,7 @@
 
 "privileged.missingInstallScript" = "应用包内缺少安装脚本，请重新安装。";
 
-"privileged.installedPassword" = "已用管理员密码安装 LaunchDaemon（未公证包通常走这条路径）。%@";
+"privileged.installedPassword" = "已用 macOS Authorization Services 安装 LaunchDaemon（ad-hoc / 未公证包通常走这条路径）。%@";
 
 "privileged.installedSM" = "已用系统服务注册挂载助手。";
 
@@ -378,6 +382,8 @@
 "privileged.notFound" = "未找到挂载助手。请点「安装挂载助手」。";
 
 "privileged.commFailed" = "与挂载助手通信失败。";
+
+"privileged.authUnavailable" = "Authorization Services 无法启动特权安装程序。SIP 保持开启。请使用可注册 SMAppService 的 Developer ID / 公证构建，或重试。";
 
 "privileged.timeout" = "挂载助手超时。请查看日志后重试。";
 
@@ -425,6 +431,34 @@
 "diagnose.checking" = "正在检查捆绑组件与挂载助手…";
 
 "diagnose.copy" = "复制结果";
+
+"diagnose.export" = "导出诊断报告";
+
+"diagnose.exporting" = "正在导出诊断报告…";
+
+"diagnose.exportPrivacy" = "压缩包可能包含磁盘名称和卷标识符。统一日志里的路径可能已被系统打码。";
+
+"diagnose.exportSaved" = "已保存诊断报告：%@";
+
+"diagnose.exportFailed" = "无法导出诊断报告：%@";
+
+"diagnose.exportFailedSimple" = "无法创建 zip 压缩包。";
+
+"diagnose.exportHint" = "提交 GitHub Issue 时请导出诊断报告并附上 zip。「复制结果」仍然可用。";
+
+"diagnose.exportReadmeHeader" = "本压缩包由 NTFSMount 生成。";
+
+"diagnose.exportReadmeFiles" = "包含的文件：";
+
+"diagnose.exportNoVolumes" = "应用当前看不到 NTFS 卷。";
+
+"diagnose.exportDiskutilFailed" = "diskutil list 失败或超时。";
+
+"diagnose.exportLogUnavailable" = "log show 失败或超时。不要求「完全磁盘访问权限」；没有该权限时统一日志可能为空。";
+
+"diagnose.exportLogEmpty" = "最近 1 小时内没有匹配的统一日志。不要求完全磁盘访问权限。";
+
+"menu.exportDiagnose" = "导出诊断报告…";
 
 "diagnose.installHelper" = "安装挂载助手…";
 
@@ -484,7 +518,7 @@
 
 "diagnose.gatekeeper" = "Gatekeeper：%@";
 
-"settings.diagnoseHint" = "只读检查捆绑组件与助手，不挂载、不装助手。";
+"settings.diagnoseHint" = "只读检查捆绑组件与助手，不挂载、不装助手。提交 Issue 时可导出 zip 附件。";
 
 "premount.dirtyTitle" = "NTFS 卷可能已损坏/未正常卸载";
 

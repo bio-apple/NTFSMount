@@ -214,7 +214,7 @@ struct HelperInstallBanner: View {
         ? L10n.t("installing")
         : L10n.t(needsUpdate ? "window.update" : "menu.installHelper")
       ) {
-        store.installHelper()
+        Task { _ = await store.installHelper() }
       }
       .buttonStyle(.borderedProminent)
       .controlSize(.small)
@@ -423,32 +423,32 @@ private struct VolumeDetailView: View {
     VStack(alignment: .leading, spacing: 10) {
       HStack(spacing: 10) {
         if vol.isWritableFuse {
-          Button(L10n.t("menu.unmount")) { store.unmount(vol) }
+          Button(L10n.t("menu.unmount")) { Task { await store.unmount(vol) } }
             .buttonStyle(.bordered)
             .help(VolumeActionCopy.unmountHelp)
           if !vol.isInternal {
-            Button(L10n.t("menu.eject")) { store.eject(vol) }
+            Button(L10n.t("menu.eject")) { Task { await store.eject(vol) } }
               .buttonStyle(.borderedProminent)
               .help(VolumeActionCopy.ejectHelp)
           }
         } else {
           if store.canOfferDirtyFix(vol) {
-            Button(L10n.t("menu.fixDirty")) { store.confirmDirtyFix(vol) }
+            Button(L10n.t("menu.fixDirty")) { Task { await store.confirmDirtyFix(vol) } }
               .buttonStyle(.bordered)
           }
-          Button(L10n.t("menu.mountWritable")) { store.mount(vol) }
+          Button(L10n.t("menu.mountWritable")) { Task { await store.mount(vol) } }
             .buttonStyle(.borderedProminent)
             .disabled(!store.canMountWritable(vol))
             .help(store.writableMountHelp(vol))
           if !vol.isInternal {
-            Button(L10n.t("menu.eject")) { store.eject(vol) }
+            Button(L10n.t("menu.eject")) { Task { await store.eject(vol) } }
               .buttonStyle(.bordered)
               .help(VolumeActionCopy.ejectHelp)
           }
         }
 
         if store.failedCommand(vol) != nil {
-          Button(L10n.t("retry")) { store.retry(vol) }
+          Button(L10n.t("retry")) { Task { await store.retry(vol) } }
             .buttonStyle(.bordered)
         }
 

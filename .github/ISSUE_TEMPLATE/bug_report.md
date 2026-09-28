@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Install failed, mounted but not writable, or helper error. Paste diagnose --json.
+about: Install failed, mounted but not writable, or helper error. Attach the in-app diagnostic zip, or paste diagnose --json.
 title: "[Bug] "
 labels: bug
 ---
@@ -19,7 +19,9 @@ labels: bug
 
 **Diagnose output (required)**
 
-Run this from a clone of the repo and paste the full JSON below:
+In the app: **Diagnose Environment…** → **Export Diagnostic Report**, then attach the zip (`NTFSMount-diagnose-YYYYMMDD.zip`). The zip may include **disk names**.
+
+Alternatively, from a clone, paste the JSON below:
 
 ```bash
 ./scripts/ntfsmount diagnose --json
@@ -28,7 +30,7 @@ Run this from a clone of the repo and paste the full JSON below:
 Output may include **disk names**. That is expected; redact anything you do not want public.
 
 ```json
-<!-- paste diagnose --json here -->
+<!-- paste diagnose --json here if you did not attach the zip -->
 ```
 
 **Disk format**

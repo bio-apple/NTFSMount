@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import NTFSMountCore
+import os
 
 enum PlatformGate {
   static var isArm64: Bool {
@@ -67,12 +68,19 @@ enum SigningStatus {
 }
 
 enum AppLog {
+  static let app = Logger(subsystem: AppIdentity.bundleId, category: "app")
+  static let helper = Logger(subsystem: AppIdentity.bundleId, category: "helper")
+  static let volume = Logger(subsystem: AppIdentity.bundleId, category: "volume")
+  static let diagnose = Logger(subsystem: AppIdentity.bundleId, category: "diagnose")
+
   static var url: URL {
     FileManager.default.homeDirectoryForCurrentUser
       .appendingPathComponent("Library/Logs/ntfsmount.log")
   }
 
-  static func append(_ line: String) {
+  /// File log stays for in-app diagnose. Unified Logging gets the same line as `.private`
+  /// so paths and helper output are redacted unless private data is enabled.
+  static func append(_ line: String, unified: Bool = true) {
     let text = "\(ISO8601DateFormatter().string(from: Date())) \(line)\n"
     if let data = text.data(using: .utf8) {
       if FileManager.default.fileExists(atPath: url.path) {
@@ -84,6 +92,9 @@ enum AppLog {
       } else {
         try? data.write(to: url)
       }
+    }
+    if unified {
+      app.info("\(line, privacy: .private)")
     }
   }
 

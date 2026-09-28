@@ -31,6 +31,7 @@ let package = Package(
         .linkedFramework("AppKit"),
         .linkedFramework("SwiftUI"),
         .linkedFramework("ServiceManagement"),
+        .linkedFramework("Security"),
         .linkedFramework("DiskArbitration"),
       ]
     ),

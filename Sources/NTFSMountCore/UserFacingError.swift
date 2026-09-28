@@ -16,10 +16,14 @@ public enum UserFacingError {
   public static func kind(from raw: String) -> Kind {
     let t = raw.trimmingCharacters(in: .whitespacesAndNewlines)
     let lower = t.lowercased()
-    if lower.contains("user canceled") || t.contains("-128") || lower.contains("(-128)") {
+    if lower.contains("user canceled")
+      || t.contains("-128")
+      || lower.contains("(-128)")
+      || t.contains("-60006") {
       return .canceled
     }
     if t.contains("磁盘正被占用")
+      || lower.contains("busy-occupiers:")
       || lower.contains("resource busy")
       || lower.contains("volume busy")
       || lower.contains("in use and cannot be ejected") {
@@ -39,6 +43,13 @@ public enum UserFacingError {
     }
     if looksLikeMissingBinary(t, lower: lower) {
       return .missingBinary
+    }
+    if lower.contains("authorization denied")
+      || lower.contains("authorization failed")
+      || lower.contains("errauthorization")
+      || t.contains("-60005")
+      || t.contains("-60007") {
+      return .adminDenied
     }
     if lower.contains("execution error") || lower.contains("osascript") || lower.contains("0:") {
       return .adminDenied
@@ -67,12 +78,8 @@ public enum UserFacingError {
     case .helperNeedsUpdate:
       mapped = L10n.t("error.helperNeedsUpdate", locale: locale)
     case .diskBusy:
-      if t.contains("磁盘正被占用") {
-        if t.hasPrefix("error:") {
-          mapped = String(t.dropFirst(6)).trimmingCharacters(in: .whitespaces)
-        } else {
-          mapped = t
-        }
+      if let names = occupierNames(from: t) {
+        mapped = L10n.format("error.diskBusyNamed", names, locale: locale)
       } else {
         mapped = L10n.t("error.diskBusy", locale: locale)
       }
@@ -109,7 +116,7 @@ public enum UserFacingError {
     if !kept.isEmpty { return kept.joined(separator: "\n") }
     switch kind {
     case .diskBusy:
-      return L10n.t("error.diskBusy", locale: locale)
+      return text
     case .other:
       if let logPath {
         return L10n.format("error.failedWithLog", logPath, locale: locale)
@@ -131,6 +138,47 @@ public enum UserFacingError {
     s.unicodeScalars.contains { scalar in
       (0x3400...0x9FFF).contains(scalar.value) || (0xF900...0xFAFF).contains(scalar.value)
     }
+  }
+
+  /// Process names from helper `busy-occupiers:` or legacy Chinese busy text.
+  public static func occupierNames(from raw: String) -> String? {
+    for line in raw.split(whereSeparator: \.isNewline) {
+      let t = line.trimmingCharacters(in: .whitespaces)
+      let prefix = "busy-occupiers:"
+      if t.lowercased().hasPrefix(prefix) {
+        let names = String(t.dropFirst(prefix.count)).trimmingCharacters(in: .whitespaces)
+        if !names.isEmpty { return names }
+      }
+    }
+    return occupierNamesFromLegacyChinese(raw)
+  }
+
+  /// `Finder[412]` lines when present; otherwise process names.
+  public static func occupierPids(from raw: String) -> String? {
+    for line in raw.split(whereSeparator: \.isNewline) {
+      let t = line.trimmingCharacters(in: .whitespaces)
+      let prefix = "busy-pids:"
+      if t.lowercased().hasPrefix(prefix) {
+        let pids = String(t.dropFirst(prefix.count)).trimmingCharacters(in: .whitespaces)
+        if !pids.isEmpty { return pids }
+      }
+    }
+    return occupierNames(from: raw)
+  }
+
+  private static func occupierNamesFromLegacyChinese(_ raw: String) -> String? {
+    let marker = "磁盘正被占用："
+    guard let r = raw.range(of: marker) else { return nil }
+    var rest = String(raw[r.upperBound...])
+    if let nl = rest.firstIndex(of: "\n") {
+      rest = String(rest[..<nl])
+    }
+    rest = rest.trimmingCharacters(in: .whitespaces)
+    if rest.hasPrefix("请") { return nil }
+    guard let dot = rest.firstIndex(of: "。") else { return nil }
+    let names = String(rest[..<dot]).trimmingCharacters(in: .whitespaces)
+    if names.isEmpty || names.hasPrefix("请") { return nil }
+    return names
   }
 
   private static func looksLikeGoNfsv4(_ t: String, lower: String) -> Bool {

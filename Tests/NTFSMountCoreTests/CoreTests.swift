@@ -712,6 +712,13 @@ final class FormatPolicyTests: XCTestCase {
     let zh = Locale(identifier: "zh-Hans")
     XCTAssertEqual(ForceUnmountCopy.title(volumeName: "My Passport", locale: zh), "强制卸载「My Passport」？")
     XCTAssertTrue(ForceUnmountCopy.body(volumeName: "移动硬盘", locale: zh).contains("移动硬盘"))
+    XCTAssertTrue(
+      ForceUnmountCopy.body(volumeName: "DATA", occupiers: "Finder[412]", locale: zh).contains("Finder[412]")
+    )
+    XCTAssertTrue(
+      ForceUnmountCopy.body(volumeName: "DATA", occupiers: "Finder[412]", locale: Locale(identifier: "en"))
+        .contains("Finder[412]")
+    )
     XCTAssertEqual(ForceUnmountCopy.forceTitle(locale: zh), "强制卸载")
     XCTAssertEqual(AlertDefaultPolicy.forceUnmount, .cancelDefault)
   }
@@ -776,6 +783,16 @@ final class UserFacingErrorTests: XCTestCase {
       "未能取得管理员权限。若刚才点了取消，可再试。详情已写入日志。"
     )
     XCTAssertEqual(UserFacingError.message(from: "User canceled. (-128)", locale: zh), "已取消。")
+    XCTAssertEqual(UserFacingError.kind(from: "User canceled. (-60006)"), .canceled)
+    XCTAssertEqual(UserFacingError.kind(from: "authorization denied (-60005)"), .adminDenied)
+    XCTAssertEqual(
+      UserFacingError.message(from: "authorization denied (-60005)", locale: zh),
+      "未能取得管理员权限。若刚才点了取消，可再试。详情已写入日志。"
+    )
+    XCTAssertFalse(
+      UserFacingError.message(from: "authorization denied (-60005)", locale: Locale(identifier: "en"))
+        .unicodeScalars.contains { (0x3400...0x9FFF).contains($0.value) }
+    )
     XCTAssertEqual(
       UserFacingError.message(from: "bash: foo: No such file or directory (127)", locale: zh),
       "找不到所需程序（可能缺少 ntfs-3g 或挂载组件）。请重新安装应用。详情已写入日志。"
@@ -786,16 +803,33 @@ final class UserFacingErrorTests: XCTestCase {
     let zh = Locale(identifier: "zh-Hans")
     XCTAssertEqual(
       UserFacingError.message(from: "error: 磁盘正被占用：Finder。请关闭访达窗口/文件后点推出", locale: zh),
-      "磁盘正被占用：Finder。请关闭访达窗口/文件后点推出"
+      L10n.format("error.diskBusyNamed", "Finder", locale: zh)
     )
     XCTAssertEqual(
       UserFacingError.message(from: "Unmount failed: Resource busy", locale: zh),
-      "磁盘正被占用：请关闭访达窗口/文件后点推出"
+      L10n.t("error.diskBusy", locale: zh)
     )
     XCTAssertEqual(
       UserFacingError.message(from: "error: 磁盘正被占用：Finder。请关闭访达窗口/文件后点卸载", locale: zh),
-      "磁盘正被占用：Finder。请关闭访达窗口/文件后点卸载"
+      L10n.format("error.diskBusyNamed", "Finder", locale: zh)
     )
+    let structured = """
+      busy-occupiers: Finder, TextEdit
+      busy-pids: Finder[412], TextEdit[901]
+      error: 磁盘正被占用：Finder, TextEdit。请关闭访达窗口/文件后点卸载
+      """
+    XCTAssertEqual(UserFacingError.kind(from: structured), .diskBusy)
+    XCTAssertEqual(UserFacingError.occupierNames(from: structured), "Finder, TextEdit")
+    XCTAssertEqual(UserFacingError.occupierPids(from: structured), "Finder[412], TextEdit[901]")
+    XCTAssertEqual(
+      UserFacingError.message(from: structured, locale: zh),
+      L10n.format("error.diskBusyNamed", "Finder, TextEdit", locale: zh)
+    )
+  }
+
+  func testGenericBusyHasNoOccupierNames() {
+    XCTAssertNil(UserFacingError.occupierNames(from: "error: 磁盘正被占用：请关闭访达窗口/文件后点卸载"))
+    XCTAssertNil(UserFacingError.occupierNames(from: "Unmount failed: Resource busy"))
   }
 
   func testEnglishLocaleDoesNotShowHelperChinese() {
@@ -804,7 +838,7 @@ final class UserFacingErrorTests: XCTestCase {
       from: "error: 磁盘正被占用：Finder。请关闭访达窗口/文件后点推出",
       locale: en
     )
-    XCTAssertEqual(busy, L10n.t("error.diskBusy", locale: en))
+    XCTAssertEqual(busy, L10n.format("error.diskBusyNamed", "Finder", locale: en))
     XCTAssertFalse(busy.contains("磁盘"))
     XCTAssertFalse(busy.contains("访达"))
     let other = UserFacingError.message(from: "挂载失败：磁盘 dirty 或 Windows 休眠", locale: en)
@@ -815,7 +849,15 @@ final class UserFacingErrorTests: XCTestCase {
       locale: Locale(identifier: "ja")
     )
     XCTAssertFalse(ja.contains("磁盘"))
-    XCTAssertEqual(ja, L10n.t("error.diskBusy", locale: Locale(identifier: "ja")))
+    XCTAssertEqual(ja, L10n.format("error.diskBusyNamed", "Finder", locale: Locale(identifier: "ja")))
+    let structuredEn = UserFacingError.message(
+      from: "busy-occupiers: Finder, TextEdit\nerror: 磁盘正被占用：Finder, TextEdit。请关闭访达窗口/文件后点卸载",
+      locale: en
+    )
+    XCTAssertEqual(
+      structuredEn,
+      L10n.format("error.diskBusyNamed", "Finder, TextEdit", locale: en)
+    )
   }
 }
 
@@ -849,6 +891,9 @@ final class L10nTests: XCTestCase {
     XCTAssertEqual(L10n.t("diagnose.checking", locale: zh), "正在检查捆绑组件与挂载助手…")
     XCTAssertEqual(L10n.t("diagnose.installHelper", locale: zh), "安装挂载助手…")
     XCTAssertEqual(L10n.t("diagnose.installFailed", locale: zh), "安装挂载助手失败")
+    XCTAssertEqual(L10n.t("diagnose.export", locale: en), "Export Diagnostic Report")
+    XCTAssertEqual(L10n.t("diagnose.export", locale: zh), "导出诊断报告")
+    XCTAssertEqual(L10n.t("menu.exportDiagnose", locale: zh), "导出诊断报告…")
     XCTAssertTrue(L10n.t("privileged.socketMissing", locale: zh).contains("socket"))
     XCTAssertEqual(L10n.t("window.firstInstall", locale: zh), "助手未安装（socket 不存在）。")
     XCTAssertTrue(L10n.t("window.helperMissingDetail", locale: zh).contains("管理员密码"))
@@ -872,6 +917,16 @@ final class L10nTests: XCTestCase {
     XCTAssertTrue(L10n.t("settings.autoMountNote", locale: Locale(identifier: "zh-Hant")).contains("關閉"))
     XCTAssertTrue(L10n.t("settings.autoMountNeedHelper", locale: Locale(identifier: "ja")).contains("ヘルパー"))
     XCTAssertFalse(L10n.t("helper.privilegeHint", locale: zh).contains("CDHash"))
+    XCTAssertTrue(L10n.t("helper.privilegeHint", locale: en).contains("SIP"))
+    XCTAssertTrue(L10n.t("helper.privilegeHint", locale: en).contains("Authorization"))
+    XCTAssertFalse(L10n.t("helper.privilegeHint", locale: en).contains("关闭"))
+    XCTAssertTrue(L10n.t("helper.hintAdHoc", locale: en).contains("Authorization"))
+    XCTAssertTrue(L10n.t("helper.hintAdHoc", locale: en).contains("SIP"))
+    XCTAssertEqual(
+      L10n.t("privileged.authUnavailable", locale: en),
+      "Authorization Services could not start a privileged installer. SIP stays enabled. Use a Developer ID / notarized build that can register SMAppService, or try again."
+    )
+    XCTAssertFalse(L10n.t("privileged.authUnavailable", locale: en).contains("关闭"))
     XCTAssertFalse(L10n.t("update.autoCheckNote", locale: en).contains("EdDSA"))
     XCTAssertFalse(L10n.t("update.autoCheckNote", locale: en).contains("v1.2.0"))
     XCTAssertTrue(L10n.t("update.autoCheckNote", locale: en).contains("GitHub Releases"))
@@ -913,7 +968,7 @@ final class L10nTests: XCTestCase {
     let en = Locale(identifier: "en")
     let keys = [
       "format.confirmExtra", "format.confirmTitle", "forceUnmount.title", "forceUnmount.body",
-      "forceUnmount.action", "repairEnv.title", "repairEnv.body", "repairEnv.action",
+      "forceUnmount.action", "forceUnmount.occupiers", "repairEnv.title", "repairEnv.body", "repairEnv.action",
       "repairEnv.working", "repairEnv.summary", "repairEnv.summaryBusy", "repairEnv.summaryNone",
       "repairEnv.helperRestarted", "repairEnv.failed", "menu.repairEnv",
       "diskStatus.mountMode", "diskStatus.mountRW", "diskStatus.mountRO", "diskStatus.used",
@@ -921,8 +976,9 @@ final class L10nTests: XCTestCase {
       "diskStatus.journal", "diskStatus.journalUnknown", "diskStatus.journalDirty",
       "diskStatus.journalHibernated", "diskStatus.journalCorrupt", "diskStatus.journalClean",
       "settings.autoMount", "settings.autoMountNote", "settings.autoMountNeedHelper",
+      "helper.privilegeHint", "helper.hintAdHoc", "helper.hintNotarized", "privileged.authUnavailable",
       "dirty.title", "dirty.body", "premount.dirtyTitle", "premount.hiberTitle",
-      "status.roDirty", "error.diskBusy", "window.usageAfterMount",
+      "status.roDirty", "error.diskBusy", "error.diskBusyNamed", "window.usageAfterMount",
       "about.version", "menu.about",
     ]
     let han = try! NSRegularExpression(pattern: "\\p{Han}")

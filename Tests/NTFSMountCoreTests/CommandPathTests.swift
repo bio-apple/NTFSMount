@@ -18,6 +18,19 @@ final class CommandPathTests: XCTestCase {
     XCTAssertNil(CommandPath.find("ntfsmount-definitely-missing-cmd"))
   }
 
+  func testFindsLsofAndFuserInSystemDirs() {
+    guard let lsof = CommandPath.find("lsof") else {
+      return XCTFail("lsof must exist in system dirs")
+    }
+    XCTAssertTrue(lsof.hasSuffix("/lsof"))
+    XCTAssertTrue(CommandPath.systemDirs.contains { lsof.hasPrefix($0 + "/") })
+    XCTAssertTrue(FileManager.default.isExecutableFile(atPath: lsof))
+    if let fuser = CommandPath.find("fuser") {
+      XCTAssertTrue(fuser.hasSuffix("/fuser"))
+      XCTAssertTrue(CommandPath.systemDirs.contains { fuser.hasPrefix($0 + "/") })
+    }
+  }
+
   func testAbsolutePathMustExistAndBeExecutable() {
     XCTAssertNil(CommandPath.find("/no/such/launchctl"))
     if let sh = CommandPath.find("sh") {

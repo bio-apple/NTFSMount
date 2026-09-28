@@ -26,6 +26,11 @@ PKILL="$(resolve_cmd pkill)"
 PGREP="$(resolve_cmd pgrep)"
 KILL="$(resolve_cmd kill)"
 LSOF="$(resolve_cmd lsof)"
+FUSER=""
+if _fuser="$(resolve_cmd fuser 2>/dev/null)"; then
+  FUSER="$_fuser"
+fi
+PS="$(resolve_cmd ps)"
 LAUNCHCTL="$(resolve_cmd launchctl)"
 OSASCRIPT="$(resolve_cmd osascript)"
 # macOS diskutil 把 -- 当成非法参数；id 必须先 valid_id/valid_whole，再作为独立 argv 传入，永不拼进 shell 字符串。
@@ -505,9 +510,7 @@ notify() {
   uid="$(/usr/bin/id -u "$user" 2>/dev/null || true)"
   e="display notification \"${msg}\" with title \"NTFS 读写\""
   if [[ "$(/usr/bin/id -u)" -eq 0 && -n "$uid" && "$uid" != "0" ]]; then
-    "$LAUNCHCTL" asuser "$uid" "$OSASCRIPT" -e "$e" >/dev/null 2>&1 \
-      || /usr/bin/sudo -u "$user" "$OSASCRIPT" -e "$e" >/dev/null 2>&1 \
-      || true
+    "$LAUNCHCTL" asuser "$uid" "$OSASCRIPT" -e "$e" >/dev/null 2>&1 || true
   else
     "$OSASCRIPT" -e "$e" >/dev/null 2>&1 || true
   fi
@@ -590,15 +593,129 @@ kill_ntfs3g_whole() {
   done < <(list_slice_idents "$ident")
 }
 
-occupiers_for_mp() {
-  local mp="$1"
-  local names=""
-  [[ -n "$mp" && -e "$mp" && -x "$LSOF" ]] || return 0
-  names="$("$LSOF" -nP "$mp" 2>/dev/null | /usr/bin/awk 'NR>1 && $1 != "lsof" && $1 != "ntfs-rw-helper" { print $1 }' | /usr/bin/sort -u | /usr/bin/head -6)" || true
-  if [[ -z "$names" ]]; then
-    names="$(/usr/bin/perl -e 'alarm 2; exec @ARGV' "$LSOF" -nP +D "$mp" 2>/dev/null | /usr/bin/awk 'NR>1 && $1 != "lsof" && $1 != "ntfs-rw-helper" { print $1 }' | /usr/bin/sort -u | /usr/bin/head -6)" || true
+OCCUPIERS_NAMES=""
+OCCUPIERS_PIDS=""
+OCCUPIERS_STATUS="ok"
+
+skip_occupier_cmd() {
+  case "${1##*/}" in
+    lsof|fuser|ps|ntfs-rw-helper|ntfsmount-helperd|ntfs-3g|go-nfsv4|nfsd|nfsiod|kernel_task)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+lsof_probe_denied() {
+  local f="$1"
+  [[ -s "$f" ]] || return 1
+  /usr/bin/grep -qiE 'operation not permitted|permission denied' "$f"
+}
+
+lsof_cmd_pid_pairs() {
+  /usr/bin/awk '
+    /^p[0-9]+$/ { pid=substr($0,2); next }
+    /^c/ && pid != "" {
+      print substr($0,2), pid
+      pid=""
+    }
+  '
+}
+
+append_occupier() {
+  local cmd="$1" pid="$2"
+  skip_occupier_cmd "$cmd" && return 0
+  [[ "$pid" == "$$" || "$pid" == "$PPID" || "$pid" == "1" ]] && return 0
+  OCCUPIERS_NAMES="${OCCUPIERS_NAMES}"$'\n'"${cmd}"
+  OCCUPIERS_PIDS="${OCCUPIERS_PIDS}"$'\n'"${cmd}[${pid}]"
+}
+
+finalize_occupiers() {
+  OCCUPIERS_NAMES="$(printf '%s\n' "$OCCUPIERS_NAMES" | /usr/bin/awk 'NF && !seen[$0]++ { if (++n>6) next; if (n>1) printf ", "; printf "%s", $0 }')"
+  OCCUPIERS_PIDS="$(printf '%s\n' "$OCCUPIERS_PIDS" | /usr/bin/awk 'NF && !seen[$0]++ { if (++n>6) next; if (n>1) printf ", "; printf "%s", $0 }')"
+  if [[ -n "$OCCUPIERS_NAMES" ]]; then
+    OCCUPIERS_STATUS="busy"
   fi
-  printf '%s' "$names" | /usr/bin/tr '\n' ',' | /usr/bin/sed -e 's/,$//' -e 's/,/, /g'
+}
+
+# stdout unused; sets OCCUPIERS_NAMES / OCCUPIERS_PIDS / OCCUPIERS_STATUS=ok|busy|failed.
+# lsof 无 FDA 时可能失败：failed 不得当作「空闲」，也不得因此自动 force。
+probe_mp_occupiers() {
+  local mp="$1" errfile out cmd pid
+  OCCUPIERS_NAMES=""
+  OCCUPIERS_PIDS=""
+  OCCUPIERS_STATUS="ok"
+  [[ -n "$mp" && -e "$mp" ]] || return 0
+  errfile="$(/usr/bin/mktemp /tmp/ntfsmount-lsof.XXXXXX 2>/dev/null || printf '/tmp/ntfsmount-lsof.%s' "$$")"
+  if [[ -x "$LSOF" ]]; then
+    set +e
+    out="$("$LSOF" -nP -F pc -- "$mp" 2>"$errfile")"
+    set -e
+    if lsof_probe_denied "$errfile"; then
+      OCCUPIERS_STATUS="failed"
+    else
+      while read -r cmd pid; do
+        [[ -n "$cmd" && -n "$pid" ]] || continue
+        append_occupier "$cmd" "$pid"
+      done < <(printf '%s\n' "$out" | lsof_cmd_pid_pairs)
+      if [[ -z "$OCCUPIERS_NAMES" ]]; then
+        set +e
+        out="$(/usr/bin/perl -e 'alarm 2; exec @ARGV' "$LSOF" -nP -F pc +D "$mp" 2>"$errfile")"
+        set -e
+        if ! lsof_probe_denied "$errfile"; then
+          while read -r cmd pid; do
+            [[ -n "$cmd" && -n "$pid" ]] || continue
+            append_occupier "$cmd" "$pid"
+          done < <(printf '%s\n' "$out" | lsof_cmd_pid_pairs)
+        fi
+      fi
+    fi
+  else
+    OCCUPIERS_STATUS="failed"
+  fi
+
+  if [[ -z "$OCCUPIERS_NAMES" && "$OCCUPIERS_STATUS" == "failed" && -n "$FUSER" && -x "$FUSER" ]]; then
+    set +e
+    out="$("$FUSER" -c "$mp" 2>"$errfile")"
+    [[ -n "$out" ]] || out="$("$FUSER" "$mp" 2>"$errfile")"
+    set -e
+    if lsof_probe_denied "$errfile" && [[ -z "$out" ]]; then
+      OCCUPIERS_STATUS="failed"
+    else
+      OCCUPIERS_STATUS="ok"
+      while IFS= read -r pid; do
+        [[ "$pid" =~ ^[0-9]+$ ]] || continue
+        cmd="$pid"
+        if [[ -n "$PS" && -x "$PS" ]]; then
+          cmd="$("$PS" -p "$pid" -o comm= 2>/dev/null | /usr/bin/head -1 | /usr/bin/awk '{ print $1 }' || true)"
+          [[ -n "$cmd" ]] || cmd="$pid"
+        fi
+        append_occupier "$cmd" "$pid"
+      done < <(printf '%s\n' "$out" | /usr/bin/grep -oE '[0-9]+' || true)
+    fi
+  fi
+
+  /bin/rm -f "$errfile"
+  finalize_occupiers
+}
+
+occupiers_for_mp() {
+  probe_mp_occupiers "$1"
+  printf '%s' "$OCCUPIERS_NAMES"
+}
+
+print_busy_occupiers() {
+  [[ -n "$OCCUPIERS_NAMES" ]] && echo "busy-occupiers: ${OCCUPIERS_NAMES}" >&2
+  [[ -n "$OCCUPIERS_PIDS" ]] && echo "busy-pids: ${OCCUPIERS_PIDS}" >&2
+  return 0
+}
+
+busy_hint_for_cmd() {
+  case "${CURRENT_CMD:-}" in
+    eject) printf '%s' "请关闭访达窗口/文件后点推出" ;;
+    unmount) printf '%s' "请关闭访达窗口/文件后点卸载" ;;
+    *) printf '%s' "请关闭访达窗口/文件后重试" ;;
+  esac
 }
 
 busy_volume_message() {
@@ -619,13 +736,45 @@ busy_unmount_message() {
   busy_volume_message "$1" "请关闭访达窗口/文件后点卸载"
 }
 
+die_volume_busy() {
+  print_busy_occupiers
+  die "$(busy_volume_message "$OCCUPIERS_NAMES" "$(busy_hint_for_cmd)")"
+}
+
+# 卸载前探测。占用则拒绝（不 diskutil）。force 仅 UI 确认后：仍探测并记下 PID，然后放行。
+guard_unmount_busy() {
+  local ident="$1" name mp
+  [[ -n "$ident" ]] || return 0
+  name="$(volume_name "$ident")"
+  if ! mp="$(plist_mount_point "$ident")"; then
+    mp="$(volume_mount_point "$name")"
+  fi
+  probe_mp_occupiers "$mp"
+  if [[ "$OCCUPIERS_STATUS" == "busy" && "${ALLOW_FORCE}" -ne 1 ]]; then
+    die_volume_busy
+  fi
+  return 0
+}
+
 # 默认 diskutil unmount（独立 argv，可含空格/中文）。force 仅 ALLOW_FORCE=1。
-# 挂载点路径失败时再试 umount --（从不 -f）。
+# 挂载点路径失败时再试 umount --（从不 -f）。占用进程存在且未确认 force 时不调用 diskutil。
 try_unmount_target() {
-  local target="$1"
+  local target="$1" occupier_reason=""
   [[ -n "$target" ]] || return 1
+  if [[ "$target" == /* ]]; then
+    probe_mp_occupiers "$target"
+    if [[ "$OCCUPIERS_STATUS" == "busy" && "${ALLOW_FORCE}" -ne 1 ]]; then
+      print_busy_occupiers
+      return 1
+    fi
+    if [[ "$OCCUPIERS_STATUS" == "busy" ]]; then
+      occupier_reason="occupiers=${OCCUPIERS_PIDS:-$OCCUPIERS_NAMES}"
+    elif [[ "$OCCUPIERS_STATUS" == "failed" ]]; then
+      occupier_reason="occupiers unknown (lsof/fuser failed)"
+    fi
+  fi
   if [[ "${ALLOW_FORCE}" -eq 1 ]]; then
-    log_force_warning "$target"
+    log_force_warning "$target" "${occupier_reason:-user-confirmed force unmount}"
     vlog "$DISKUTIL" unmount force "$target"
     "$DISKUTIL" unmount force "$target" >/dev/null 2>&1 && return 0
     return 1
@@ -667,6 +816,7 @@ unmount_numbered_leftovers() {
 unmount_any() {
   local ident="$1"
   local name mp
+  guard_unmount_busy "$ident"
   name="$(volume_name "$ident")"
   mp="$(volume_mount_point "$name")"
   kill_ntfs3g "$ident"
@@ -718,6 +868,7 @@ volume_still_mounted() {
 ensure_unmounted() {
   local ident="$1"
   local i name mp occupiers
+  guard_unmount_busy "$ident"
   for i in 1 2 3 4 5; do
     unmount_any "$ident" || true
     if ! volume_still_mounted "$ident"; then
@@ -730,6 +881,7 @@ ensure_unmounted() {
     mp="$(volume_mount_point "$name")"
   fi
   occupiers="$(occupiers_for_mp "$mp")"
+  print_busy_occupiers
   die "$(busy_volume_message "$occupiers")"
 }
 
@@ -941,6 +1093,7 @@ do_unmount() {
   elif [[ -n "$mode" ]]; then
     die "非法卸载参数: $mode"
   fi
+  guard_unmount_busy "$ident"
   unmount_any "$ident" || true
   if volume_still_mounted "$ident"; then
     local name mp occupiers
@@ -949,6 +1102,7 @@ do_unmount() {
       mp="$(volume_mount_point "$name")"
     fi
     occupiers="$(occupiers_for_mp "$mp")"
+    print_busy_occupiers
     die "$(busy_unmount_message "$occupiers")"
   fi
   echo "ok unmounted $ident"
@@ -965,6 +1119,9 @@ do_eject() {
   if ! mp="$(plist_mount_point "$ident")"; then
     mp="$(volume_mount_point "$name")"
   fi
+
+  # 占用则先拒绝，不杀 FUSE、不 diskutil。不得 force-pop。
+  guard_unmount_busy "$ident"
 
   # 先释放本卷 FUSE（ntfs-3g / go-nfsv4），再优雅卸载挂载点，最后才 diskutil eject 整盘。
   # 占用中不得 force-pop；失败把 busy 交给 UI。
@@ -994,6 +1151,7 @@ do_eject() {
 
   if [[ "$still" -ne 0 ]] || volume_still_mounted "$ident"; then
     occupiers="$(occupiers_for_mp "$mp")"
+    print_busy_occupiers
     die "$(busy_eject_message "$occupiers")"
   fi
 
@@ -1010,6 +1168,7 @@ do_eject() {
   if [[ "$eject_rc" -ne 0 ]]; then
     occupiers="$(occupiers_for_mp "$mp")"
     if [[ -n "$occupiers" ]] || echo "$eject_out" | /usr/bin/grep -qiE 'busy|in use|占用'; then
+      print_busy_occupiers
       die "$(busy_eject_message "$occupiers")"
     fi
     die "推出失败: $ident"
@@ -1510,6 +1669,11 @@ repair_should_unmount_ident() {
 # 优雅卸载；不 kill、不 ALLOW_FORCE、不 umount -f。占用则失败给 UI。
 repair_graceful_unmount_ident() {
   local ident="$1" mp="$2" name="$3" extra
+  probe_mp_occupiers "$mp"
+  if [[ "$OCCUPIERS_STATUS" == "busy" ]]; then
+    print_busy_occupiers
+    return 1
+  fi
   try_unmount_target "$mp" || true
   try_unmount_target "$ident" || true
   try_unmount_target "/dev/$ident" || true
@@ -1759,6 +1923,20 @@ do_selftest() {
   fi
   is_localhost_nfs_line "127.0.0.1:/abc on /Volumes/Foo (nfs, nodev, nosuid)" || die "selftest: FUSE-T NFS 行应识别"
   [[ "${ALLOW_FORCE}" -eq 0 ]] || die "selftest: repair 路径后 ALLOW_FORCE 仍须为 0"
+
+  local st_dir st_pid st_names
+  st_dir="$(/usr/bin/mktemp -d /tmp/ntfsmount-lsof.XXXXXX)"
+  ( cd "$st_dir" && exec /bin/sleep 30 ) &
+  st_pid=$!
+  /bin/sleep 0.4
+  probe_mp_occupiers "$st_dir"
+  st_names="$OCCUPIERS_NAMES"
+  /bin/kill "$st_pid" >/dev/null 2>&1 || true
+  wait "$st_pid" 2>/dev/null || true
+  /bin/rm -rf "$st_dir" >/dev/null 2>&1 || true
+  printf '%s' "$st_names" | /usr/bin/grep -qi sleep || die "selftest: lsof/fuser 应在占用目录上看到 sleep，得到: ${st_names:-empty} status=${OCCUPIERS_STATUS}"
+  [[ "$OCCUPIERS_STATUS" == "busy" ]] || die "selftest: 占用目录 OCCUPIERS_STATUS 应为 busy"
+
   echo "ok selftest HELPER_VERSION=${HELPER_VERSION}"
 }
 

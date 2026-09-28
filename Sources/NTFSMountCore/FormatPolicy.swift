@@ -76,8 +76,10 @@ public enum ForceUnmountCopy {
     L10n.format("forceUnmount.title", volumeName, locale: locale)
   }
 
-  public static func body(volumeName: String, locale: Locale? = nil) -> String {
-    L10n.format("forceUnmount.body", volumeName, locale: locale)
+  public static func body(volumeName: String, occupiers: String? = nil, locale: Locale? = nil) -> String {
+    let base = L10n.format("forceUnmount.body", volumeName, locale: locale)
+    guard let occupiers, !occupiers.isEmpty else { return base }
+    return base + "\n" + L10n.format("forceUnmount.occupiers", occupiers, locale: locale)
   }
 
   public static func forceTitle(locale: Locale?) -> String {

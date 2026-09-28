@@ -1,6 +1,7 @@
 #!/bin/bash
 # 完全卸载：应用 + 特权助手 + LaunchDaemon/Agent + 本机配置。不写 sudoers。
 # 仅卸助手见 helper/uninstall-helper.sh。
+# 必须以 root 运行（应用内「卸载助手」走 Authorization Services）。不调用 sudo。SIP 保持开启。
 set -euo pipefail
 resolve_cmd() {
   local n="$1" p
@@ -14,7 +15,6 @@ resolve_cmd() {
   return 1
 }
 LAUNCHCTL="$(resolve_cmd launchctl || true)"
-OSASCRIPT="$(resolve_cmd osascript || true)"
 
 SYSTEM_LABELS=(
   com.bioapple.ntfsmount.helper
@@ -62,22 +62,14 @@ clean_named_user() {
   clean_user_home "$home" "${uid:-}"
 }
 
-if [[ -n "${OSASCRIPT:-}" ]]; then
-  "$OSASCRIPT" -e 'quit app "NTFS 读写"' 2>/dev/null || true
-  "$OSASCRIPT" -e 'quit app "NTFSMount"' 2>/dev/null || true
-fi
+/usr/bin/killall NTFSMount >/dev/null 2>&1 || true
 
 if [[ "$(/usr/bin/id -u)" -ne 0 ]]; then
-  SCRIPT="$(cd "$(/usr/bin/dirname "$0")" && /bin/pwd -P)/$(/usr/bin/basename "$0")"
-  if [[ -n "${OSASCRIPT:-}" ]]; then
-    "$OSASCRIPT" - "$SCRIPT" <<'APPLESCRIPT'
-on run argv
-  do shell script quoted form of (item 1 of argv) with administrator privileges
-end run
-APPLESCRIPT
-  fi
+  echo "需要 root 才能删除 LaunchDaemon 与 /Library 下的挂载助手。" >&2
+  echo "请在应用中选择「设置 → 卸载助手」（macOS Authorization Services），或从已提权的 root shell 再运行本脚本。" >&2
+  echo "SIP 保持开启；本脚本不调用 sudo。" >&2
   clean_user_home "$HOME" "$(/usr/bin/id -u)"
-  exit 0
+  exit 1
 fi
 
 for label in "${SYSTEM_LABELS[@]}"; do
@@ -98,7 +90,6 @@ done
 /bin/rm -rf "/Library/Application Support/NTFSMount" /Applications/NTFSMount.app
 
 clean_named_user "$(/usr/bin/stat -f '%Su' /dev/console 2>/dev/null || true)"
-clean_named_user "${SUDO_USER:-}"
 
 leftover=0
 for label in "${SYSTEM_LABELS[@]}"; do
@@ -117,13 +108,10 @@ echo "本脚本仅移除 NTFSMount 及其专属组件。系统级 FUSE-T / MacFU
 echo "如果您不再需要任何 NTFS 读写功能，请手动检查并移除 /usr/local/lib/libfuse.2.dylib 等全局依赖。"
 echo "未删除日志：~/Library/Logs/ntfsmount.log（可自行删）。"
 echo "SMAppService：若「系统设置 → 通用 → 登录项与后台项目」里仍有 NTFS 读写，请关掉。"
+echo "SIP 保持开启；本项目不使用内核扩展。"
 
 if [[ "$leftover" -ne 0 ]]; then
-  echo "守护进程未完全退出。请执行："
-  echo "  sudo launchctl bootout system/com.bioapple.ntfsmount.helper"
-  echo "  sudo launchctl bootout system/com.bioapple.ntfsmount.automount"
-  echo "  sudo launchctl bootout system/local.ntfsmount.automount"
-  echo "若 socket 或 launchctl 仍列出上述标签，请注销或重启。"
+  echo "守护进程未完全退出。请注销或重启后再确认 launchd 中已无上述标签。"
 else
   echo "若菜单栏图标仍在，注销或重启即可。"
 fi

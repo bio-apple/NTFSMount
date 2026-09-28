@@ -193,7 +193,7 @@ run_helper_cmd() {
   local verb="$1" ident="$2"
   local helper out rc rec
   if [[ "$(/usr/bin/id -u)" -ne 0 ]]; then
-    emit_error "not_root" "mount/unmount 需 root 下的已安装助手。请用菜单栏应用，或: sudo $0 $verb $ident --json" "$ident"
+    emit_error "not_root" "mount/unmount 需已安装的特权助手（LaunchDaemon）。请用菜单栏应用安装助手后操作。" "$ident"
     return 1
   fi
   helper="$(find_sealed_helper)" || {

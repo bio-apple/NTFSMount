@@ -16,7 +16,7 @@ struct SettingsView: View {
           VStack(alignment: .leading, spacing: 10) {
             Toggle(L10n.t("settings.autoMount"), isOn: Binding(
               get: { store.autoMount },
-              set: { _ in store.toggleAutoMount() }
+              set: { _ in Task { await store.toggleAutoMount() } }
             ))
             .disabled(store.busyId != nil || !store.helperInstalled || Privileged.helperNeedsUpdate)
             if !store.helperInstalled || Privileged.helperNeedsUpdate {
@@ -67,12 +67,12 @@ struct SettingsView: View {
             HStack {
               if !Privileged.daemonReady {
                 Button(store.helperInstallBusy ? L10n.t("installing") : L10n.t("settings.install")) {
-                  store.installHelper()
+                  Task { _ = await store.installHelper() }
                 }
                 .disabled(store.helperInstallBusy)
               } else if Privileged.helperNeedsUpdate {
                 Button(store.helperInstallBusy ? L10n.t("installing") : L10n.t("settings.update")) {
-                  store.installHelper()
+                  Task { _ = await store.installHelper() }
                 }
                 .disabled(store.helperInstallBusy)
               }
@@ -151,6 +151,7 @@ struct SettingsView: View {
                   Button(L10n.t("settings.refreshLog")) { logText = AppLog.tail() }
                   Button(L10n.t("settings.openConsole")) { LogViewer.open() }
                   Button(L10n.t("menu.diagnose")) { EnvironmentDiagnosePresenter.present(store: store) }
+                  Button(L10n.t("diagnose.export")) { EnvironmentDiagnosePresenter.exportReport(store: store) }
                 }
                 Text(L10n.t("settings.diagnoseHint"))
                   .font(.caption)
