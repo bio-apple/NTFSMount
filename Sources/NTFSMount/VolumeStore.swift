@@ -126,7 +126,26 @@ final class VolumeStore: ObservableObject {
     }
     installHelperOnFirstLaunch()
     enableAutoMountDefault()
+    promptFullDiskAccessIfNeeded()
     checkGitHubReleaseUpdateIfNeeded()
+  }
+
+  /// Missing Full Disk Access is a warning, not a mount failure. Ask once, then open Settings.
+  func promptFullDiskAccessIfNeeded() {
+    let prompted = UserDefaults.standard.bool(forKey: AppIdentity.Defaults.didPromptFullDiskAccess)
+    let status = FullDiskAccess.probe()
+    guard FullDiskAccess.shouldPrompt(status: status, alreadyPrompted: prompted) else { return }
+    UserDefaults.standard.set(true, forKey: AppIdentity.Defaults.didPromptFullDiskAccess)
+    NSApp.activate(ignoringOtherApps: true)
+    let alert = NSAlert()
+    alert.alertStyle = .warning
+    alert.messageText = L10n.t("settings.fda")
+    alert.informativeText = FullDiskAccess.diagnoseTitle(status)
+    alert.addButton(withTitle: L10n.t("fda.open"))
+    alert.addButton(withTitle: L10n.t("later"))
+    if alert.runModal() == .alertFirstButtonReturn {
+      FullDiskAccessSettings.openPane()
+    }
   }
 
   /// Diagnose, install the helper if needed, repair, then show the result. Menu stays locked.
@@ -143,6 +162,7 @@ final class VolumeStore: ObservableObject {
       presentRepairFinished(Privileged.Outcome(ok: false, text: text))
       firstLaunchSetupBusy = false
       EnvironmentDiagnosePresenter.refreshActions()
+      promptFullDiskAccessIfNeeded()
       return
     }
     let outcome = await repairMountEnvironment()
@@ -151,6 +171,7 @@ final class VolumeStore: ObservableObject {
     firstLaunchSetupBusy = false
     EnvironmentDiagnosePresenter.refreshActions()
     enableAutoMountDefault()
+    promptFullDiskAccessIfNeeded()
   }
 
   func presentRepairFinished(_ outcome: Privileged.Outcome) {

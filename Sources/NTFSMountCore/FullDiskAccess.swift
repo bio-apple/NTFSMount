@@ -56,6 +56,11 @@ public enum FullDiskAccess {
     }
   }
 
+  /// One-time prompt until the user has been asked. Granted access never prompts.
+  public static func shouldPrompt(status: Status, alreadyPrompted: Bool) -> Bool {
+    status != .granted && !alreadyPrompted
+  }
+
   public static func diagnoseStatus(_ status: Status) -> DiagnoseStatus {
     switch status {
     case .granted: return .pass

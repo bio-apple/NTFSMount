@@ -26,6 +26,8 @@ enum AppIdentity {
     static let didShowWindow = "com.bioapple.ntfsmount.didShowWindow"
     /// Set after the first-open diagnose + repair sequence finishes.
     static let didFinishFirstLaunchSetup = "com.bioapple.ntfsmount.didFinishFirstLaunchSetup"
+    /// Set after the Full Disk Access alert has been shown once.
+    static let didPromptFullDiskAccess = "com.bioapple.ntfsmount.didPromptFullDiskAccess"
     static let didShowCompat = "com.bioapple.ntfsmount.didShowCompatNotice"
     static let didMigrate = "com.bioapple.ntfsmount.didMigrateDefaults"
     static let didAcceptLegal = "com.bioapple.ntfsmount.didAcceptLegal"

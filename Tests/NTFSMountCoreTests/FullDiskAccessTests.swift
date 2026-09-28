@@ -23,6 +23,13 @@ final class FullDiskAccessTests: XCTestCase {
     )
   }
 
+  func testPromptOnlyWhenAccessMissingAndNotYetAsked() {
+    XCTAssertTrue(FullDiskAccess.shouldPrompt(status: .denied, alreadyPrompted: false))
+    XCTAssertTrue(FullDiskAccess.shouldPrompt(status: .unknown, alreadyPrompted: false))
+    XCTAssertFalse(FullDiskAccess.shouldPrompt(status: .granted, alreadyPrompted: false))
+    XCTAssertFalse(FullDiskAccess.shouldPrompt(status: .denied, alreadyPrompted: true))
+  }
+
   func testLiveProbeDoesNotRequireGranted() {
     let status = FullDiskAccess.probe()
     XCTAssertTrue([FullDiskAccess.Status.granted, .denied, .unknown].contains(status))
