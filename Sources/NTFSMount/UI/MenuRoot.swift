@@ -101,9 +101,6 @@ struct MenuRoot: View {
       .keyboardShortcut("r")
     Button(L10n.t("menu.diagnose")) { EnvironmentDiagnosePresenter.present(store: store) }
     Button(L10n.t("menu.exportDiagnose")) { EnvironmentDiagnosePresenter.exportReport(store: store) }
-    Button(L10n.t("menu.repairEnv")) { store.confirmRepairMountEnvironment() }
-      .disabled(store.busyId != nil || !store.helperInstalled)
-      .help(store.helperInstalled ? L10n.t("repairEnv.body") : L10n.t("error.helperMissing"))
     Button(L10n.t("menu.settings")) { store.showSettings() }
     Button(AppVersion.menuTitle()) { store.showAbout() }
     if !store.message.isEmpty {
