@@ -68,12 +68,12 @@ public enum EncryptedDiskHint {
   }
 
   private static func isKnownDataFS(_ fs: String) -> Bool {
-    let u = fs.uppercased()
-    return u == "NTFS" || u == "EXFAT" || u.contains("FAT") || u == "APFS" || u == "HFS+"
+    let upper = fs.uppercased()
+    return upper == "NTFS" || upper == "EXFAT" || upper.contains("FAT") || upper == "APFS" || upper == "HFS+"
   }
 
   private static func boolFlag(_ value: Any?) -> Bool {
-    if let b = value as? Bool { return b }
+    if let flag = value as? Bool { return flag }
     if let n = value as? NSNumber { return n.boolValue }
     if let s = value as? String { return s.lowercased() == "yes" || s == "1" }
     return false

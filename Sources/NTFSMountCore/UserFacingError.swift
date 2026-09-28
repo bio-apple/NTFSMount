@@ -168,8 +168,8 @@ public enum UserFacingError {
 
   private static func occupierNamesFromLegacyChinese(_ raw: String) -> String? {
     let marker = "磁盘正被占用："
-    guard let r = raw.range(of: marker) else { return nil }
-    var rest = String(raw[r.upperBound...])
+    guard let range = raw.range(of: marker) else { return nil }
+    var rest = String(raw[range.upperBound...])
     if let nl = rest.firstIndex(of: "\n") {
       rest = String(rest[..<nl])
     }

@@ -54,8 +54,7 @@ public enum Ntfs3gVersion {
   public static func parse(_ output: String) -> Parsed {
     let text = output.replacingOccurrences(of: "\r", with: " ")
     if let triple = firstTriple(in: text, preferNtfs3gPrefix: true)
-      ?? firstTriple(in: text, preferNtfs3gPrefix: false)
-    {
+      ?? firstTriple(in: text, preferNtfs3gPrefix: false) {
       return Parsed(raw: output, year: triple.0, month: triple.1, patch: triple.2)
     }
     return Parsed(raw: output, year: nil, month: nil, patch: nil)

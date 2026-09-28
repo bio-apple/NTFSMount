@@ -105,7 +105,12 @@ public enum VolumeHealth {
   }
 
   public static func advice(for helperOutput: String, success: Bool) -> MountAdvice {
-    if success { return looksDirtyOrHibernated(helperOutput) || looksCorrupted(helperOutput) ? .readOnlyDirty : .writable }
+    if success {
+      if looksDirtyOrHibernated(helperOutput) || looksCorrupted(helperOutput) {
+        return .readOnlyDirty
+      }
+      return .writable
+    }
     if looksLikeKextOrFSKitBlock(helperOutput) { return .failedKext }
     if looksDirtyOrHibernated(helperOutput) || looksCorrupted(helperOutput) { return .readOnlyDirty }
     return .failedOther

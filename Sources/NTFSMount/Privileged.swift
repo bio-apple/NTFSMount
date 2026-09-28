@@ -77,7 +77,8 @@ enum Privileged {
           let staticCode
     else { return true }
     var info: CFDictionary?
-    guard SecCodeCopySigningInformation(staticCode, SecCSFlags(rawValue: kSecCSSigningInformation), &info) == errSecSuccess,
+    let copyFlags = SecCSFlags(rawValue: kSecCSSigningInformation)
+    guard SecCodeCopySigningInformation(staticCode, copyFlags, &info) == errSecSuccess,
           let dict = info as NSDictionary?
     else { return true }
     if let flags = dict[kSecCodeInfoFlags] as? NSNumber {
@@ -293,14 +294,15 @@ enum Privileged {
     let disk = args.count > 1 ? args[1] : ""
     let extra = args.dropFirst(2).joined(separator: " ")
     if systemHelperInstalled && helperNeedsUpdate {
-      AppLog.helper.error("\(cmd, privacy: .public) disk=\(disk, privacy: .public) extra=\(extra, privacy: .private) helper mismatch")
+      AppLog.helper.error("mismatch \(cmd, privacy: .public) \(disk, privacy: .public)")
+      AppLog.helper.error("extra=\(extra, privacy: .private)")
       return Outcome(ok: false, text: L10n.t("privileged.mismatch"))
     }
     if let via = transactViaDaemon(args) {
       if via.ok {
-        AppLog.helper.info("\(cmd, privacy: .public) disk=\(disk, privacy: .public) extra=\(extra, privacy: .private) ok")
+        AppLog.helper.info("ok \(cmd, privacy: .public) \(disk, privacy: .public)")
       } else {
-        AppLog.helper.error("\(cmd, privacy: .public) disk=\(disk, privacy: .public) extra=\(extra, privacy: .private) failed: \(via.text, privacy: .private)")
+        AppLog.helper.error("fail \(cmd, privacy: .public) \(via.text, privacy: .private)")
       }
       return via
     }
@@ -312,10 +314,11 @@ enum Privileged {
     guard let v2 = HelperIpc.encodeV2(args) else {
       return Outcome(ok: false, text: L10n.t("privileged.commFailed"))
     }
-    guard let first = transactDaemonReconnect(v2, recvSec: HelperIpc.recvTimeoutSec(command: args.first ?? "")) else { return nil }
+    let recvSec = HelperIpc.recvTimeoutSec(command: args.first ?? "")
+    guard let first = transactDaemonReconnect(v2, recvSec: recvSec) else { return nil }
     if first.ok { return first }
     if first.text.contains("协议错误"), let v1 = HelperIpc.encodeV1Compat(args) {
-      return transactDaemonReconnect(v1, recvSec: HelperIpc.recvTimeoutSec(command: args.first ?? "")) ?? first
+      return transactDaemonReconnect(v1, recvSec: recvSec) ?? first
     }
     return first
   }

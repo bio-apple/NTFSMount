@@ -28,7 +28,9 @@ if /usr/bin/grep -nE '(password|passwd|PASSWORD)[[:space:]]*=[[:space:]]*["'\'']
   echo "scripts must not hardcode passwords" >&2
   exit 1
 fi
-if /usr/bin/grep -nE 'osascript|/usr/bin/sudo|[[:space:]]sudo[[:space:]]' "$ROOT"/Sources/NTFSMount/VolumeStore.swift 2>/dev/null; then
+if /usr/bin/grep -nE 'osascript|/usr/bin/sudo|[[:space:]]sudo[[:space:]]' \
+  "$ROOT"/Sources/NTFSMount/VolumeStore.swift \
+  "$ROOT"/Sources/NTFSMount/VolumeStore+Actions.swift 2>/dev/null; then
   echo "mount/unmount/format must go through the helper daemon, not sudo/osascript" >&2
   exit 1
 fi
@@ -43,7 +45,8 @@ fi
 if /usr/bin/grep -nE 'osascript|do shell script' \
   "$ROOT/Sources/NTFSMount/Privileged.swift" \
   "$ROOT/Sources/NTFSMount/AdminAuthorization.swift" \
-  "$ROOT/Sources/NTFSMount/VolumeStore.swift" 2>/dev/null; then
+  "$ROOT/Sources/NTFSMount/VolumeStore.swift" \
+  "$ROOT/Sources/NTFSMount/VolumeStore+Actions.swift" 2>/dev/null; then
   echo "helper install/uninstall must not use osascript" >&2
   exit 1
 fi
@@ -403,24 +406,27 @@ if ! /usr/bin/awk '
   echo "do_unmount must set ALLOW_FORCE only when the extra arg is force" >&2
   exit 1
 fi
-STORE="$ROOT/Sources/NTFSMount/VolumeStore.swift"
-if ! /usr/bin/grep -q 'confirmForceUnmount' "$STORE"; then
+STORE=(
+  "$ROOT/Sources/NTFSMount/VolumeStore.swift"
+  "$ROOT/Sources/NTFSMount/VolumeStore+Actions.swift"
+)
+if ! /usr/bin/grep -q 'confirmForceUnmount' "${STORE[@]}"; then
   echo "VolumeStore must confirm force unmount (Cancel default) before extra force" >&2
   exit 1
 fi
-if ! /usr/bin/grep -q 'extra: \["force"\]' "$STORE"; then
+if ! /usr/bin/grep -q 'extra: \["force"\]' "${STORE[@]}"; then
   echo "VolumeStore must send unmount force only as an explicit extra arg" >&2
   exit 1
 fi
-if /usr/bin/grep -nE 'run\("probe".*force|run\("automount".*force|run\("mount".*force|run\("eject".*force|run\("fix".*force|run\("repair-env".*force' "$STORE"; then
+if /usr/bin/grep -nE 'run\("probe".*force|run\("automount".*force|run\("mount".*force|run\("eject".*force|run\("fix".*force|run\("repair-env".*force' "${STORE[@]}"; then
   echo "probe/automount/mount/eject/fix/repair-env must not send force" >&2
   exit 1
 fi
-if ! /usr/bin/grep -q '!probe.ok' "$STORE"; then
+if ! /usr/bin/grep -q '!probe.ok' "${STORE[@]}"; then
   echo "probeThenMount must fail closed when probe cannot unmount" >&2
   exit 1
 fi
-if ! /usr/bin/grep -q 'restoreSystemMount' "$STORE"; then
+if ! /usr/bin/grep -q 'restoreSystemMount' "${STORE[@]}"; then
   echo "VolumeStore must restore the system mount after a cancelled/failed probe" >&2
   exit 1
 fi
@@ -433,7 +439,7 @@ if ! /usr/bin/awk '
   inh && $0 ~ /^  (private )?func / && $0 !~ /func confirmForceUnmount\(/ { inh=0 }
   inh && /makeCancelDefault/ { found=1 }
   END { exit found ? 0 : 1 }
-' "$STORE"; then
+' "${STORE[@]}"; then
   echo "confirmForceUnmount must make Cancel the default button" >&2
   exit 1
 fi
@@ -458,7 +464,7 @@ if /usr/bin/awk '
   echo "do_repair_env must not reset pf, recycle vmnet, force unmount, clear hiberfile, or repairVolume" >&2
   exit 1
 fi
-if /usr/bin/grep -nE 'pfctl|/etc/pf.conf|vmnet' "$STORE" \
+if /usr/bin/grep -nE 'pfctl|/etc/pf.conf|vmnet' "${STORE[@]}" \
     "$ROOT/Sources/NTFSMount/Privileged.swift" \
     "$ROOT/Sources/NTFSMount/UI/DiagnoseAlert.swift" \
     "$ROOT/Sources/NTFSMount/UI/MenuRoot.swift" \
@@ -466,7 +472,7 @@ if /usr/bin/grep -nE 'pfctl|/etc/pf.conf|vmnet' "$STORE" \
   echo "repair UI/helper client must not call pfctl or vmnet" >&2
   exit 1
 fi
-if ! /usr/bin/grep -q 'confirmRepairMountEnvironment' "$STORE"; then
+if ! /usr/bin/grep -q 'confirmRepairMountEnvironment' "${STORE[@]}"; then
   echo "VolumeStore must confirm Repair Mount Environment" >&2
   exit 1
 fi
@@ -475,15 +481,15 @@ if ! /usr/bin/awk '
   inh && $0 ~ /^  (private )?func / && $0 !~ /func confirmRepairMountEnvironment\(/ { inh=0 }
   inh && /makeCancelDefault/ { found=1 }
   END { exit found ? 0 : 1 }
-' "$STORE"; then
+' "${STORE[@]}"; then
   echo "confirmRepairMountEnvironment must make Cancel the default button" >&2
   exit 1
 fi
-if ! /usr/bin/grep -q 'Privileged.run("repair-env"' "$STORE"; then
+if ! /usr/bin/grep -q 'Privileged.run("repair-env"' "${STORE[@]}"; then
   echo "VolumeStore must run helper repair-env" >&2
   exit 1
 fi
-if ! /usr/bin/grep -q 'restartHelper' "$STORE"; then
+if ! /usr/bin/grep -q 'restartHelper' "${STORE[@]}"; then
   echo "VolumeStore must restart the helper after repair-env" >&2
   exit 1
 fi
@@ -492,19 +498,19 @@ if /usr/bin/awk '
   inh && $0 ~ /^  func / && $0 !~ /func repairMountEnvironment\(/ { inh=0 }
   inh && /confirmForceUnmount|extra: \["force"\]|umount -f|pfctl|vmnet/ { found=1 }
   END { exit found ? 0 : 1 }
-' "$STORE"; then
+' "${STORE[@]}"; then
   echo "repairMountEnvironment must not force unmount, reset pf, or recycle vmnet" >&2
   exit 1
 fi
 if /usr/bin/grep -nE '修复挂载|未能修复挂载|正在修复挂载' \
-    "$STORE" \
+    "${STORE[@]}" \
     "$ROOT/Sources/NTFSMount/UI/DiagnoseAlert.swift" \
     "$ROOT/Sources/NTFSMount/UI/MenuRoot.swift" \
     "$ROOT/Sources/NTFSMountCore/FormatPolicy.swift"; then
   echo "repair UI copy must go through L10n, not Chinese literals" >&2
   exit 1
 fi
-if ! /usr/bin/grep -q 'RepairMountCopy.userMessage' "$STORE"; then
+if ! /usr/bin/grep -q 'RepairMountCopy.userMessage' "${STORE[@]}"; then
   echo "VolumeStore must surface repair results via RepairMountCopy.userMessage" >&2
   exit 1
 fi
@@ -566,7 +572,7 @@ if /usr/bin/grep -nE 'DISKUTIL[[:space:]]+unmount[[:space:]]+/Volumes/' "$HELPER
   echo "must not concatenate unquoted /Volumes/name into diskutil" >&2
   exit 1
 fi
-if ! /usr/bin/grep -q 'Privileged.run("probe"' "$STORE"; then
+if ! /usr/bin/grep -q 'Privileged.run("probe"' "${STORE[@]}"; then
   echo "VolumeStore must probe volume health before writable mount" >&2
   exit 1
 fi
@@ -575,7 +581,7 @@ if /usr/bin/awk '
   inh && $0 ~ /^  func / && $0 !~ /func mountAll\(/ { inh=0 }
   inh && /run\("mount"/ { found=1 }
   END { exit found ? 0 : 1 }
-' "$STORE"; then
+' "${STORE[@]}"; then
   echo "mountAll must not call run(\"mount\") directly" >&2
   exit 1
 fi
@@ -584,7 +590,7 @@ if ! /usr/bin/awk '
   inh && $0 ~ /^  func / && $0 !~ /func mountAll\(/ && $0 !~ /func pumpMountAll\(/ { inh=0 }
   inh && /probeThenMount/ { found=1 }
   END { exit found ? 0 : 1 }
-' "$STORE"; then
+' "${STORE[@]}"; then
   echo "mountAll must go through probeThenMount" >&2
   exit 1
 fi
@@ -596,7 +602,7 @@ if ! /usr/bin/grep -q '"probe"' "$HELPERD_C"; then
   echo "helperd must allow probe" >&2
   exit 1
 fi
-if ! /usr/bin/grep -A30 'func mountDefaultWritableIfNeeded' "$STORE" | /usr/bin/grep -q 'for vol in volumes'; then
+if ! /usr/bin/grep -A30 'func mountDefaultWritableIfNeeded' "${STORE[@]}" | /usr/bin/grep -q 'for vol in volumes'; then
   echo "mountDefaultWritableIfNeeded must iterate every volume, not only volumes.first" >&2
   exit 1
 fi
@@ -607,15 +613,15 @@ if /usr/bin/awk '
   $0 ~ /func toggleAutoMount\(/ { inh=0 }
   inh && /autoMountAttempted.insert/ { found=1 }
   END { exit found ? 0 : 1 }
-' "$STORE"; then
+' "${STORE[@]}"; then
   echo "autoMountAttempted must not be stamped before confirmWritable/Privileged.run" >&2
   exit 1
 fi
-if ! /usr/bin/grep -q 'shouldRecordAttempt' "$STORE"; then
+if ! /usr/bin/grep -q 'shouldRecordAttempt' "${STORE[@]}"; then
   echo "VolumeStore must stamp autoMountAttempted via shouldRecordAttempt" >&2
   exit 1
 fi
-if ! /usr/bin/grep -q 'shouldAutoEnable' "$STORE"; then
+if ! /usr/bin/grep -q 'shouldAutoEnable' "${STORE[@]}"; then
   echo "enableAutoMountDefault must stay off until helper+legal+writable stamp" >&2
   exit 1
 fi
@@ -624,7 +630,7 @@ if ! /usr/bin/awk '
   $0 ~ /func pumpAutoMount\(/ { inh=0 }
   inh && /mayAttempt/ { found=1 }
   END { exit found ? 0 : 1 }
-' "$STORE"; then
+' "${STORE[@]}"; then
   echo "mountDefaultWritableIfNeeded must consult AutoMountPolicy.mayAttempt (no mount before legal consent)" >&2
   exit 1
 fi
@@ -633,7 +639,7 @@ if ! /usr/bin/awk '
   $0 ~ /func pumpAutoMount\(/ { inh=0 }
   inh && /allowsWritableAttempt/ { found=1 }
   END { exit found ? 0 : 1 }
-' "$STORE"; then
+' "${STORE[@]}"; then
   echo "mountDefaultWritableIfNeeded must consult allowsWritableAttempt so dirty/hiber skip RW auto-mount" >&2
   exit 1
 fi
@@ -1008,7 +1014,8 @@ if /usr/bin/grep -n 'replacingOccurrences(of: "\\n", with: " ") + "\\n"' "$ROOT/
 fi
 
 export MACOSX_DEPLOYMENT_TARGET=13.0
-swift build --package-path "$ROOT" --target NTFSMountCoreTests
-swift test --package-path "$ROOT" --skip-build --filter NTFSMountCoreTests
+# Xcode 15.4 / SwiftPM cannot form NTFSMountPackageTests.xctest after
+# `swift build --target NTFSMountCoreTests` plus `--skip-build`.
+swift test --package-path "$ROOT" --filter NTFSMountCoreTests
 
 echo "ok tests"
