@@ -174,14 +174,17 @@ final class VolumeStore: ObservableObject {
     alert.runModal()
   }
 
-  func installHelper() {
+  func installHelper(then completion: (() -> Void)? = nil) {
     guard !helperInstallBusy else { return }
     helperInstallBusy = true
     setMessage(L10n.t("installing"))
     DispatchQueue.global(qos: .userInitiated).async { [weak self] in
       let result = Privileged.installHelper()
       DispatchQueue.main.async {
-        guard let self else { return }
+        guard let self else {
+          completion?()
+          return
+        }
         self.helperInstallBusy = false
         self.helperInstalled = Privileged.systemHelperInstalled
         self.setMessage(self.display(result.text))
@@ -190,13 +193,15 @@ final class VolumeStore: ObservableObject {
           if let bundled = Bundle.main.path(forResource: "ntfs-rw-helper", ofType: nil) {
             UserDefaults.standard.set(AppIdentity.sha256File(bundled), forKey: AppIdentity.Defaults.lastHelperSHA)
           }
-          self.waitForHelperSocketThenFinishInstall()
+          self.waitForHelperSocketThenFinishInstall(then: completion)
+        } else {
+          completion?()
         }
       }
     }
   }
 
-  private func waitForHelperSocketThenFinishInstall() {
+  private func waitForHelperSocketThenFinishInstall(then completion: (() -> Void)? = nil) {
     let path = AppIdentity.helperSocket
     DispatchQueue.global(qos: .userInitiated).async { [weak self] in
       let deadline = Date().addingTimeInterval(5)
@@ -204,9 +209,13 @@ final class VolumeStore: ObservableObject {
         Thread.sleep(forTimeInterval: 0.1)
       }
       DispatchQueue.main.async {
-        guard let self else { return }
+        guard let self else {
+          completion?()
+          return
+        }
         self.helperInstalled = Privileged.systemHelperInstalled
         self.enableAutoMountDefault()
+        completion?()
       }
     }
   }

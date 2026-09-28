@@ -113,15 +113,23 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "window.settings" = "設定";
 
-"window.firstInstall" = "初回はマウントヘルパーのインストールが必要です。";
+"window.firstInstall" = "ヘルパー未インストール（socket なし）。";
 
-"window.helperUpdate" = "すべての機能を使うにはマウントヘルパーの更新が必要です。";
+"window.helperMissingDetail" = "書き込みマウントとフォーマットにはマウントヘルパーが必要です。「インストール…」を押し、管理者パスワードを入力してください。診断では自動インストールしません。";
+
+"window.helperUpdate" = "マウントヘルパーの更新が必要です。";
+
+"window.helperUpdateDetail" = "書き込みマウントとフォーマットには最新のヘルパーが必要です。「更新…」を押し、管理者パスワードを入力してください。自動ではインストールしません。";
 
 "window.update" = "更新…";
 
 "window.emptyTitle" = "NTFS ディスクが見つかりません";
 
+"window.emptyTitleNeedHelper" = "先にマウントヘルパーをインストールしてください";
+
 "window.emptySubtitle" = "Windows 形式の外付けディスクを接続すると左側に表示されます。";
+
+"window.emptySubtitleNeedHelper" = "書き込みマウントとフォーマットにはヘルパーが必要です。インストール後に Windows 形式のディスクを接続すると、左側に表示されます。";
 
 "window.emptyHint" = "このウィンドウを閉じても、メニューバーの NTFS アイコンは残ります。ディスクを取り外すときは「取り出す」を使ってください。アイコンを残したい場合は、Dock から終了しないでください。";
 
@@ -383,6 +391,12 @@ Return で同意します。同意しない場合は「終了」を押してく�
 "diagnose.checking" = "同梱コンポーネントとヘルパーを確認しています…";
 
 "diagnose.copy" = "結果をコピー";
+
+"diagnose.installHelper" = "マウントヘルパーをインストール…";
+
+"diagnose.updateHelper" = "マウントヘルパーを更新…";
+
+"diagnose.brokenBundle" = "同梱の ntfs-3g / go-nfsv4 がありません。このコピーは不完全です。アプリを再ダウンロードしてください。macFUSE のインストールも brew も不要です。";
 
 "diagnose.openLog" = "ログを開く";
 

@@ -147,7 +147,7 @@ struct SettingsView: View {
                 HStack {
                   Button(L10n.t("settings.refreshLog")) { logText = AppLog.tail() }
                   Button(L10n.t("settings.openConsole")) { LogViewer.open() }
-                  Button(L10n.t("menu.diagnose")) { EnvironmentDiagnosePresenter.present() }
+                  Button(L10n.t("menu.diagnose")) { EnvironmentDiagnosePresenter.present(store: store) }
                 }
                 Text(L10n.t("settings.diagnoseHint"))
                   .font(.caption)

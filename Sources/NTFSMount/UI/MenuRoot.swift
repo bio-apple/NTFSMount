@@ -89,7 +89,7 @@ struct MenuRoot: View {
     Divider()
     Button(L10n.t("menu.refresh")) { store.refresh() }
       .keyboardShortcut("r")
-    Button(L10n.t("menu.diagnose")) { EnvironmentDiagnosePresenter.present() }
+    Button(L10n.t("menu.diagnose")) { EnvironmentDiagnosePresenter.present(store: store) }
     Button(L10n.t("menu.settings")) { store.showSettings() }
     Button(UpdateCopy.menuCheck) { SparkleUpdater.shared.checkForUpdates() }
     if !store.message.isEmpty {

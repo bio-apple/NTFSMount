@@ -36,6 +36,10 @@ if /usr/bin/grep -n 'ln -sf' "$ROOT/helper/install-helper.sh"; then
   echo "install-helper must not recreate /usr/local/sbin symlink" >&2
   exit 1
 fi
+if /usr/bin/grep -n '/usr/bin/realpath' "$ROOT/helper/install-helper.sh"; then
+  echo "install-helper must not invoke /usr/bin/realpath (macOS has no such binary)" >&2
+  exit 1
+fi
 
 HELPERD_C="$ROOT/helper/ntfsmount-helperd.c"
 if ! /usr/bin/grep -q '/Library/Application Support/NTFSMount' "$HELPERD_C"; then

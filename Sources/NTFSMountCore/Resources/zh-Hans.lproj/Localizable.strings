@@ -113,15 +113,23 @@
 
 "window.settings" = "设置";
 
-"window.firstInstall" = "第一次使用需要安装挂载助手。";
+"window.firstInstall" = "助手未安装（socket 不存在）。";
 
-"window.helperUpdate" = "挂载助手需要更新后才能使用全部功能。";
+"window.helperMissingDetail" = "可写挂载和格式化需要挂载助手。点「安装…」并输入管理员密码；诊断不会自动安装。";
+
+"window.helperUpdate" = "挂载助手需要更新。";
+
+"window.helperUpdateDetail" = "可写挂载和格式化需要最新助手。点「更新…」并输入管理员密码；不会自动安装。";
 
 "window.update" = "更新…";
 
 "window.emptyTitle" = "没有检测到 NTFS 硬盘";
 
+"window.emptyTitleNeedHelper" = "请先安装挂载助手";
+
 "window.emptySubtitle" = "插入 Windows 格式的移动盘后会出现在左侧。";
+
+"window.emptySubtitleNeedHelper" = "可写挂载和格式化需要助手。安装后再插入 Windows 格式的移动盘，它会出现在左侧。";
 
 "window.emptyHint" = "关闭窗口后，菜单栏的 NTFS 图标仍会保留。要取下磁盘请用「推出」。若希望图标继续显示，请不要从程序坞退出。";
 
@@ -383,6 +391,12 @@
 "diagnose.checking" = "正在检查捆绑组件与挂载助手…";
 
 "diagnose.copy" = "复制结果";
+
+"diagnose.installHelper" = "安装挂载助手…";
+
+"diagnose.updateHelper" = "更新挂载助手…";
+
+"diagnose.brokenBundle" = "捆绑的 ntfs-3g / go-nfsv4 缺失。这是不完整的安装包，请重新下载本应用。不要安装 macFUSE，也不要 brew install。";
 
 "diagnose.openLog" = "打开日志";
 

@@ -281,9 +281,14 @@ obtain_fuse_t() {
 }
 
 ntfs3g_prefix() {
-  local bin real
+  local bin real dir
   bin="$(find_ntfs3g_bin)" || return 1
-  real="$(/usr/bin/realpath "$bin" 2>/dev/null || printf '%s' "$bin")"
+  dir="$(/usr/bin/dirname "$bin")"
+  if [[ -d "$dir" ]] && dir="$(cd "$dir" && /bin/pwd -P)"; then
+    real="${dir}/$(/usr/bin/basename "$bin")"
+  else
+    real="$bin"
+  fi
   if [[ "$real" == */bin/ntfs-3g ]]; then
     printf '%s' "$(/usr/bin/dirname "$(/usr/bin/dirname "$real")")"
     return 0

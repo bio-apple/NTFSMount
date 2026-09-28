@@ -113,15 +113,23 @@ Return means you agree. Click “Quit” if you do not.";
 
 "window.settings" = "Settings";
 
-"window.firstInstall" = "The first use requires installing the mount helper.";
+"window.firstInstall" = "Helper not installed (socket missing).";
 
-"window.helperUpdate" = "Update the mount helper to use every feature.";
+"window.helperMissingDetail" = "Writable mount and format need the mount helper. Choose Install… and enter the administrator password. Diagnose does not install it for you.";
+
+"window.helperUpdate" = "Mount helper needs an update.";
+
+"window.helperUpdateDetail" = "Writable mount and format need the current helper. Choose Update… and enter the administrator password. Nothing is installed automatically.";
 
 "window.update" = "Update…";
 
 "window.emptyTitle" = "No NTFS disks detected";
 
+"window.emptyTitleNeedHelper" = "Install the mount helper first";
+
 "window.emptySubtitle" = "Plug in a Windows-formatted external disk and it will appear on the left.";
+
+"window.emptySubtitleNeedHelper" = "Writable mount and format need the helper. After it is installed, plug in a Windows-formatted disk — it will appear on the left.";
 
 "window.emptyHint" = "Closing this window keeps the menu-bar NTFS icon. Use Eject to remove a disk. Do not Quit from the Dock if you want the icon to stay.";
 
@@ -383,6 +391,12 @@ Return means you agree. Click “Quit” if you do not.";
 "diagnose.checking" = "Checking bundled components and helper…";
 
 "diagnose.copy" = "Copy Results";
+
+"diagnose.installHelper" = "Install Mount Helper…";
+
+"diagnose.updateHelper" = "Update Mount Helper…";
+
+"diagnose.brokenBundle" = "Bundled ntfs-3g / go-nfsv4 is missing. This copy is incomplete — re-download the app. Do not install macFUSE or run brew.";
 
 "diagnose.openLog" = "Open Log";
 

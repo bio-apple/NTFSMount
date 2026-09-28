@@ -86,6 +86,16 @@ public enum EnvironmentDiagnose {
     return "\(L10n.t("diagnose.header", locale: locale))\n\n\(body)\n\n\(L10n.t("diagnose.fuseTNote", locale: locale))"
   }
 
+  /// LaunchDaemon helper is missing or unreachable. macFUSE / brew are never installable here.
+  public static func helperNeedsInstall(_ snap: DiagnoseSnapshot) -> Bool {
+    !snap.helperSocketExists || snap.helperPing.hasPrefix("connect_failed")
+  }
+
+  /// Bundled ntfs-3g / ntfsfix / go-nfsv4 gap means a broken app copy, not a brew install.
+  public static func bundledComponentsBroken(_ snap: DiagnoseSnapshot) -> Bool {
+    !snap.bundledNtfs3g || !snap.bundledNtfsfix || !snap.bundledGoNfsv4
+  }
+
   public static func parseJSON(_ data: Data) -> DiagnoseSnapshot? {
     guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
       return nil

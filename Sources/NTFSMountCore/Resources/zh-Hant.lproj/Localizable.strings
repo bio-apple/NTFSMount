@@ -113,15 +113,23 @@ Return 即同意。不同意請點「結束」。";
 
 "window.settings" = "設定";
 
-"window.firstInstall" = "第一次使用需要安裝掛載助手。";
+"window.firstInstall" = "助手未安裝（socket 不存在）。";
 
-"window.helperUpdate" = "掛載助手需要更新後才能使用全部功能。";
+"window.helperMissingDetail" = "可寫掛載與格式化需要掛載助手。點「安裝…」並輸入管理員密碼；診斷不會自動安裝。";
+
+"window.helperUpdate" = "掛載助手需要更新。";
+
+"window.helperUpdateDetail" = "可寫掛載與格式化需要最新助手。點「更新…」並輸入管理員密碼；不會自動安裝。";
 
 "window.update" = "更新…";
 
 "window.emptyTitle" = "沒有偵測到 NTFS 硬碟";
 
+"window.emptyTitleNeedHelper" = "請先安裝掛載助手";
+
 "window.emptySubtitle" = "插入 Windows 格式的行動碟後會出現在左側。";
+
+"window.emptySubtitleNeedHelper" = "可寫掛載與格式化需要助手。安裝後再插入 Windows 格式的行動碟，它會出現在左側。";
 
 "window.emptyHint" = "關閉視窗後，選單列的 NTFS 圖示仍會保留。要取下磁碟請用「推出」。若希望圖示繼續顯示，請不要從 Dock 結束。";
 
@@ -383,6 +391,12 @@ Return 即同意。不同意請點「結束」。";
 "diagnose.checking" = "正在檢查內附元件與掛載助手…";
 
 "diagnose.copy" = "複製結果";
+
+"diagnose.installHelper" = "安裝掛載助手…";
+
+"diagnose.updateHelper" = "更新掛載助手…";
+
+"diagnose.brokenBundle" = "內附的 ntfs-3g / go-nfsv4 缺失。這是不完整的安裝包，請重新下載本 App。不要安裝 macFUSE，也不要 brew install。";
 
 "diagnose.openLog" = "打開紀錄";
 

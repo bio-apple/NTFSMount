@@ -600,6 +600,11 @@ final class L10nTests: XCTestCase {
       "Checking bundled components and helper…"
     )
     XCTAssertEqual(L10n.t("diagnose.checking", locale: zh), "正在检查捆绑组件与挂载助手…")
+    XCTAssertEqual(L10n.t("diagnose.installHelper", locale: zh), "安装挂载助手…")
+    XCTAssertEqual(L10n.t("window.firstInstall", locale: zh), "助手未安装（socket 不存在）。")
+    XCTAssertTrue(L10n.t("window.helperMissingDetail", locale: zh).contains("管理员密码"))
+    XCTAssertFalse(L10n.t("diagnose.brokenBundle", locale: en).contains("brew install macfuse"))
+    XCTAssertTrue(L10n.t("diagnose.brokenBundle", locale: zh).contains("重新下载"))
     XCTAssertEqual(
       L10n.t("window.emptyHint", locale: en),
       "Closing this window keeps the menu-bar NTFS icon. Use Eject to remove a disk. Do not Quit from the Dock if you want the icon to stay."

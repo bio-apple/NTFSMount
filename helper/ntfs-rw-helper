@@ -26,7 +26,7 @@ CMD_START_MS=0
 #   .../NTFSMount.app/Contents/Resources/ntfs-rw-helper
 #   <repo>/helper/ntfs-rw-helper
 helper_realpath() {
-  local src="${BASH_SOURCE[0]:-$0}"
+  local src="${BASH_SOURCE[0]:-$0}" dir
   if [[ "$src" != /* ]]; then
     if [[ -e "$PWD/$src" ]]; then
       src="$PWD/$src"
@@ -36,7 +36,13 @@ helper_realpath() {
       [[ -n "$found" ]] && src="$found"
     fi
   fi
-  /usr/bin/realpath "$src" 2>/dev/null || printf '%s' "$src"
+  # macOS 无 /usr/bin/realpath；旧系统可能连 /bin/realpath 也没有。
+  dir="$(/usr/bin/dirname "$src")"
+  if [[ -d "$dir" ]]; then
+    printf '%s/%s' "$(cd "$dir" && /bin/pwd -P)" "$(/usr/bin/basename "$src")"
+  else
+    printf '%s' "$src"
+  fi
 }
 
 # Candidate dirs for ntfs-3g / mkntfs / ntfsfix / go-nfsv4, in order:
@@ -49,7 +55,7 @@ _add_bundle_dir() {
   local d="$1" x
   [[ -n "$d" ]] || return 0
   if [[ -d "$d" ]]; then
-    d="$(/usr/bin/realpath "$d" 2>/dev/null || printf '%s' "$d")"
+    d="$(cd "$d" && /bin/pwd -P || printf '%s' "$d")"
   fi
   for x in "${BUNDLE_DIRS[@]+"${BUNDLE_DIRS[@]}"}"; do
     [[ "$x" == "$d" ]] && return 0

@@ -53,7 +53,7 @@ clean_named_user() {
 /usr/bin/osascript -e 'quit app "NTFSMount"' 2>/dev/null || true
 
 if [[ "$(/usr/bin/id -u)" -ne 0 ]]; then
-  SCRIPT="$(/usr/bin/realpath "$0")"
+  SCRIPT="$(cd "$(/usr/bin/dirname "$0")" && /bin/pwd -P)/$(/usr/bin/basename "$0")"
   /usr/bin/osascript - "$SCRIPT" <<'APPLESCRIPT'
 on run argv
   do shell script quoted form of (item 1 of argv) with administrator privileges

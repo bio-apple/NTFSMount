@@ -1,11 +1,12 @@
 import AppKit
 import NTFSMountCore
 
-/// Scrollable diagnose window. Copy / close; never install helper.
+/// Scrollable diagnose window. Scan is read-only (never installs). After the report,
+/// the user can choose to install the mount helper via the same `installHelper()` flow.
 enum EnvironmentDiagnosePresenter {
   @MainActor
-  static func present() {
-    DiagnoseWindowController.shared.show()
+  static func present(store: VolumeStore) {
+    DiagnoseWindowController.shared.show(store: store)
   }
 }
 
@@ -17,17 +18,24 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
   private var textView: NSTextView?
   private var spinner: NSProgressIndicator?
   private var copyButton: NSButton?
+  private var installButton: NSButton?
+  private var hintField: NSTextField?
+  private var hintCollapse: NSLayoutConstraint?
+  private var buttonRow: NSStackView?
+  private weak var store: VolumeStore?
   private var running = false
+  private var installing = false
   private var report = ""
   private var generation = 0
 
-  func show() {
+  func show(store: VolumeStore) {
+    self.store = store
     if window == nil {
       buildWindow()
     }
     NSApp.activate(ignoringOtherApps: true)
     window?.makeKeyAndOrderFront(nil)
-    if !running {
+    if !running && !installing {
       start()
     }
   }
@@ -40,11 +48,14 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     generation += 1
     let token = generation
     running = true
+    installing = false
     report = ""
     setBody(L10n.t("diagnose.checking"))
     spinner?.startAnimation(nil)
     spinner?.isHidden = false
     copyButton?.isEnabled = false
+    setHint(nil)
+    setInstallVisible(false)
     DispatchQueue.global(qos: .userInitiated).async { [weak self] in
       let snap = EnvironmentDiagnoseRunner.snapshot()
       let lines = EnvironmentDiagnose.lines(from: snap)
@@ -58,8 +69,38 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
         self.spinner?.stopAnimation(nil)
         self.spinner?.isHidden = true
         self.copyButton?.isEnabled = true
+        self.updateActions(snap)
       }
     }
+  }
+
+  private func updateActions(_ snap: DiagnoseSnapshot) {
+    if EnvironmentDiagnose.bundledComponentsBroken(snap) {
+      setHint(L10n.t("diagnose.brokenBundle"))
+    } else {
+      setHint(nil)
+    }
+
+    let helperOffer = EnvironmentDiagnose.helperNeedsInstall(snap)
+      || Privileged.helperNeedsUpdate
+    setInstallVisible(helperOffer)
+    guard helperOffer else { return }
+    let update = (store?.helperInstalled ?? false) && Privileged.helperNeedsUpdate
+    installButton?.title = L10n.t(update ? "diagnose.updateHelper" : "diagnose.installHelper")
+    installButton?.isEnabled = !(store?.helperInstallBusy ?? false) && !installing
+  }
+
+  private func setHint(_ text: String?) {
+    let show = !(text ?? "").isEmpty
+    hintField?.stringValue = text ?? ""
+    hintField?.isHidden = !show
+    hintCollapse?.isActive = !show
+  }
+
+  private func setInstallVisible(_ visible: Bool) {
+    guard let install = installButton else { return }
+    install.isHidden = !visible
+    buttonRow?.setVisibilityPriority(visible ? .mustHold : .notVisible, for: install)
   }
 
   private func setBody(_ text: String) {
@@ -72,24 +113,37 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     NSPasteboard.general.setString(text, forType: .string)
   }
 
+  @objc private func installHelper() {
+    guard let store, !installing, !store.helperInstallBusy else { return }
+    installing = true
+    installButton?.title = L10n.t("installing")
+    installButton?.isEnabled = false
+    store.installHelper { [weak self] in
+      guard let self else { return }
+      self.installing = false
+      guard self.window?.isVisible == true else { return }
+      self.start()
+    }
+  }
+
   @objc private func closeWindow() {
     window?.close()
   }
 
   private func buildWindow() {
     let win = NSWindow(
-      contentRect: NSRect(x: 0, y: 0, width: 560, height: 420),
+      contentRect: NSRect(x: 0, y: 0, width: 560, height: 440),
       styleMask: [.titled, .closable, .resizable, .miniaturizable],
       backing: .buffered,
       defer: false
     )
     win.title = L10n.t("diagnose.alertTitle")
-    win.minSize = NSSize(width: 420, height: 280)
+    win.minSize = NSSize(width: 420, height: 300)
     win.isReleasedWhenClosed = false
     win.delegate = self
     win.center()
 
-    let content = NSView(frame: NSRect(x: 0, y: 0, width: 560, height: 420))
+    let content = NSView(frame: NSRect(x: 0, y: 0, width: 560, height: 440))
 
     let spinner = NSProgressIndicator()
     spinner.style = .spinning
@@ -111,20 +165,48 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     text.textContainerInset = NSSize(width: 8, height: 8)
     text.string = L10n.t("diagnose.checking")
 
+    let hint = NSTextField(wrappingLabelWithString: "")
+    hint.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+    hint.textColor = NSColor.secondaryLabelColor
+    hint.translatesAutoresizingMaskIntoConstraints = false
+    hint.isHidden = true
+    hint.preferredMaxLayoutWidth = 520
+    hint.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
     let copy = NSButton(title: L10n.t("diagnose.copy"), target: self, action: #selector(copyReport))
     copy.bezelStyle = .rounded
-    copy.translatesAutoresizingMaskIntoConstraints = false
     copy.isEnabled = false
+
+    let install = NSButton(
+      title: L10n.t("diagnose.installHelper"),
+      target: self,
+      action: #selector(installHelper)
+    )
+    install.bezelStyle = .rounded
+    install.isHidden = true
 
     let close = NSButton(title: L10n.t("ok.gotIt"), target: self, action: #selector(closeWindow))
     close.bezelStyle = .rounded
     close.keyEquivalent = "\r"
-    close.translatesAutoresizingMaskIntoConstraints = false
+
+    let spacer = NSView()
+    spacer.setContentHuggingPriority(.fittingSizeCompression, for: .horizontal)
+    spacer.setContentCompressionResistancePriority(.fittingSizeCompression, for: .horizontal)
+
+    let row = NSStackView(views: [copy, install, spacer, close])
+    row.orientation = .horizontal
+    row.alignment = .centerY
+    row.spacing = 12
+    row.translatesAutoresizingMaskIntoConstraints = false
+    row.setVisibilityPriority(.notVisible, for: install)
 
     content.addSubview(spinner)
     content.addSubview(scroll)
-    content.addSubview(copy)
-    content.addSubview(close)
+    content.addSubview(hint)
+    content.addSubview(row)
+
+    let hintCollapse = hint.heightAnchor.constraint(equalToConstant: 0)
+    hintCollapse.isActive = true
 
     NSLayoutConstraint.activate([
       spinner.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),
@@ -132,12 +214,13 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
       scroll.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),
       scroll.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),
       scroll.topAnchor.constraint(equalTo: spinner.bottomAnchor, constant: 10),
-      scroll.bottomAnchor.constraint(equalTo: copy.topAnchor, constant: -12),
-      copy.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),
-      copy.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -14),
-      copy.trailingAnchor.constraint(lessThanOrEqualTo: close.leadingAnchor, constant: -12),
-      close.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),
-      close.centerYAnchor.constraint(equalTo: copy.centerYAnchor),
+      scroll.bottomAnchor.constraint(equalTo: hint.topAnchor, constant: -8),
+      hint.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),
+      hint.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),
+      hint.bottomAnchor.constraint(equalTo: row.topAnchor, constant: -12),
+      row.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),
+      row.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),
+      row.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -14),
     ])
 
     win.contentView = content
@@ -145,5 +228,9 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     self.textView = text
     self.spinner = spinner
     self.copyButton = copy
+    self.installButton = install
+    self.hintField = hint
+    self.hintCollapse = hintCollapse
+    self.buttonRow = row
   }
 }

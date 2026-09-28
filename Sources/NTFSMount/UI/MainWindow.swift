@@ -68,6 +68,11 @@ struct MainWindowView: View {
       detail
     }
     .frame(minWidth: 680, minHeight: 400)
+    .safeAreaInset(edge: .top, spacing: 0) {
+      if !store.helperInstalled || Privileged.helperNeedsUpdate {
+        HelperInstallBanner(store: store)
+      }
+    }
     .onAppear {
       if store.openSettings {
         selectedId = "__settings__"
@@ -186,55 +191,59 @@ private struct VolumeSidebarRow: View {
 
 struct HelperInstallBanner: View {
   @ObservedObject var store: VolumeStore
-  var text: String
-  var button: String
-  var action: () -> Void
+
+  private var needsUpdate: Bool {
+    store.helperInstalled && Privileged.helperNeedsUpdate
+  }
 
   var body: some View {
-    HStack(spacing: 10) {
+    HStack(alignment: .top, spacing: 10) {
       Image(systemName: "exclamationmark.triangle.fill")
         .foregroundStyle(Color(nsColor: .systemOrange))
-      Text(store.helperInstallBusy ? L10n.t("installing") : text)
-      Spacer()
-      Button(store.helperInstallBusy ? L10n.t("installing") : button, action: action)
-        .controlSize(.small)
-        .disabled(store.helperInstallBusy)
+        .padding(.top, 1)
+      VStack(alignment: .leading, spacing: 4) {
+        Text(needsUpdate ? L10n.t("window.helperUpdate") : L10n.t("window.firstInstall"))
+          .font(.callout.weight(.medium))
+        Text(needsUpdate ? L10n.t("window.helperUpdateDetail") : L10n.t("window.helperMissingDetail"))
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+      Spacer(minLength: 12)
+      Button(store.helperInstallBusy
+        ? L10n.t("installing")
+        : L10n.t(needsUpdate ? "window.update" : "menu.installHelper")
+      ) {
+        store.installHelper()
+      }
+      .buttonStyle(.borderedProminent)
+      .controlSize(.small)
+      .disabled(store.helperInstallBusy)
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 10)
     .background(Color(nsColor: .controlBackgroundColor))
+    .overlay(alignment: .bottom) { Divider() }
   }
 }
 
 private struct EmptyVolumeView: View {
   @ObservedObject var store: VolumeStore
 
+  private var helperReady: Bool {
+    store.helperInstalled && !Privileged.helperNeedsUpdate
+  }
+
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
-      if !store.helperInstalled {
-        HelperInstallBanner(
-          store: store,
-          text: L10n.t("window.firstInstall"),
-          button: L10n.t("menu.installHelper"),
-          action: { store.installHelper() }
-        )
-      } else if Privileged.helperNeedsUpdate {
-        HelperInstallBanner(
-          store: store,
-          text: L10n.t("window.helperUpdate"),
-          button: L10n.t("window.update"),
-          action: { store.installHelper() }
-        )
-      }
-
       VStack(spacing: 12) {
-        Image(systemName: "externaldrive")
+        Image(systemName: helperReady ? "externaldrive" : "exclamationmark.triangle")
           .font(.system(size: 48))
           .symbolRenderingMode(.hierarchical)
           .foregroundStyle(.secondary)
-        Text(L10n.t("window.emptyTitle"))
+        Text(emptyTitle)
           .font(.title3.weight(.semibold))
-        Text(L10n.t("window.emptySubtitle"))
+        Text(emptySubtitle)
           .font(.callout)
           .foregroundStyle(.secondary)
           .multilineTextAlignment(.center)
@@ -278,6 +287,16 @@ private struct EmptyVolumeView: View {
       .padding()
     }
   }
+
+  private var emptyTitle: String {
+    if !store.helperInstalled { return L10n.t("window.emptyTitleNeedHelper") }
+    if Privileged.helperNeedsUpdate { return L10n.t("window.helperUpdate") }
+    return L10n.t("window.emptyTitle")
+  }
+
+  private var emptySubtitle: String {
+    helperReady ? L10n.t("window.emptySubtitle") : L10n.t("window.emptySubtitleNeedHelper")
+  }
 }
 
 private struct VolumeDetailView: View {
@@ -291,22 +310,6 @@ private struct VolumeDetailView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
-      if !store.helperInstalled {
-        HelperInstallBanner(
-          store: store,
-          text: L10n.t("window.firstInstall"),
-          button: L10n.t("menu.installHelper"),
-          action: { store.installHelper() }
-        )
-      } else if Privileged.helperNeedsUpdate {
-        HelperInstallBanner(
-          store: store,
-          text: L10n.t("window.helperUpdate"),
-          button: L10n.t("window.update"),
-          action: { store.installHelper() }
-        )
-      }
-
       VStack(alignment: .leading, spacing: 20) {
         header
         if vol.hasUsage {

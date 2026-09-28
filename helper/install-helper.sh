@@ -28,7 +28,7 @@ if [[ "$USER_NAME" == "root" ]]; then
   USER_NAME="$(/usr/bin/stat -f '%Su' /dev/console)"
 fi
 
-APP="$(/usr/bin/realpath "$APP")"
+APP="$(cd "$APP" && /bin/pwd -P)"
 /bin/mkdir -p "$SUPPORT" /Library/PrivilegedHelperTools
 
 /bin/cp "$HELPER_SRC" "$HELPER_DST"

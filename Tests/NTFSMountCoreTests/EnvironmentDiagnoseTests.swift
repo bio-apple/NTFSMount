@@ -80,6 +80,31 @@ final class EnvironmentDiagnoseTests: XCTestCase {
     XCTAssertTrue(line(lines, "fuse_t").title.contains("不必安装 macFUSE"))
     XCTAssertEqual(line(lines, "helper").status, .fail)
     XCTAssertTrue(line(lines, "helper").title.contains("不会去安装"))
+    XCTAssertTrue(EnvironmentDiagnose.helperNeedsInstall(snap))
+    XCTAssertTrue(EnvironmentDiagnose.bundledComponentsBroken(snap))
+  }
+
+  func testHelperInstallableIsSocketNotMacFuse() {
+    var snap = DiagnoseSnapshot()
+    snap.helperSocketExists = false
+    snap.brewMacFuse = "absent"
+    snap.kextMacFuse = "absent"
+    XCTAssertTrue(EnvironmentDiagnose.helperNeedsInstall(snap))
+    XCTAssertTrue(EnvironmentDiagnose.bundledComponentsBroken(snap))
+
+    snap.helperSocketExists = true
+    snap.helperPing = "HELPER_VERSION=9"
+    snap.bundledNtfs3g = true
+    snap.bundledNtfsfix = true
+    snap.bundledGoNfsv4 = true
+    XCTAssertFalse(EnvironmentDiagnose.helperNeedsInstall(snap))
+    XCTAssertFalse(EnvironmentDiagnose.bundledComponentsBroken(snap))
+
+    snap.helperPing = "connect_failed: timeout"
+    XCTAssertTrue(EnvironmentDiagnose.helperNeedsInstall(snap))
+    snap.helperPing = "HELPER_VERSION=9"
+    snap.brewMacFuse = "present"
+    XCTAssertFalse(EnvironmentDiagnose.helperNeedsInstall(snap))
   }
 
   func testMacFusePresentIsConflictNotRequirement() {
