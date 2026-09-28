@@ -237,6 +237,20 @@ Return means you agree. Click “Quit” if you do not.";
 
 "settings.autoMountNeedHelper" = "Install or update the mount helper before turning on auto-mount.";
 
+"settings.cleanMacJunk" = "Clean Mac junk files before eject";
+
+"settings.cleanMacJunkNote" = "When on, eject or unmount deletes .DS_Store, AppleDouble (._*) files, .Trashes, .Spotlight-V100, .fseventsd, and .TemporaryItems on that mounted external NTFS volume. Off by default. Does not touch hiberfil.sys, pagefile, or your documents.";
+
+"cleanJunk.working" = "Cleaning Mac junk files…";
+
+"cleanJunk.done" = "Removed %d Mac junk file(s).";
+
+"cleanJunk.failedTitle" = "Could not clean Mac junk files";
+
+"cleanJunk.failedBody" = "Some macOS hidden files on “%@” could not be removed. You can eject or unmount without cleaning.";
+
+"cleanJunk.continueWithout" = "Continue without cleaning";
+
 "settings.appearance" = "Appearance & Startup";
 
 "settings.launchAtLogin" = "Open at login";
@@ -288,6 +302,20 @@ Return means you agree. Click “Quit” if you do not.";
 "helper.hintAdHoc" = "Ad-hoc / un-notarized builds usually cannot register SMAppService. Install uses Authorization Services (system admin dialog). SIP stays enabled; no kext.";
 
 "helper.privilegeHint" = "The mount helper runs as root and can mount, unmount, and format external disks. One-time install uses macOS Authorization Services; the password is not saved. SIP stays enabled. This app does not use a kernel extension and does not write sudoers.";
+
+"helper.fdaHint" = "On Apple Silicon and Sequoia or later, grant Full Disk Access to NTFSMount.app. The LaunchDaemon does not inherit that grant; if mounts still fail, add ntfsmount-helperd in the same list.";
+
+"settings.fda" = "Full Disk Access";
+
+"fda.body" = "Grant Full Disk Access to NTFSMount.app (System Settings → Privacy & Security → Full Disk Access). Needed for occupier detection and some volume metadata on Sequoia+; the LaunchDaemon is a separate process and does not inherit the app’s TCC — if mounts still fail after FDA on the app, add the helper (ntfsmount-helperd) in the same list.";
+
+"fda.open" = "Open Full Disk Access…";
+
+"fda.statusGranted" = "This app can read a Full Disk Access gated path.";
+
+"fda.statusDenied" = "Full Disk Access for this app was not detected.";
+
+"fda.helperPath" = "If mounts still fail, add the helper in the same list: %@";
 
 "alert.updateHelperTitle" = "Update Mount Helper";
 
@@ -353,6 +381,8 @@ Return means you agree. Click “Quit” if you do not.";
 
 "error.missingBinary" = "A required program is missing (ntfs-3g or a mount component). Reinstall the app. Details were written to the log.";
 
+"runtime.ntfs3gMissing" = "Bundled ntfs-3g is missing. Reinstall NTFSMount.app from GitHub Latest. Do not use Homebrew.";
+
 "error.adminDenied" = "Could not get administrator access. If you clicked Cancel, try again. Details were written to the log.";
 
 "error.helperNeedsUpdate" = "The mount helper needs an update. Click “Update…” in the window.";
@@ -360,6 +390,10 @@ Return means you agree. Click “Quit” if you do not.";
 "error.diskBusy" = "The disk is in use: close Finder windows/files, then click Eject";
 
 "error.diskBusyNamed" = "The disk is in use by %@. Close those programs, then retry.";
+
+"error.occupiersMore" = "and %d more";
+
+"error.diskBusyNeedFDA" = "Grant Full Disk Access to see which app is using the disk.";
 
 "error.failedWithLog" = "The operation failed. Details were written to %@";
 
@@ -466,7 +500,7 @@ Return means you agree. Click “Quit” if you do not.";
 
 "diagnose.installFailed" = "Mount helper install failed";
 
-"diagnose.brokenBundle" = "Bundled ntfs-3g / go-nfsv4 is missing. This copy is incomplete — re-download the app.";
+"diagnose.brokenBundle" = "Bundled ntfs-3g / go-nfsv4 is missing. Reinstall NTFSMount.app from GitHub Latest.";
 
 "diagnose.openLog" = "Open Log";
 
@@ -480,7 +514,7 @@ Return means you agree. Click “Quit” if you do not.";
 
 "diagnose.runtimeOK" = "Bundled ntfs-3g / ntfsfix / go-nfsv4 are all present";
 
-"diagnose.runtimeMissing" = "Missing bundled %@ (reinstall the app; no need for Homebrew ntfs-3g-mac)";
+"diagnose.runtimeMissing" = "Missing bundled %@ — reinstall NTFSMount.app from GitHub Latest (not Homebrew)";
 
 "diagnose.fuseOK" = "Bundled go-nfsv4 (pinned FUSE-T %@)";
 
@@ -518,6 +552,12 @@ Return means you agree. Click “Quit” if you do not.";
 
 "diagnose.gatekeeper" = "Gatekeeper: %@";
 
+"diagnose.fdaGranted" = "Full Disk Access gated path is readable in this app (LaunchDaemon does not inherit this grant)";
+
+"diagnose.fdaDenied" = "Full Disk Access for NTFSMount.app was not detected; occupier names and some volume metadata may be missing on Sequoia+";
+
+"diagnose.fdaUnknown" = "Grant Full Disk Access to NTFSMount.app for occupier detection and some volume metadata on Sequoia+. The LaunchDaemon does not inherit this grant; if mounts still fail, add ntfsmount-helperd in the same list";
+
 "settings.diagnoseHint" = "Read-only check of bundled components and the helper. Does not mount or install the helper. Export a zip to attach to a GitHub issue.";
 
 "premount.dirtyTitle" = "NTFS volume may be damaged or was not unmounted cleanly";
@@ -534,7 +574,7 @@ Return means you agree. Click “Quit” if you do not.";
 
 "premount.hiberBody" = "“%@” is still in Windows hibernation or Fast Startup.\nIt will be mounted read-only so hibernation data is not damaged. Fully shut down Windows (no hibernate / Fast Startup) before mounting writable.\nThis will not run ntfsfix and will not clear the hibernation file.";
 
-"ntfs3g.diagnoseMissing" = "Bundled ntfs-3g not found; cannot check the driver version (PATH was not searched)";
+"ntfs3g.diagnoseMissing" = "Bundled ntfs-3g not found. Reinstall NTFSMount.app from GitHub Latest (PATH was not searched).";
 
 "ntfs3g.mountWarningTitle" = "Untested ntfs-3g version";
 

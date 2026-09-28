@@ -5,6 +5,7 @@ import SwiftUI
 struct SettingsView: View {
   @ObservedObject var store: VolumeStore
   @State private var logText = AppLog.tail()
+  @State private var fdaStatus = FullDiskAccess.Status.unknown
 
   var body: some View {
     ScrollView {
@@ -26,6 +27,14 @@ struct SettingsView: View {
                 .fixedSize(horizontal: false, vertical: true)
             }
             Text(L10n.t("settings.autoMountNote"))
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              .fixedSize(horizontal: false, vertical: true)
+            Toggle(L10n.t("settings.cleanMacJunk"), isOn: Binding(
+              get: { store.cleanMacJunkBeforeEject },
+              set: { _ in store.toggleCleanMacJunkBeforeEject() }
+            ))
+            Text(L10n.t("settings.cleanMacJunkNote"))
               .font(.caption)
               .foregroundStyle(.secondary)
               .fixedSize(horizontal: false, vertical: true)
@@ -88,6 +97,34 @@ struct SettingsView: View {
               .font(.caption)
               .foregroundStyle(.secondary)
               .fixedSize(horizontal: false, vertical: true)
+            Text(L10n.t("helper.fdaHint"))
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              .fixedSize(horizontal: false, vertical: true)
+          }
+          .padding(8)
+        }
+
+        GroupBox(L10n.t("settings.fda")) {
+          VStack(alignment: .leading, spacing: 10) {
+            Text(L10n.t("fda.body"))
+              .font(.callout)
+              .foregroundStyle(.secondary)
+              .fixedSize(horizontal: false, vertical: true)
+            if fdaStatus != .unknown {
+              Text(fdaStatus == .granted
+                ? L10n.t("fda.statusGranted")
+                : L10n.t("fda.statusDenied"))
+                .font(.caption)
+                .foregroundStyle(fdaStatus == .granted ? Color.secondary : Color.orange)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+            Text(L10n.format("fda.helperPath", FullDiskAccess.helperInstallPath))
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              .textSelection(.enabled)
+              .fixedSize(horizontal: false, vertical: true)
+            Button(L10n.t("fda.open")) { FullDiskAccessSettings.openPane() }
           }
           .padding(8)
         }
@@ -174,7 +211,10 @@ struct SettingsView: View {
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     .background(Color(nsColor: .windowBackgroundColor))
-    .onAppear { logText = AppLog.tail() }
+    .onAppear {
+      logText = AppLog.tail()
+      fdaStatus = FullDiskAccess.probe()
+    }
   }
 
   private var helperStatus: String {

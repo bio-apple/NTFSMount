@@ -9,10 +9,10 @@ enum EnvironmentDiagnoseRunner {
   static let fuseTApp = "/Applications/FUSE-T.app"
 
   static func snapshot() -> DiagnoseSnapshot {
-    if let fromScript = runBundledScript() {
-      return fromScript
-    }
-    return liveSnapshot()
+    var snap = runBundledScript() ?? liveSnapshot()
+    // Probe in this process (the app). A spawned bash script's `-r` tests bash, not NTFSMount.app.
+    snap.fullDiskAccess = FullDiskAccess.probe()
+    return snap
   }
 
   static func liveSnapshot() -> DiagnoseSnapshot {
@@ -172,7 +172,10 @@ enum EnvironmentDiagnoseRunner {
     let text = String(data: out, encoding: .utf8) ?? ""
     let flat = text.replacingOccurrences(of: "\n", with: " ")
       .trimmingCharacters(in: .whitespacesAndNewlines)
-    if flat.contains("调用方未通过签名校验") { return "alive_caller_rejected" }
+    if flat.contains("调用方未通过签名校验")
+      || flat.lowercased().contains("caller failed the signature check") {
+      return "alive_caller_rejected"
+    }
     if let range = flat.range(of: "HELPER_VERSION=") {
       return String(flat[range.lowerBound...]).trimmingCharacters(in: .whitespaces)
     }

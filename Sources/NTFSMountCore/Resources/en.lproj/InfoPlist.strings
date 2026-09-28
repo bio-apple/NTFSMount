@@ -1,3 +1,8 @@
 /* NTFSMount InfoPlist */
 
 "CFBundleDisplayName" = "NTFS Read-Write";
+
+"NSSystemAdministrationUsageDescription" = "NTFSMount needs an administrator password once to install the mount helper that mounts and unmounts external NTFS volumes.";
+
+"NSRemovableVolumesUsageDescription" = "NTFSMount needs access to removable volumes to list, mount, and unmount external NTFS disks.";
+

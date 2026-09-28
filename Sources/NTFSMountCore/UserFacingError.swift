@@ -6,6 +6,7 @@ public enum UserFacingError {
     case helperInstallFailed
     case helperMissing
     case missingGoNfsv4
+    case ntfs3gMissing
     case missingBinary
     case adminDenied
     case helperNeedsUpdate
@@ -24,6 +25,7 @@ public enum UserFacingError {
     }
     if t.contains("磁盘正被占用")
       || lower.contains("busy-occupiers:")
+      || lower.contains("busy-lsof-failed:")
       || lower.contains("resource busy")
       || lower.contains("volume busy")
       || lower.contains("in use and cannot be ejected") {
@@ -34,6 +36,9 @@ public enum UserFacingError {
     }
     if looksLikeGoNfsv4(t, lower: lower) {
       return .missingGoNfsv4
+    }
+    if looksLikeNtfs3gMissing(t, lower: lower) {
+      return .ntfs3gMissing
     }
     if looksLikeHelperMissing(t) {
       return .helperMissing
@@ -71,6 +76,8 @@ public enum UserFacingError {
       mapped = L10n.t("error.helperMissing", locale: locale)
     case .missingGoNfsv4:
       mapped = L10n.t("error.missingGoNfsv4", locale: locale)
+    case .ntfs3gMissing:
+      mapped = L10n.t("runtime.ntfs3gMissing", locale: locale)
     case .missingBinary:
       mapped = L10n.t("error.missingBinary", locale: locale)
     case .adminDenied:
@@ -79,7 +86,10 @@ public enum UserFacingError {
       mapped = L10n.t("error.helperNeedsUpdate", locale: locale)
     case .diskBusy:
       if let names = occupierNames(from: t) {
-        mapped = L10n.format("error.diskBusyNamed", names, locale: locale)
+        mapped = L10n.format("error.diskBusyNamed", occupierSummary(names, locale: locale), locale: locale)
+      } else if lsofProbeFailed(from: t) {
+        mapped = L10n.t("error.diskBusy", locale: locale)
+          + "\n" + L10n.t("error.diskBusyNeedFDA", locale: locale)
       } else {
         mapped = L10n.t("error.diskBusy", locale: locale)
       }
@@ -140,6 +150,23 @@ public enum UserFacingError {
     }
   }
 
+  /// First ~3 process names, then “and N more”.
+  public static func occupierSummary(_ rawList: String, locale: Locale? = nil, limit: Int = 3) -> String {
+    let parts = rawList.split(separator: ",").map {
+      $0.trimmingCharacters(in: .whitespaces)
+    }.filter { !$0.isEmpty }
+    if parts.count <= limit { return parts.joined(separator: ", ") }
+    let head = parts.prefix(limit).joined(separator: ", ")
+    let more = parts.count - limit
+    return head + ", " + L10n.format("error.occupiersMore", more, locale: locale)
+  }
+
+  static func lsofProbeFailed(from raw: String) -> Bool {
+    raw.split(whereSeparator: \.isNewline).contains { line in
+      line.trimmingCharacters(in: .whitespaces).lowercased().hasPrefix("busy-lsof-failed:")
+    }
+  }
+
   /// Process names from helper `busy-occupiers:` or legacy Chinese busy text.
   public static func occupierNames(from raw: String) -> String? {
     for line in raw.split(whereSeparator: \.isNewline) {
@@ -179,6 +206,16 @@ public enum UserFacingError {
     let names = String(rest[..<dot]).trimmingCharacters(in: .whitespaces)
     if names.isEmpty || names.hasPrefix("请") { return nil }
     return names
+  }
+
+  private static func looksLikeNtfs3gMissing(_ t: String, lower: String) -> Bool {
+    if lower.contains("bundled-ntfs-3g-missing") { return true }
+    if t.contains("找不到捆绑的 ntfs-3g") { return true }
+    if t.contains("找不到內附") && lower.contains("ntfs-3g") { return true }
+    if lower.contains("bundled ntfs-3g") && (lower.contains("not found") || lower.contains("missing")) {
+      return true
+    }
+    return false
   }
 
   private static func looksLikeGoNfsv4(_ t: String, lower: String) -> Bool {

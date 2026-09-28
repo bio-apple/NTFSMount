@@ -1,3 +1,8 @@
 /* NTFSMount InfoPlist */
 
 "CFBundleDisplayName" = "NTFS 读写";
+
+"NSSystemAdministrationUsageDescription" = "NTFS 读写需要一次管理员密码，用于安装负责挂载和卸载外置 NTFS 卷的挂载助手。";
+
+"NSRemovableVolumesUsageDescription" = "NTFS 读写需要访问可移动卷，以便列出、挂载和卸载外置 NTFS 磁盘。";
+

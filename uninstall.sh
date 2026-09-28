@@ -11,7 +11,7 @@ resolve_cmd() {
       return 0
     fi
   done
-  echo "error: 找不到命令 $n" >&2
+  echo "error: command not found: $n" >&2
   return 1
 }
 LAUNCHCTL="$(resolve_cmd launchctl || true)"
@@ -65,9 +65,9 @@ clean_named_user() {
 /usr/bin/killall NTFSMount >/dev/null 2>&1 || true
 
 if [[ "$(/usr/bin/id -u)" -ne 0 ]]; then
-  echo "需要 root 才能删除 LaunchDaemon 与 /Library 下的挂载助手。" >&2
-  echo "请在应用中选择「设置 → 卸载助手」（macOS Authorization Services），或从已提权的 root shell 再运行本脚本。" >&2
-  echo "SIP 保持开启；本脚本不调用 sudo。" >&2
+  echo "Root is required to remove the LaunchDaemon and the mount helper under /Library." >&2
+  echo "In the app, choose Settings → Uninstall Helper (macOS Authorization Services), or run this script again from an already-privileged root shell." >&2
+  echo "SIP stays enabled. This script does not call sudo." >&2
   clean_user_home "$HOME" "$(/usr/bin/id -u)"
   exit 1
 fi
@@ -94,24 +94,24 @@ clean_named_user "$(/usr/bin/stat -f '%Su' /dev/console 2>/dev/null || true)"
 leftover=0
 for label in "${SYSTEM_LABELS[@]}"; do
   if [[ -n "${LAUNCHCTL:-}" ]] && "$LAUNCHCTL" print "system/${label}" >/dev/null 2>&1; then
-    echo "仍在 launchd：system/${label}"
+    echo "still in launchd: system/${label}"
     leftover=1
   fi
 done
 if [[ -e /var/run/com.bioapple.ntfsmount.sock ]]; then
-  echo "仍有 socket：/var/run/com.bioapple.ntfsmount.sock"
+  echo "socket still present: /var/run/com.bioapple.ntfsmount.sock"
   leftover=1
 fi
 
-echo "已卸载 NTFSMount（应用 + 挂载助手 + LaunchDaemon/Agent + 配置）。"
-echo "本脚本仅移除 NTFSMount 及其专属组件。系统级 FUSE-T / MacFUSE 不会被触碰。"
-echo "如果您不再需要任何 NTFS 读写功能，请手动检查并移除 /usr/local/lib/libfuse.2.dylib 等全局依赖。"
-echo "未删除日志：~/Library/Logs/ntfsmount.log（可自行删）。"
-echo "SMAppService：若「系统设置 → 通用 → 登录项与后台项目」里仍有 NTFS 读写，请关掉。"
-echo "SIP 保持开启；本项目不使用内核扩展。"
+echo "Uninstalled NTFSMount (app, mount helper, LaunchDaemon/Agent, and settings)."
+echo "This script removes only NTFSMount and its own components. System FUSE-T / MacFUSE is left untouched."
+echo "If you no longer need any NTFS read/write support, manually check and remove global libraries such as /usr/local/lib/libfuse.2.dylib."
+echo "Logs were kept: ~/Library/Logs/ntfsmount.log (delete them yourself if you want)."
+echo "SMAppService: if System Settings → General → Login Items & Extensions still lists NTFS read/write, turn it off."
+echo "SIP stays enabled. This project does not use kernel extensions."
 
 if [[ "$leftover" -ne 0 ]]; then
-  echo "守护进程未完全退出。请注销或重启后再确认 launchd 中已无上述标签。"
+  echo "The daemon has not fully exited. Log out or restart, then confirm those labels are gone from launchd."
 else
-  echo "若菜单栏图标仍在，注销或重启即可。"
+  echo "If the menu-bar icon is still there, log out or restart."
 fi

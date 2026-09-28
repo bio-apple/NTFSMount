@@ -6,7 +6,7 @@
 set -euo pipefail
 DMG="${1:?usage: write-dmg-sha256.sh <dmg>}"
 [[ -f "$DMG" ]] || {
-  echo "error: 找不到 $DMG" >&2
+  echo "error: not found: $DMG" >&2
   exit 1
 }
 
@@ -20,13 +20,13 @@ if [[ -x /usr/bin/shasum ]]; then
 elif command -v sha256sum >/dev/null; then
   (cd "$DIR" && sha256sum "$BASE" >"$BASE.sha256")
 else
-  echo "error: 需要 shasum 或 sha256sum" >&2
+  echo "error: shasum or sha256sum is required" >&2
   exit 1
 fi
 
 HASH="$(/usr/bin/awk '{print $1; exit}' "$SIDECAR")"
 [[ ${#HASH} -eq 64 ]] || {
-  echo "error: 无效 SHA256: $HASH" >&2
+  echo "error: invalid SHA256: $HASH" >&2
   exit 1
 }
 
@@ -37,13 +37,13 @@ $BASE
 SHA256:
 $HASH
 
-校验完整性 · Verify:
+Verify:
 
 \`\`\`bash
 shasum -a 256 "$BASE"
 \`\`\`
 
-结果应与上面的 SHA256 完全一致。也可下载 \`$BASE.sha256\` 后执行 \`shasum -a 256 -c "$BASE.sha256"\`。
+The result must match the SHA256 above. You can also download `$BASE.sha256` and run `shasum -a 256 -c "$BASE.sha256"`.
 EOF
 
 echo "ok $SIDECAR"

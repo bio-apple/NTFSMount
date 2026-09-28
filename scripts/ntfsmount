@@ -9,13 +9,13 @@ export NTFSMOUNT_ROOT="$ROOT"
 
 usage() {
   cat <<EOF >&2
-用法: ntfsmount <command> [--json] [diskNsM]
-  diagnose           只读环境诊断
-  list               列出 NTFS 卷
-  status [diskNsM]   一块卷的挂载状态；省略 ident 等于 list
-  mount diskNsM      可写挂载（需 root + 已安装助手）
-  unmount diskNsM    卸载（需 root + 已安装助手）
---json 输出稳定英文 snake_case，便于 GUI / 脚本。
+usage: ntfsmount <command> [--json] [diskNsM]
+  diagnose           read-only environment report
+  list               list NTFS volumes
+  status [diskNsM]   mount status for one volume; omit ident to list
+  mount diskNsM      mount read/write (needs root and an installed helper)
+  unmount diskNsM    unmount (needs root and an installed helper)
+--json prints stable English snake_case keys for a GUI or script.
 EOF
 }
 
@@ -58,7 +58,7 @@ list | status | mount | unmount)
   esac
   ;;
 *)
-  echo "error: 未知子命令: ${cmd}" >&2
+  echo "error: unknown subcommand: ${cmd}" >&2
   usage
   exit 2
   ;;

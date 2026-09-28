@@ -24,6 +24,29 @@ final class UserFacingErrorTests: XCTestCase {
       UserFacingError.message(from: "bash: foo: No such file or directory (127)", locale: zh),
       "找不到所需程序（可能缺少 ntfs-3g 或挂载组件）。请重新安装应用。详情已写入日志。"
     )
+    XCTAssertEqual(
+      UserFacingError.kind(from: "error: bundled-ntfs-3g-missing: reinstall NTFSMount.app from GitHub Latest"),
+      .ntfs3gMissing
+    )
+    XCTAssertEqual(
+      UserFacingError.message(
+        from: "error: bundled-ntfs-3g-missing: reinstall NTFSMount.app from GitHub Latest",
+        locale: zh
+      ),
+      L10n.t("runtime.ntfs3gMissing", locale: zh)
+    )
+    let missingEn = UserFacingError.message(
+      from: "error: bundled-ntfs-3g-missing: reinstall NTFSMount.app from GitHub Latest",
+      locale: Locale(identifier: "en")
+    )
+    XCTAssertEqual(missingEn, L10n.t("runtime.ntfs3gMissing", locale: Locale(identifier: "en")))
+    XCTAssertTrue(missingEn.contains("GitHub Latest"))
+    XCTAssertFalse(missingEn.contains("/opt/homebrew"))
+    XCTAssertFalse(missingEn.contains("/usr/local/bin/ntfs-3g"))
+    XCTAssertEqual(
+      UserFacingError.kind(from: "error: 找不到捆绑的 ntfs-3g。请把 NTFSMount.app 重新装到 /Applications"),
+      .ntfs3gMissing
+    )
   }
 
   func testMapsBusyEject() {
@@ -51,6 +74,67 @@ final class UserFacingErrorTests: XCTestCase {
     XCTAssertEqual(
       UserFacingError.message(from: structured, locale: zh),
       L10n.format("error.diskBusyNamed", "Finder, TextEdit", locale: zh)
+    )
+    XCTAssertTrue(UserFacingError.message(from: structured, locale: zh).contains("Finder"))
+  }
+
+  func testBusyOccupiersTruncatesAndFdaHint() {
+    let en = Locale(identifier: "en")
+    let zh = Locale(identifier: "zh-Hans")
+    let many = """
+      busy-occupiers: Finder, TextEdit, Preview, Terminal, Safari
+      busy-pids: Finder[412], TextEdit[901], Preview[1], Terminal[2], Safari[3]
+      error: Resource busy
+      """
+    let summary = UserFacingError.occupierSummary(
+      "Finder, TextEdit, Preview, Terminal, Safari",
+      locale: en
+    )
+    XCTAssertEqual(summary, "Finder, TextEdit, Preview, " + L10n.format("error.occupiersMore", 2, locale: en))
+    XCTAssertEqual(
+      UserFacingError.message(from: many, locale: en),
+      L10n.format("error.diskBusyNamed", summary, locale: en)
+    )
+    XCTAssertTrue(UserFacingError.message(from: many, locale: en).contains("Finder"))
+    XCTAssertTrue(UserFacingError.message(from: many, locale: zh).contains("Finder"))
+    XCTAssertTrue(
+      UserFacingError.message(from: many, locale: zh).contains(L10n.format("error.occupiersMore", 2, locale: zh))
+    )
+
+    let noFda = """
+      busy-lsof-failed:
+      error: Resource busy
+      """
+    XCTAssertEqual(UserFacingError.kind(from: noFda), .diskBusy)
+    XCTAssertNil(UserFacingError.occupierNames(from: noFda))
+    let fdaEn = UserFacingError.message(from: noFda, locale: en)
+    XCTAssertEqual(
+      fdaEn,
+      L10n.t("error.diskBusy", locale: en) + "\n" + L10n.t("error.diskBusyNeedFDA", locale: en)
+    )
+    XCTAssertEqual(
+      UserFacingError.message(from: noFda, locale: zh),
+      L10n.t("error.diskBusy", locale: zh) + "\n" + L10n.t("error.diskBusyNeedFDA", locale: zh)
+    )
+    XCTAssertEqual(
+      UserFacingError.message(from: "Unmount failed: Resource busy", locale: en),
+      L10n.t("error.diskBusy", locale: en)
+    )
+  }
+
+  func testOccupierLinesSurviveCleanJunkStatusPrefix() {
+    let mixed = """
+      clean-junk disk5s1 removed=3 failed=0
+      busy-occupiers: Finder, Preview
+      busy-pids: Finder[412], Preview[880]
+      error: Resource busy
+      """
+    XCTAssertEqual(UserFacingError.kind(from: mixed), .diskBusy)
+    XCTAssertEqual(UserFacingError.occupierNames(from: mixed), "Finder, Preview")
+    XCTAssertEqual(UserFacingError.occupierPids(from: mixed), "Finder[412], Preview[880]")
+    XCTAssertEqual(
+      UserFacingError.message(from: mixed, locale: Locale(identifier: "en")),
+      L10n.format("error.diskBusyNamed", "Finder, Preview", locale: Locale(identifier: "en"))
     )
   }
 

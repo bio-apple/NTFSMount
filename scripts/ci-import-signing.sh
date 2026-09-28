@@ -9,7 +9,7 @@ if [[ -z "${APPLE_CERTIFICATE_BASE64:-}" ]]; then
   exit 0
 fi
 if [[ -z "${APPLE_CERTIFICATE_PASSWORD:-}" ]]; then
-  echo "error: APPLE_CERTIFICATE_BASE64 需要 APPLE_CERTIFICATE_PASSWORD" >&2
+  echo "error: APPLE_CERTIFICATE_BASE64 requires APPLE_CERTIFICATE_PASSWORD" >&2
   exit 1
 fi
 
@@ -33,7 +33,7 @@ if [[ -z "$ident" ]]; then
   ident="$(/usr/bin/security find-identity -v -p codesigning "$kc" | /usr/bin/awk -F'"' '/Developer ID Application/{print $2; exit}')"
 fi
 [[ -n "$ident" ]] || {
-  echo "error: p12 里没有 Developer ID Application 证书" >&2
+  echo "error: the p12 has no Developer ID Application certificate" >&2
   exit 1
 }
 

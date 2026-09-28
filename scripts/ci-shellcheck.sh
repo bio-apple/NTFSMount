@@ -12,7 +12,7 @@ die() {
 
 SHELLCHECK="$(command -v shellcheck || true)"
 if [[ -z "$SHELLCHECK" ]]; then
-  die "未找到 shellcheck。CI 会安装；本机: brew install shellcheck"
+  die "shellcheck not found. CI installs it; locally: brew install shellcheck"
 fi
 
 # 显式列出无后缀脚本，其余按 *.sh。不要扫 .build / runtime。
@@ -26,9 +26,9 @@ done < <(
   } | /usr/bin/awk 'NF && !seen[$0]++' | /usr/bin/sort
 )
 
-[[ ${#files[@]} -gt 0 ]] || die "没有要检查的脚本"
+[[ ${#files[@]} -gt 0 ]] || die "no scripts to check"
 for f in "${files[@]}"; do
-  [[ -f "$f" ]] || die "缺少 $f"
+  [[ -f "$f" ]] || die "missing $f"
 done
 
 echo "shellcheck ${#files[@]} files:"

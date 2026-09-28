@@ -4410,6 +4410,35 @@
         }
       }
     },
+    "runtime.ntfs3gMissing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bundled ntfs-3g is missing. Reinstall NTFSMount.app from GitHub Latest. Do not use Homebrew."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找不到捆绑的 ntfs-3g。请从 GitHub Latest 重新安装 NTFSMount.app，不要用 Homebrew。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找不到內附的 ntfs-3g。請從 GitHub Latest 重新安裝 NTFSMount.app，不要用 Homebrew。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同梱の ntfs-3g がありません。GitHub Latest から NTFSMount.app を再インストールしてください。Homebrew は使いません。"
+          }
+        }
+      }
+    },
     "error.adminDenied": {
       "extractionState": "manual",
       "localizations": {
@@ -4522,6 +4551,64 @@
           "stringUnit": {
             "state": "translated",
             "value": "ディスクは %@ が使用中です。それらのプログラムを閉じてから再試行してください。"
+          }
+        }
+      }
+    },
+    "error.occupiersMore": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "and %d more"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等 %d 个"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等 %d 個"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "他 %d 件"
+          }
+        }
+      }
+    },
+    "error.diskBusyNeedFDA": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grant Full Disk Access to see which app is using the disk."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请授予完全磁盘访问权限以查看是哪个应用占用。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請授予完整磁碟取用權限以查看是哪個應用程式占用。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フルディスクアクセスを許可すると、使用中のアプリを確認できます。"
           }
         }
       }
@@ -5663,25 +5750,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Missing bundled %@ (reinstall the app; no need for Homebrew ntfs-3g-mac)"
+            "value": "Missing bundled %@ — reinstall NTFSMount.app from GitHub Latest (not Homebrew)"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "缺少捆绑 %@（请重新安装应用；不必装 Homebrew ntfs-3g-mac）"
+            "value": "缺少捆绑 %@。请从 GitHub Latest 重新安装 NTFSMount.app（不要用 Homebrew）"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "缺少內附 %@（請重新安裝 App；不必裝 Homebrew ntfs-3g-mac）"
+            "value": "缺少內附 %@。請從 GitHub Latest 重新安裝 NTFSMount.app（不要用 Homebrew）"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "同梱の %@ がありません（アプリを再インストール。Homebrew ntfs-3g-mac は不要）"
+            "value": "同梱の %@ がありません。GitHub Latest から NTFSMount.app を再インストールしてください（Homebrew は不要）"
           }
         }
       }
@@ -6446,25 +6533,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bundled ntfs-3g not found; cannot check the driver version (PATH was not searched)"
+            "value": "Bundled ntfs-3g not found. Reinstall NTFSMount.app from GitHub Latest (PATH was not searched)."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未找到捆绑 ntfs-3g，无法校验驱动版本（未查 PATH）"
+            "value": "未找到捆绑 ntfs-3g。请从 GitHub Latest 重新安装 NTFSMount.app（未查 PATH）"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "找不到內附 ntfs-3g，無法校驗驅動程式版本（未查 PATH）"
+            "value": "找不到內附 ntfs-3g。請從 GitHub Latest 重新安裝 NTFSMount.app（未查 PATH）"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "同梱の ntfs-3g が見つからず、ドライバ版を確認できません（PATH は検索していません）"
+            "value": "同梱の ntfs-3g が見つかりません。GitHub Latest から NTFSMount.app を再インストールしてください（PATH は検索していません）"
           }
         }
       }
@@ -7113,25 +7200,25 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bundled ntfs-3g / go-nfsv4 is missing. This copy is incomplete — re-download the app."
+            "value": "Bundled ntfs-3g / go-nfsv4 is missing. Reinstall NTFSMount.app from GitHub Latest."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "捆绑的 ntfs-3g / go-nfsv4 缺失。这是不完整的安装包，请重新下载本应用。"
+            "value": "捆绑的 ntfs-3g / go-nfsv4 缺失。请从 GitHub Latest 重新安装 NTFSMount.app。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "內附的 ntfs-3g / go-nfsv4 缺失。這是不完整的安裝包，請重新下載本 App。"
+            "value": "內附的 ntfs-3g / go-nfsv4 缺失。請從 GitHub Latest 重新安裝 NTFSMount.app。"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "同梱の ntfs-3g / go-nfsv4 がありません。このコピーは不完全です。アプリを再ダウンロードしてください。"
+            "value": "同梱の ntfs-3g / go-nfsv4 がありません。GitHub Latest から NTFSMount.app を再インストールしてください。"
           }
         }
       }
@@ -7915,6 +8002,209 @@
           "stringUnit": {
             "state": "translated",
             "value": "自動マウントをオンにする前に、マウントヘルパーをインストールまたは更新してください。"
+          }
+        }
+      }
+    },
+    "settings.cleanMacJunk": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clean Mac junk files before eject"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推出前清理 Mac 垃圾文件"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推出前清理 Mac 垃圾檔案"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取り出す前に Mac の不要ファイルを削除"
+          }
+        }
+      }
+    },
+    "settings.cleanMacJunkNote": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When on, eject or unmount deletes .DS_Store, AppleDouble (._*) files, .Trashes, .Spotlight-V100, .fseventsd, and .TemporaryItems on that mounted external NTFS volume. Off by default. Does not touch hiberfil.sys, pagefile, or your documents."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开后，推出或卸载时会删除该外置可写 NTFS 上的 .DS_Store、AppleDouble（._*）、.Trashes、.Spotlight-V100、.fseventsd 和 .TemporaryItems。默认关闭。不会删除 hiberfil.sys、pagefile 或你的文档。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打開後，推出或卸載時會刪除該外接可寫 NTFS 上的 .DS_Store、AppleDouble（._*）、.Trashes、.Spotlight-V100、.fseventsd 和 .TemporaryItems。預設關閉。不會刪除 hiberfil.sys、pagefile 或你的文件。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "オンにすると、取り出しまたはマウント解除の前に、その外付けの書き込み可能な NTFS 上の .DS_Store、AppleDouble（._*）、.Trashes、.Spotlight-V100、.fseventsd、.TemporaryItems を削除します。既定はオフです。hiberfil.sys、pagefile、書類は削除しません。"
+          }
+        }
+      }
+    },
+    "cleanJunk.working": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cleaning Mac junk files…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在清理 Mac 垃圾文件…"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在清理 Mac 垃圾檔案…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac の不要ファイルを削除しています…"
+          }
+        }
+      }
+    },
+    "cleanJunk.done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Removed %d Mac junk file(s)."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已删除 %d 个 Mac 垃圾文件。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已刪除 %d 個 Mac 垃圾檔案。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac の不要ファイルを %d 個削除しました。"
+          }
+        }
+      }
+    },
+    "cleanJunk.failedTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not clean Mac junk files"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法清理 Mac 垃圾文件"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無法清理 Mac 垃圾檔案"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac の不要ファイルを削除できませんでした"
+          }
+        }
+      }
+    },
+    "cleanJunk.failedBody": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some macOS hidden files on “%@” could not be removed. You can eject or unmount without cleaning."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」上部分 macOS 隐藏文件无法删除。可以不清理就推出或卸载。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」上部分 macOS 隱藏檔案無法刪除。可以不清理就推出或卸載。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」上の一部の macOS 隠しファイルを削除できませんでした。削除せずに取り出す／マウント解除できます。"
+          }
+        }
+      }
+    },
+    "cleanJunk.continueWithout": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue without cleaning"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不清理并继续"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不清理並繼續"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "削除せずに続ける"
           }
         }
       }

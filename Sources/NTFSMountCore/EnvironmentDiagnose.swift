@@ -59,6 +59,8 @@ public struct DiagnoseSnapshot: Equatable, Sendable {
   public var quarantine: Bool?
   /// notarized | accepted | rejected | unavailable
   public var spctl: String = "unavailable"
+  /// granted | denied | unknown — readability probe in this process, not a TCC.db scrape
+  public var fullDiskAccess: FullDiskAccess.Status = .unknown
 
   public init() {}
 }
@@ -76,6 +78,7 @@ public enum EnvironmentDiagnose {
       fuseLine(snap, locale: locale),
       helperLine(snap, locale: locale),
     ]
+    lines.append(fullDiskAccessLine(snap, locale: locale))
     if let conflict = conflictLine(snap, locale: locale) {
       lines.append(conflict)
     }
@@ -161,6 +164,13 @@ public enum EnvironmentDiagnose {
     let gate = dict(root["gatekeeper"])
     if gate["quarantine"] != nil { snap.quarantine = boolFlag(gate["quarantine"]) }
     snap.spctl = string(gate["spctl"], fallback: "unavailable")
+    let fda = dict(root["full_disk_access"])
+    if !fda.isEmpty {
+      let raw = string(fda["app"])
+      snap.fullDiskAccess = FullDiskAccess.parseStatus(raw.isEmpty ? string(fda["process"]) : raw)
+    } else {
+      snap.fullDiskAccess = FullDiskAccess.parseStatus(string(root["full_disk_access"]))
+    }
     return snap
   }
 
@@ -286,6 +296,14 @@ public enum EnvironmentDiagnose {
       id: "helper",
       status: .info,
       title: L10n.format("diagnose.helperPing", ping, locale: locale)
+    )
+  }
+
+  static func fullDiskAccessLine(_ snap: DiagnoseSnapshot, locale: Locale? = nil) -> DiagnoseLine {
+    DiagnoseLine(
+      id: FullDiskAccess.diagnoseLineId,
+      status: FullDiskAccess.diagnoseStatus(snap.fullDiskAccess),
+      title: FullDiskAccess.diagnoseTitle(snap.fullDiskAccess, locale: locale)
     )
   }
 

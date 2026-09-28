@@ -81,8 +81,8 @@ if /usr/bin/grep -nE 'csrutil[[:space:]]+disable|turn off SIP|关闭 SIP|disable
   echo "must not document or script disabling SIP" >&2
   exit 1
 fi
-if ! /usr/bin/grep -q 'SIP stays enabled' "$ROOT/README.md"; then
-  echo "README must say SIP stays enabled" >&2
+if ! /usr/bin/grep -q 'SIP stays on' "$ROOT/README.md"; then
+  echo "README must say SIP stays on" >&2
   exit 1
 fi
 if ! /usr/bin/grep -q 'Authorization Services' "$ROOT/docs/DISTRIBUTION.md"; then
@@ -175,7 +175,7 @@ for key in 'app.path' 'allowed.cdhash' 'helper.stamp' 'ntfs-rw-helper'; do
     exit 1
   }
 done
-if ! /usr/bin/grep -q '无法读取应用 CDHash' "$ROOT/helper/install-helper.sh"; then
+if ! /usr/bin/grep -q 'Cannot read the app CDHash' "$ROOT/helper/install-helper.sh"; then
   echo "install-helper must refuse an empty CDHash" >&2
   exit 1
 fi
@@ -195,7 +195,7 @@ if ! /usr/bin/grep -q 'Signature=adhoc' "$ROOT/helper/install-helper.sh"; then
   echo "install-helper must re-sign ad-hoc helperd without Hardened Runtime" >&2
   exit 1
 fi
-if ! /usr/bin/grep -q 'socket 未出现' "$ROOT/helper/install-helper.sh"; then
+if ! /usr/bin/grep -q 'socket did not appear' "$ROOT/helper/install-helper.sh"; then
   echo "install-helper must fail when the helper socket never appears" >&2
   exit 1
 fi
@@ -661,13 +661,101 @@ if ! /usr/bin/grep -q 'L10n.t("settings.autoMountNeedHelper")' "$SETTINGS"; then
 fi
 for lang in en zh-Hans zh-Hant ja; do
   strings="$ROOT/Sources/NTFSMountCore/Resources/${lang}.lproj/Localizable.strings"
-  for key in settings.autoMount settings.autoMountNote settings.autoMountNeedHelper; do
+  for key in settings.autoMount settings.autoMountNote settings.autoMountNeedHelper \
+    settings.cleanMacJunk settings.cleanMacJunkNote cleanJunk.working cleanJunk.done \
+    cleanJunk.failedTitle cleanJunk.failedBody cleanJunk.continueWithout; do
     if ! /usr/bin/grep -q "\"$key\"" "$strings"; then
       echo "missing $key in $lang Localizable.strings" >&2
       exit 1
     fi
   done
 done
+if ! /usr/bin/grep -q 'L10n.t("settings.cleanMacJunk")' "$SETTINGS"; then
+  echo "settings clean-Mac-junk toggle must use L10n.t(\"settings.cleanMacJunk\")" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'L10n.t("settings.cleanMacJunkNote")' "$SETTINGS"; then
+  echo "settings clean-Mac-junk note must use L10n.t(\"settings.cleanMacJunkNote\")" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q '"settings.cleanMacJunk"' "$ROOT/Resources/Localizable.xcstrings"; then
+  echo "xcstrings must include settings.cleanMacJunk" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'MacJunkCleanup.shouldRun' "${STORE[@]}"; then
+  echo "eject/unmount must consult MacJunkCleanup.shouldRun" >&2
+  exit 1
+fi
+if ! /usr/bin/awk '
+  $0 ~ /func unmount\(/ { inh=1 }
+  $0 ~ /func eject\(/ { inh=1 }
+  $0 ~ /func mountAll\(/ { inh=0 }
+  inh && /removeThen/ { found=1 }
+  END { exit found ? 0 : 1 }
+' "${STORE[@]}"; then
+  echo "unmount/eject must go through removeThen so optional junk clean runs first" >&2
+  exit 1
+fi
+if /usr/bin/grep -nE 'extra: \["force"\].*MacJunkCleanup|MacJunkCleanup.*force' "${STORE[@]}"; then
+  echo "force unmount must not clean junk then force" >&2
+  exit 1
+fi
+CLEAN="$ROOT/Sources/NTFSMountCore/MacJunkCleanup.swift"
+if ! /usr/bin/grep -q 'defaultEnabled = false' "$CLEAN"; then
+  echo "Mac junk cleanup must default off" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'hiberfil.sys' "$CLEAN"; then
+  echo "Mac junk cleanup must refuse hiberfil.sys" >&2
+  exit 1
+fi
+if /usr/bin/grep -nE 'ntfsfix|do_format|remove_hiberfile' "$CLEAN" |
+  /usr/bin/grep -vE '^[0-9]+:[[:space:]]*(///|//|\*)'; then
+  echo "Mac junk cleanup must not format, ntfsfix, or clear hiberfile" >&2
+  exit 1
+fi
+if /usr/bin/grep -nE 'clean-mac-junk|clean_junk|wipe.ds.store|do_clean_junk' "$HELPER"; then
+  echo "helper must not gain a junk-wipe verb; delete from the mounted tree as the GUI user" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'display(result.text)' "${STORE[@]}"; then
+  echo "finishVolume must show helper stderr via display(result.text) so busy-occupiers survive eject failure" >&2
+  exit 1
+fi
+if /usr/bin/grep -nE 'replacingOccurrences.*busy-occupiers|busy-occupiers.*replacingOccurrences|filter.*busy-occupiers' "${STORE[@]}"; then
+  echo "VolumeStore must not strip helper busy-occupiers / busy-pids lines" >&2
+  exit 1
+fi
+if ! /usr/bin/awk '
+  $0 ~ /^print_busy_occupiers\(\)/ { inh=1 }
+  inh && $0 ~ /^[a-z_]+\(\)/ && $0 !~ /^print_busy_occupiers\(\)/ { inh=0 }
+  inh && /busy-lsof-failed:/ { found=1 }
+  END { exit found ? 0 : 1 }
+' "$HELPER"; then
+  echo "print_busy_occupiers must emit busy-lsof-failed when lsof/FDA probe fails" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'alertDiskBusy' "${STORE[@]}"; then
+  echo "eject busy must present occupier summary via alertDiskBusy" >&2
+  exit 1
+fi
+for loc in en zh-Hans zh-Hant ja; do
+  strings="$ROOT/Sources/NTFSMountCore/Resources/${loc}.lproj/Localizable.strings"
+  for key in error.diskBusyNamed error.occupiersMore error.diskBusyNeedFDA; do
+    /usr/bin/grep -q "\"$key\"" "$strings" || {
+      echo "missing $key in $loc Localizable.strings" >&2
+      exit 1
+    }
+  done
+done
+if ! /usr/bin/grep -q '"error.occupiersMore"' "$ROOT/Resources/Localizable.xcstrings"; then
+  echo "xcstrings must include error.occupiersMore" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q '"error.diskBusyNeedFDA"' "$ROOT/Resources/Localizable.xcstrings"; then
+  echo "xcstrings must include error.diskBusyNeedFDA" >&2
+  exit 1
+fi
 
 # 命令位不得出现未加引号的 /Volumes/$name（"My Passport" 会切成两个 argv）
 if /usr/bin/grep -nE '(^|[^"=$])/Volumes/\$name' "$HELPER"; then
@@ -766,7 +854,7 @@ for ident in "${refuse_ids[@]}"; do
     echo "format must never succeed on system disk $ident: $fmt_err" >&2
     exit 1
   fi
-  if printf '%s' "$fmt_err" | /usr/bin/grep -q '拒绝格式化'; then
+  if printf '%s' "$fmt_err" | /usr/bin/grep -q 'refused to format'; then
     seen_refuse=1
   else
     echo "format should refuse system/internal disk $ident: $fmt_err" >&2
@@ -806,7 +894,7 @@ for ident in "${fix_ids[@]}"; do
     echo "fix must never format $ident: $fix_err" >&2
     exit 1
   fi
-  if printf '%s' "$fix_err" | /usr/bin/grep -q '拒绝修复'; then
+  if printf '%s' "$fix_err" | /usr/bin/grep -q 'refused to repair'; then
     seen_fix_refuse=1
   fi
   alias_err="$("$HELPER" ntfsfix "$ident" 2>&1 || true)"
@@ -829,7 +917,7 @@ for ident in "${fix_ids[@]}"; do
     echo "eject must never succeed on system disk $ident: $ej_err" >&2
     exit 1
   fi
-  if printf '%s' "$ej_err" | /usr/bin/grep -q '拒绝推出'; then
+  if printf '%s' "$ej_err" | /usr/bin/grep -q 'refused to eject'; then
     seen_eject_refuse=1
   fi
 done
@@ -940,7 +1028,62 @@ if ! /usr/bin/grep -q 'ntfs3g_base_opts' "$HELPER"; then
   exit 1
 fi
 if ! /usr/bin/grep -q 'auto_xattr' "$HELPER"; then
-  echo "helper must pass auto_xattr so Finder xattr / 中文名 metadata 可用" >&2
+  echo "helper must pass auto_xattr so Finder xattr and non-ASCII names work" >&2
+  exit 1
+fi
+# Runtime helper must resolve bundled ntfs-3g from app.path / app bundle, never Homebrew.
+if /usr/bin/awk '
+  /^init_bundle_dirs[(]/ { p=1 }
+  p { print }
+  p && /^}/ { exit }
+' "$HELPER" | /usr/bin/grep -E '/opt/homebrew|/usr/local/bin/ntfs-3g|/usr/local/Cellar'; then
+  echo "runtime helper init_bundle_dirs must not search Homebrew for ntfs-3g" >&2
+  exit 1
+fi
+if /usr/bin/awk '
+  /^find_bundled[(]/ { p=1 }
+  p { print }
+  p && /^}/ { exit }
+' "$HELPER" | /usr/bin/grep -E '/opt/homebrew|/usr/local/bin/ntfs-3g'; then
+  echo "runtime helper find_bundled must not search Homebrew for ntfs-3g" >&2
+  exit 1
+fi
+if ! /usr/bin/awk '
+  /^init_bundle_dirs[(]/ { p=1 }
+  p && /installed_app_macos/ { found=1 }
+  p && /^}/ { exit }
+  END { exit found ? 0 : 1 }
+' "$HELPER"; then
+  echo "init_bundle_dirs must prefer app.path via installed_app_macos" >&2
+  exit 1
+fi
+if /usr/bin/grep -nE 'NTFS3G="\$\{NTFS3G:-' "$HELPER"; then
+  echo "helper must not honor inherited NTFS3G= (Homebrew / PATH hijack)" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'bundled-ntfs-3g-missing' "$HELPER"; then
+  echo "helper must fail with bundled-ntfs-3g-missing when the binary is absent" >&2
+  exit 1
+fi
+if /usr/bin/awk '
+  /func bundledTool/,/^  }/ { print }
+' "$ROOT/Sources/NTFSMount/Helpers/EnvironmentDiagnoseRunner.swift" | /usr/bin/grep -E '/opt/homebrew|/usr/local/bin/ntfs-3g'; then
+  echo "app bundledTool must not search Homebrew for ntfs-3g" >&2
+  exit 1
+fi
+for loc in en zh-Hans zh-Hant ja; do
+  strings="$ROOT/Sources/NTFSMountCore/Resources/${loc}.lproj/Localizable.strings"
+  /usr/bin/grep -q '"runtime.ntfs3gMissing"' "$strings" || {
+    echo "missing runtime.ntfs3gMissing in $loc Localizable.strings" >&2
+    exit 1
+  }
+done
+if ! /usr/bin/grep -q '"runtime.ntfs3gMissing"' "$ROOT/Resources/Localizable.xcstrings"; then
+  echo "xcstrings must include runtime.ntfs3gMissing" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'runtime.ntfs3gMissing' "$ROOT/Sources/NTFSMountCore/UserFacingError.swift"; then
+  echo "UserFacingError must map missing ntfs-3g to runtime.ntfs3gMissing" >&2
   exit 1
 fi
 if ! /usr/bin/grep -q 'locale=zh_CN.UTF-8' "$HELPER"; then
@@ -1004,7 +1147,7 @@ if ! /usr/bin/grep -q 'brew install ntfs-3g' "$CHECK_DEPS"; then
   echo "check-fuse-deps must brew install ntfs-3g only" >&2
   exit 1
 fi
-if ! /usr/bin/grep -q '无需关闭 SIP' "$CHECK_DEPS"; then
+if ! /usr/bin/grep -q 'SIP stays enabled' "$CHECK_DEPS"; then
   echo "check-fuse-deps must say FUSE-T does not require lowering SIP" >&2
   exit 1
 fi

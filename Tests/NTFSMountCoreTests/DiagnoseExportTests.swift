@@ -72,6 +72,9 @@ final class DiagnoseExportTests: XCTestCase {
     XCTAssertEqual(parsed?.ntfs3gVersion, "2026.7.7")
     XCTAssertEqual(parsed?.systemFuseTVersion, "1.2.8")
     XCTAssertEqual(parsed?.pinnedFuseT, "1.2.7")
+    XCTAssertEqual(parsed?.fullDiskAccess, .unknown)
+    XCTAssertTrue(json.contains("full_disk_access"))
+    XCTAssertTrue(json.contains("does not inherit"))
   }
 
   func testDiskStatusTextKeepsIdentifierAndPrivacy() {

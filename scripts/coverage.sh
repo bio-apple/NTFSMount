@@ -20,10 +20,10 @@ if [[ -z "${BIN:-}" || ! -x "$BIN" || -z "${PROF:-}" || ! -f "$PROF" ]]; then
 fi
 
 echo
-echo "NTFSMountCore (llvm-cov, 不含 UI / helper bash):"
+echo "NTFSMountCore (llvm-cov, excluding UI / helper bash):"
 xcrun llvm-cov report "$BIN" -instr-profile "$PROF" "$ROOT/Sources/NTFSMountCore"
 echo
-echo "写操作相关（磁盘检测 + 格式化 + 挂载分类）:"
+echo "Write path (disk detection + format + mount classification):"
 xcrun llvm-cov report "$BIN" -instr-profile "$PROF" \
   "$ROOT/Sources/NTFSMountCore/NTFSVolume.swift" \
   "$ROOT/Sources/NTFSMountCore/FormatDisk.swift" \

@@ -6,7 +6,7 @@
 
 NTFS3G_PINNED="${NTFS3G_PINNED:-2026.7.7}"
 NTFS3G_ALLOW_LIST="${NTFS3G_ALLOW_LIST:-2026.7.7,2026.8.x}"
-NTFS3G_ALLOW_HUMAN="${NTFS3G_ALLOW_HUMAN:-2026.7.7、2026.8.x}"
+NTFS3G_ALLOW_HUMAN="${NTFS3G_ALLOW_HUMAN:-2026.7.7, 2026.8.x}"
 
 ntfs3g_parse_version() {
   local text="$1" ver
@@ -44,12 +44,12 @@ EOF
 ntfs3g_human_line() {
   local present="$1" ver="$2" allowed="$3"
   if [[ "$present" != true ]]; then
-    printf '%s' "未找到捆绑 ntfs-3g，无法校验（未查 PATH）"
+    printf '%s' "Bundled ntfs-3g not found, so the version was not checked (PATH was not searched)"
     return 0
   fi
   if [[ "$allowed" == true ]]; then
-    printf '%s' "ntfs-3g ${ver}（已测试；允许 ${NTFS3G_ALLOW_HUMAN}）"
+    printf '%s' "ntfs-3g ${ver} (tested; allowed ${NTFS3G_ALLOW_HUMAN})"
     return 0
   fi
-  printf '%s' "ntfs-3g ${ver:-unknown} 未经测试（允许 ${NTFS3G_ALLOW_HUMAN}）；未知版本有风险，仍可继续挂载"
+  printf '%s' "ntfs-3g ${ver:-unknown} is untested (allowed ${NTFS3G_ALLOW_HUMAN}); an unknown version is risky, but mounting can continue"
 }

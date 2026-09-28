@@ -57,6 +57,11 @@ final class Ntfs3gVersionTests: XCTestCase {
     let miss = EnvironmentDiagnose.lines(from: missing, locale: zh).first { $0.id == Ntfs3gVersion.diagnoseLineId }
     XCTAssertEqual(miss?.status, .fail)
     XCTAssertEqual(miss?.title, Ntfs3gVersion.diagnoseMissing(locale: zh))
+    XCTAssertTrue(miss?.title.contains("GitHub Latest") == true)
+    XCTAssertEqual(
+      Ntfs3gVersion.settingsLine(Ntfs3gVersion.parse(""), locale: zh),
+      L10n.t("runtime.ntfs3gMissing", locale: zh)
+    )
   }
 
   func testParseJSONRuntimeVersion() throws {

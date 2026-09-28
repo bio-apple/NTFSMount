@@ -32,6 +32,9 @@ final class VolumeStore: ObservableObject {
   @Published var autoMount: Bool = Privileged.autoMountEnabled
   @Published var launchAtLogin: Bool = SMAppService.mainApp.status == .enabled
   @Published var showDock: Bool = UserDefaults.standard.bool(forKey: AppIdentity.Defaults.showDock)
+  @Published var cleanMacJunkBeforeEject: Bool = UserDefaults.standard.bool(
+    forKey: AppIdentity.Defaults.cleanMacJunkBeforeEject
+  )
   @Published var openSettings = false
   @Published var driverVersionLine: String = Ntfs3gVersion.settingsChecking
   @Published var driverVersionUntested = false
@@ -183,6 +186,19 @@ final class VolumeStore: ObservableObject {
     let alert = NSAlert()
     alert.messageText = L10n.t("alert.mountFailed")
     alert.informativeText = L10n.format("alert.kextBody", detail)
+    alert.addButton(withTitle: L10n.t("ok.gotIt"))
+    alert.runModal()
+  }
+
+  func alertDiskBusy(_ detail: String) {
+    NSApp.activate(ignoringOtherApps: true)
+    let alert = NSAlert()
+    alert.alertStyle = .warning
+    let parts = detail.split(separator: "\n", maxSplits: 1, omittingEmptySubsequences: false)
+    alert.messageText = String(parts[0])
+    if parts.count > 1 {
+      alert.informativeText = String(parts[1])
+    }
     alert.addButton(withTitle: L10n.t("ok.gotIt"))
     alert.runModal()
   }
@@ -375,9 +391,13 @@ final class VolumeStore: ObservableObject {
     driverVersionUntested = parsed.status == .untested
   }
 
-  func confirmDriverIfNeeded() -> Bool {
+  func confirmDriverIfNeeded(volumeId: String? = nil) -> Bool {
     let parsed = cachedNtfs3g ?? EnvironmentDiagnoseRunner.probeNtfs3g()
     applyDriverVersion(parsed)
+    if parsed.status == .missing {
+      setMessage(L10n.t("runtime.ntfs3gMissing"), volumeId: volumeId)
+      return false
+    }
     return LegalGate.confirmUntestedDriver(parsed)
   }
 

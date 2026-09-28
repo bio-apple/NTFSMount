@@ -317,7 +317,8 @@ enum Privileged {
     let recvSec = HelperIpc.recvTimeoutSec(command: args.first ?? "")
     guard let first = transactDaemonReconnect(v2, recvSec: recvSec) else { return nil }
     if first.ok { return first }
-    if first.text.contains("协议错误"), let v1 = HelperIpc.encodeV1Compat(args) {
+    if first.text.contains("协议错误") || first.text.lowercased().contains("protocol error"),
+      let v1 = HelperIpc.encodeV1Compat(args) {
       return transactDaemonReconnect(v1, recvSec: recvSec) ?? first
     }
     return first

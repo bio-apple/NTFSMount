@@ -9,12 +9,12 @@ resolve_cmd() {
       return 0
     fi
   done
-  echo "error: 找不到命令 $n" >&2
+  echo "error: command not found: $n" >&2
   return 1
 }
 LAUNCHCTL="$(resolve_cmd launchctl || true)"
 if [[ "$(/usr/bin/id -u)" -ne 0 ]]; then
-  echo "需要 root" >&2
+  echo "root is required" >&2
   exit 1
 fi
 if [[ -n "$LAUNCHCTL" ]]; then

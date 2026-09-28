@@ -11,20 +11,20 @@ resolve_cmd() {
       return 0
     fi
   done
-  echo "error: 找不到命令 $n" >&2
+  echo "error: command not found: $n" >&2
   return 1
 }
 LAUNCHCTL="$(resolve_cmd launchctl)"
 BASH_BIN="$(resolve_cmd bash)"
 if [[ "$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null || true)" != "1" && "$(/usr/bin/uname -m)" != "arm64" ]]; then
-  echo "error: NTFSMount 仅支持 Apple Silicon（M 芯片 / arm64），不支持 Intel Mac（x86_64）。当前架构：$(/usr/bin/uname -m)" >&2
+  echo "error: NTFSMount supports Apple Silicon (M-series / arm64) only, not Intel Macs (x86_64). This machine: $(/usr/bin/uname -m)" >&2
   exit 1
 fi
 if [[ "$(/usr/bin/id -u)" -ne 0 ]]; then
-  echo "需要 root" >&2
+  echo "root is required" >&2
   exit 1
 fi
-HELPER_SRC="${1:?用法: install-helper.sh <helper> <helperd> <用户名> <app>}"
+HELPER_SRC="${1:?usage: install-helper.sh <helper> <helperd> <username> <app>}"
 HELPERD_SRC="${2:?}"
 USER_NAME="${3:?}"
 APP="${4:?}"
@@ -36,15 +36,15 @@ SUDOERS="/etc/sudoers.d/ntfs-rw"
 LEGACY_HELPER="/usr/local/sbin/ntfs-rw-helper"
 
 [[ -f "$HELPER_SRC" ]] || {
-  echo "找不到助手: $HELPER_SRC" >&2
+  echo "helper not found: $HELPER_SRC" >&2
   exit 1
 }
 [[ -f "$HELPERD_SRC" ]] || {
-  echo "找不到守护进程: $HELPERD_SRC" >&2
+  echo "daemon not found: $HELPERD_SRC" >&2
   exit 1
 }
 [[ -d "$APP" ]] || {
-  echo "找不到应用: $APP" >&2
+  echo "app not found: $APP" >&2
   exit 1
 }
 if [[ "$USER_NAME" == "root" ]]; then
@@ -65,7 +65,7 @@ APP="$(cd "$APP" && /bin/pwd -P)"
 printf '%s\n' "$APP" >"$SUPPORT/app.path"
 CDHASH="$(/usr/bin/codesign -dv --verbose=4 "$APP" 2>&1 | /usr/bin/sed -n 's/^CDHash=//p' | /usr/bin/head -1 || true)"
 if [[ -z "$CDHASH" ]]; then
-  echo "无法读取应用 CDHash，请确认应用已签名后再安装助手。" >&2
+  echo "Cannot read the app CDHash. Sign the app, then install the helper again." >&2
   exit 1
 fi
 printf '%s\n' "$CDHASH" >"$SUPPORT/allowed.cdhash"
@@ -149,8 +149,8 @@ done
 /bin/rm -f "$SUDOERS" "$LEGACY_HELPER"
 
 if [[ ! -S "$SOCK" && ! -e "$SOCK" ]]; then
-  echo "error: 挂载助手已拷贝，但 socket 未出现（$SOCK）。" >&2
-  echo "请在「系统设置 → 通用 → 登录项与扩展」允许 NTFSMount 在后台运行后重试。" >&2
+  echo "error: helper files were copied, but the socket did not appear ($SOCK)." >&2
+  echo "Allow NTFSMount to run in the background under System Settings → General → Login Items & Extensions, then try again." >&2
   "$LAUNCHCTL" print system/com.bioapple.ntfsmount.helper 2>&1 | /usr/bin/tail -n 40 >&2 || true
   if [[ -f /Library/Logs/ntfsmount-helperd.log ]]; then
     echo "--- helperd log ---" >&2

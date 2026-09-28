@@ -16,7 +16,7 @@ resolve_cmd() {
       return 0
     fi
   done
-  echo "error: 找不到命令 $n" >&2
+  echo "error: command not found: $n" >&2
   return 1
 }
 DISKUTIL="$(resolve_cmd diskutil)"
@@ -45,7 +45,7 @@ LOG_FILE=""
 CMD_START_MS=0
 
 # Resolve this helper's real path. $0 may be:
-#   /usr/local/sbin/ntfs-rw-helper
+#   /Library/Application Support/NTFSMount/ntfs-rw-helper
 #   .../NTFSMount.app/Contents/Resources/ntfs-rw-helper
 #   <repo>/helper/ntfs-rw-helper
 helper_realpath() {
@@ -69,9 +69,11 @@ helper_realpath() {
 }
 
 # Candidate dirs for ntfs-3g / mkntfs / ntfsfix / go-nfsv4, in order:
-# 1. /Applications/NTFSMount.app/Contents/MacOS
-# 2. NTFSMount.app/Contents/MacOS derived by walking from this helper
-# 3. last resort (dev): <git repo>/runtime  — never a hardcoded home path
+# 1. Contents/MacOS of the app recorded in the install stamp (app.path)
+# 2. /Applications/NTFSMount.app/Contents/MacOS
+# 3. Contents/MacOS next to this helper (in-bundle / SMAppService)
+# 4. last resort (dev): <git repo>/runtime
+# Never Homebrew. Only sealed/app bundle paths above.
 BUNDLE_DIRS=()
 
 _add_bundle_dir() {
@@ -86,12 +88,24 @@ _add_bundle_dir() {
   BUNDLE_DIRS+=("$d")
 }
 
+installed_app_macos() {
+  local f="/Library/Application Support/NTFSMount/app.path" app
+  [[ -f "$f" ]] || return 1
+  app="$(/bin/cat "$f" 2>/dev/null || true)"
+  app="${app%%$'\n'*}"
+  [[ -n "$app" && -d "${app}/Contents/MacOS" ]] || return 1
+  printf '%s' "${app}/Contents/MacOS"
+}
+
 init_bundle_dirs() {
-  local helper helper_dir d parent
-  helper="$(helper_realpath)"
-  helper_dir="$(/usr/bin/dirname "$helper")"
+  local helper helper_dir d parent macos
+  macos="$(installed_app_macos || true)"
+  [[ -n "$macos" ]] && _add_bundle_dir "$macos"
 
   _add_bundle_dir "/Applications/NTFSMount.app/Contents/MacOS"
+
+  helper="$(helper_realpath)"
+  helper_dir="$(/usr/bin/dirname "$helper")"
 
   d="$helper_dir"
   while :; do
@@ -142,7 +156,8 @@ init_bundle_dirs
 
 find_ntfs3g() { find_bundled ntfs-3g; }
 
-NTFS3G="${NTFS3G:-$(find_ntfs3g || true)}"
+# Bundled dirs only. Do not honor inherited NTFS3G= (user PATH / package-manager hijack).
+NTFS3G="$(find_ntfs3g || true)"
 NTFS3G_DIR=""
 if [[ -n "${NTFS3G}" ]]; then
   NTFS3G_DIR="$(/usr/bin/dirname "$NTFS3G")"
@@ -323,10 +338,10 @@ classify_line_for_state() {
 do_probe() {
   local ident="$1"
   CURRENT_IDENT="$ident"
-  valid_id "$ident" || die "非法设备: $ident"
-  [[ -e "/dev/$ident" ]] || die "设备不存在: /dev/$ident"
+  valid_id "$ident" || die "invalid device: $ident"
+  [[ -e "/dev/$ident" ]] || die "no such device: /dev/$ident"
   require_ntfs "$ident"
-  [[ -n "$NTFSFIX" && -x "$NTFSFIX" ]] || die "找不到捆绑的 ntfsfix。请把 NTFSMount.app 重新装到 /Applications"
+  [[ -n "$NTFSFIX" && -x "$NTFSFIX" ]] || die "bundled ntfsfix not found. Reinstall NTFSMount.app to /Applications"
 
   export PATH="${NTFS3G_DIR:-}:/usr/bin:/bin:/usr/sbin:/sbin"
   ensure_unmounted "$ident"
@@ -409,7 +424,7 @@ require_ntfs() {
   local fs
   vlog "$DISKUTIL" info -plist "$1"
   fs="$("$DISKUTIL" info -plist "$1" 2>/dev/null | /usr/bin/plutil -extract FilesystemName raw - 2>/dev/null || true)"
-  [[ "$fs" == "NTFS" ]] || die "$1 不是 NTFS（当前: ${fs:-unknown}）"
+  [[ "$fs" == "NTFS" ]] || die "$1 is not NTFS (current: ${fs:-unknown})"
 }
 
 volume_name() {
@@ -511,7 +526,7 @@ notify() {
   msg="$(printf '%s' "$msg" | /usr/bin/tr -d '"$`\\')"
   user="$(/usr/bin/stat -f '%Su' /dev/console 2>/dev/null || /usr/bin/id -un)"
   uid="$(/usr/bin/id -u "$user" 2>/dev/null || true)"
-  e="display notification \"${msg}\" with title \"NTFS 读写\""
+  e="display notification \"${msg}\" with title \"NTFS Mount\""
   if [[ "$(/usr/bin/id -u)" -eq 0 && -n "$uid" && "$uid" != "0" ]]; then
     "$LAUNCHCTL" asuser "$uid" "$OSASCRIPT" -e "$e" >/dev/null 2>&1 || true
   else
@@ -710,33 +725,36 @@ occupiers_for_mp() {
 print_busy_occupiers() {
   [[ -n "$OCCUPIERS_NAMES" ]] && echo "busy-occupiers: ${OCCUPIERS_NAMES}" >&2
   [[ -n "$OCCUPIERS_PIDS" ]] && echo "busy-pids: ${OCCUPIERS_PIDS}" >&2
+  if [[ "$OCCUPIERS_STATUS" == "failed" ]]; then
+    echo "busy-lsof-failed:" >&2
+  fi
   return 0
 }
 
 busy_hint_for_cmd() {
   case "${CURRENT_CMD:-}" in
-  eject) printf '%s' "请关闭访达窗口/文件后点推出" ;;
-  unmount) printf '%s' "请关闭访达窗口/文件后点卸载" ;;
-  *) printf '%s' "请关闭访达窗口/文件后重试" ;;
+  eject) printf '%s' "Close Finder windows and files, then eject." ;;
+  unmount) printf '%s' "Close Finder windows and files, then unmount." ;;
+  *) printf '%s' "Close Finder windows and files, then try again." ;;
   esac
 }
 
 busy_volume_message() {
   local who="$1"
-  local hint="${2:-请关闭访达窗口/文件后重试}"
+  local hint="${2:-Close Finder windows and files, then try again.}"
   if [[ -n "$who" ]]; then
-    printf '磁盘正被占用：%s。%s' "$who" "$hint"
+    printf 'Volume busy: %s. %s' "$who" "$hint"
   else
-    printf '磁盘正被占用：%s' "$hint"
+    printf 'Volume busy: %s' "$hint"
   fi
 }
 
 busy_eject_message() {
-  busy_volume_message "$1" "请关闭访达窗口/文件后点推出"
+  busy_volume_message "$1" "Close Finder windows and files, then eject."
 }
 
 busy_unmount_message() {
-  busy_volume_message "$1" "请关闭访达窗口/文件后点卸载"
+  busy_volume_message "$1" "Close Finder windows and files, then unmount."
 }
 
 die_volume_busy() {
@@ -911,7 +929,7 @@ try_mount() {
   : >"$log"
   nfs="$(resolve_nfs_srv || true)"
   [[ -n "$nfs" ]] || {
-    echo "找不到捆绑的 go-nfsv4" >>"$log"
+    echo "bundled go-nfsv4 not found. Reinstall NTFSMount.app to /Applications" >>"$log"
     return 1
   }
   export FUSE_NFSSRV_PATH="$nfs"
@@ -970,13 +988,13 @@ try_mount() {
 do_mount() {
   local ident="$1"
   CURRENT_IDENT="$ident"
-  valid_id "$ident" || die "非法设备: $ident"
-  [[ -e "/dev/$ident" ]] || die "设备不存在: /dev/$ident"
+  valid_id "$ident" || die "invalid device: $ident"
+  [[ -e "/dev/$ident" ]] || die "no such device: /dev/$ident"
   require_ntfs "$ident"
-  [[ -n "$NTFS3G" && -x "$NTFS3G" ]] || die "找不到捆绑的 ntfs-3g。请把 NTFSMount.app 重新装到 /Applications"
-  resolve_nfs_srv >/dev/null || die "找不到捆绑的 go-nfsv4。请把 NTFSMount.app 重新装到 /Applications"
-  [[ -f "${NTFS3G_DIR}/libfuse.2.dylib" ]] || die "找不到捆绑的 libfuse.2.dylib。请把 NTFSMount.app 重新装到 /Applications"
-  [[ -f "${NTFS3G_DIR}/libntfs-3g.90.dylib" ]] || die "找不到捆绑的 libntfs-3g。请把 NTFSMount.app 重新装到 /Applications"
+  [[ -n "$NTFS3G" && -x "$NTFS3G" ]] || die "bundled-ntfs-3g-missing: reinstall NTFSMount.app from GitHub Latest"
+  resolve_nfs_srv >/dev/null || die "bundled go-nfsv4 not found. Reinstall NTFSMount.app to /Applications"
+  [[ -f "${NTFS3G_DIR}/libfuse.2.dylib" ]] || die "bundled libfuse.2.dylib not found. Reinstall NTFSMount.app to /Applications"
+  [[ -f "${NTFS3G_DIR}/libntfs-3g.90.dylib" ]] || die "bundled libntfs-3g not found. Reinstall NTFSMount.app to /Applications"
 
   local name mp uid gid volesc base
   name="$(volume_name "$ident")"
@@ -1022,7 +1040,7 @@ do_mount() {
       /bin/rm -f "$errfile"
       if [[ $rc -eq 0 ]]; then
         echo "ok rw $ident -> $mp (${extra})"
-        notify "NTFS 磁盘已成功挂载为可读写模式"
+        notify "NTFS volume mounted read/write."
         return 0
       fi
       if looks_like_dirty_or_hiber "$err"; then
@@ -1041,14 +1059,14 @@ do_mount() {
     fi
     classify_line="$(classify_line_for_state "$state")"
     if [[ "$state" == "hiber" ]]; then
-      ro_msg="该 NTFS 磁盘仍处于 Windows 休眠，已只读挂载。请在 Windows 中彻底关机（不要休眠/快速启动）后再以可写方式挂载。不会清除休眠文件。"
+      ro_msg="This NTFS volume is still hibernated in Windows, so it was mounted read-only. Shut Windows down fully (not hibernate or Fast Startup), then mount read/write. The hibernation file was not cleared."
     elif [[ "$state" == "dirty" ]]; then
-      ro_msg="该 NTFS 磁盘未正常关机或处于快速启动，已只读挂载。可在应用中选择「尝试修复脏卷」，或在 Windows 彻底关机后重试。不会清除休眠文件。"
+      ro_msg="This NTFS volume was not shut down cleanly or Fast Startup is on, so it was mounted read-only. Choose Try to repair the dirty volume in the app, or shut Windows down fully and try again. The hibernation file was not cleared."
     elif [[ "$state" == "corrupt" ]]; then
-      ro_msg="该 NTFS 磁盘可能已损坏或未正常卸载，已只读挂载。可写挂载可能加重损坏。可在应用中选择「尝试修复脏卷」，或在 Windows 运行 chkdsk。不会清除休眠文件。"
+      ro_msg="This NTFS volume may be damaged or was not unmounted cleanly, so it was mounted read-only. A read/write mount could make the damage worse. Choose Try to repair the dirty volume in the app, or run chkdsk in Windows. The hibernation file was not cleared."
     else
       classify_line="classify: dirty/hibernation"
-      ro_msg="该 NTFS 磁盘未正常关机或仍处于 Windows 休眠，已只读挂载。请在 Windows 中彻底关机（不要休眠/快速启动）后再以可写方式挂载。"
+      ro_msg="This NTFS volume was not shut down cleanly or is still hibernated in Windows, so it was mounted read-only. Shut Windows down fully (not hibernate or Fast Startup), then mount read/write."
     fi
     for extra in "${ro_attempts[@]}"; do
       opts="${base},${extra}"
@@ -1062,7 +1080,7 @@ do_mount() {
       err="$(/bin/cat "$errfile" 2>/dev/null || true)"
       /bin/rm -f "$errfile"
       if [[ $rc -eq 0 ]]; then
-        echo "ok ro $ident -> $mp (${state}, 未清除休眠文件)"
+        echo "ok ro $ident -> $mp (${state}, hiberfile not cleared)"
         echo "$classify_line"
         echo "warning: $ro_msg"
         notify "$ro_msg"
@@ -1070,34 +1088,34 @@ do_mount() {
       fi
     done
     echo "$classify_line"
-    notify "无法挂载：磁盘未正常关机或处于 Windows 休眠"
-    die "挂载失败：磁盘 dirty 或 Windows 休眠，只读挂载也失败。请在 Windows 彻底关机后重试。详情: $err"
+    notify "Mount failed: the volume was not shut down cleanly or Windows is hibernated."
+    die "Mount failed: the volume is dirty or Windows is hibernated, and read-only mount also failed. Shut Windows down fully, then try again. Detail: $err"
   fi
 
   unmount_any "$ident"
   local ver
   ver="$(macos_major)"
   if [[ -n "$ver" && "$ver" -lt 13 ]]; then
-    notify "挂载失败：系统低于 macOS 13（未测试）"
-    die "挂载失败：当前系统低于 macOS 13（未测试，最低要求 13.0）。详情: $err"
+    notify "Mount failed: this system is older than macOS 13 (untested)."
+    die "Mount failed: this system is older than macOS 13 (untested; 13.0 is the minimum). Detail: $err"
   fi
   if looks_like_kext_or_fskit_block "$err"; then
-    notify "挂载失败：FSKit/kext 不可用可忽略，本应用不用内核扩展"
-    die "挂载失败：FSKit/内核扩展不可用是预期情况（可忽略）。macOS ${ver:-?} 已限制 kext，本助手不使用内核扩展，已优先尝试 NFS/用户态 FUSE。请勿安装 kext。详情: $err"
+    notify "Mount failed: FSKit/kext unavailable can be ignored. This app does not use kernel extensions."
+    die "Mount failed: FSKit or a kernel extension being unavailable is expected and can be ignored. macOS ${ver:-?} restricts kexts. This helper does not use kernel extensions and already tried NFS / userspace FUSE. Do not install a kext. Detail: $err"
   fi
-  notify "NTFS 磁盘挂载失败"
-  die "挂载失败: $err"
+  notify "NTFS volume mount failed."
+  die "Mount failed: $err"
 }
 
 do_unmount() {
   local ident="$1"
   local mode="${2:-}"
   CURRENT_IDENT="$ident"
-  valid_id "$ident" || die "非法设备: $ident"
+  valid_id "$ident" || die "invalid device: $ident"
   if [[ "$mode" == "force" ]]; then
     ALLOW_FORCE=1
   elif [[ -n "$mode" ]]; then
-    die "非法卸载参数: $mode"
+    die "invalid unmount argument: $mode"
   fi
   guard_unmount_busy "$ident"
   unmount_any "$ident" || true
@@ -1117,7 +1135,7 @@ do_unmount() {
 do_eject() {
   local ident="$1"
   CURRENT_IDENT="$ident"
-  valid_id "$ident" || die "非法设备: $ident"
+  valid_id "$ident" || die "invalid device: $ident"
   refuse_eject_target "$ident"
 
   local name mp whole occupiers i still=1 eject_out eject_rc
@@ -1140,7 +1158,7 @@ do_eject() {
     [[ "$still" -ne 0 ]] || break
     occupiers="$(occupiers_for_mp "$mp")"
     if [[ -n "$occupiers" ]]; then
-      echo "磁盘正被占用：${occupiers}" >&2
+      echo "Volume busy: ${occupiers}" >&2
     fi
     if [[ "$i" -eq 2 ]]; then
       kill_ntfs3g "$ident" KILL
@@ -1177,7 +1195,7 @@ do_eject() {
       print_busy_occupiers
       die "$(busy_eject_message "$occupiers")"
     fi
-    die "推出失败: $ident"
+    die "Eject failed: $ident"
   fi
   echo "ok ejected $ident"
 }
@@ -1200,27 +1218,27 @@ refuse_format_target() {
   local plist internal sys proto store i root_plist
   vlog "$DISKUTIL" info -plist "$ident"
   plist="$("$DISKUTIL" info -plist "$ident" 2>/dev/null || true)"
-  [[ -n "$plist" ]] || die "读不到磁盘信息: $ident"
+  [[ -n "$plist" ]] || die "cannot read disk info: $ident"
   internal="$(printf '%s' "$plist" | /usr/bin/plutil -extract Internal raw - 2>/dev/null || true)"
   if [[ "$internal" == "true" ]]; then
-    die "拒绝格式化内置磁盘: $ident"
+    die "refused to format internal disk: $ident"
   fi
   proto="$(printf '%s' "$plist" | /usr/bin/plutil -extract BusProtocol raw - 2>/dev/null || true)"
   if [[ "$proto" == "Disk Image" || "$proto" == "Apple Fabric" ]]; then
-    die "拒绝格式化该磁盘: $ident ($proto)"
+    die "refused to format this disk: $ident ($proto)"
   fi
   vlog "$DISKUTIL" info -plist /
   root_plist="$("$DISKUTIL" info -plist / 2>/dev/null || true)"
   sys="$(printf '%s' "$root_plist" | /usr/bin/plutil -extract ParentWholeDisk raw - 2>/dev/null || true)"
   if [[ -n "$sys" && ("$ident" == "$sys" || "$ident" == "${sys%%s*}") ]]; then
-    die "拒绝格式化系统盘: $ident"
+    die "refused to format system disk: $ident"
   fi
   i=0
   while [[ $i -le 8 ]]; do
     store="$(printf '%s' "$root_plist" | /usr/bin/plutil -extract "APFSPhysicalStores.$i.APFSPhysicalStore" raw - 2>/dev/null || true)"
     [[ -n "$store" && "$store" != "null" ]] || break
     if [[ "$ident" == "$store" || "$ident" == "${store%%s*}" ]]; then
-      die "拒绝格式化系统盘: $ident"
+      die "refused to format system disk: $ident"
     fi
     i=$((i + 1))
   done
@@ -1232,27 +1250,27 @@ refuse_fix_target() {
   local plist internal sys proto store i root_plist
   vlog "$DISKUTIL" info -plist "$ident"
   plist="$("$DISKUTIL" info -plist "$ident" 2>/dev/null || true)"
-  [[ -n "$plist" ]] || die "读不到磁盘信息: $ident"
+  [[ -n "$plist" ]] || die "cannot read disk info: $ident"
   internal="$(printf '%s' "$plist" | /usr/bin/plutil -extract Internal raw - 2>/dev/null || true)"
   if [[ "$internal" == "true" ]]; then
-    die "拒绝修复内置磁盘: $ident"
+    die "refused to repair internal disk: $ident"
   fi
   proto="$(printf '%s' "$plist" | /usr/bin/plutil -extract BusProtocol raw - 2>/dev/null || true)"
   if [[ "$proto" == "Disk Image" || "$proto" == "Apple Fabric" ]]; then
-    die "拒绝修复该磁盘: $ident ($proto)"
+    die "refused to repair this disk: $ident ($proto)"
   fi
   vlog "$DISKUTIL" info -plist /
   root_plist="$("$DISKUTIL" info -plist / 2>/dev/null || true)"
   sys="$(printf '%s' "$root_plist" | /usr/bin/plutil -extract ParentWholeDisk raw - 2>/dev/null || true)"
   if [[ -n "$sys" && ("$ident" == "$sys" || "$whole" == "$sys" || "$ident" == "${sys%%s*}") ]]; then
-    die "拒绝修复系统盘: $ident"
+    die "refused to repair system disk: $ident"
   fi
   i=0
   while [[ $i -le 8 ]]; do
     store="$(printf '%s' "$root_plist" | /usr/bin/plutil -extract "APFSPhysicalStores.$i.APFSPhysicalStore" raw - 2>/dev/null || true)"
     [[ -n "$store" && "$store" != "null" ]] || break
     if [[ "$ident" == "$store" || "$whole" == "$store" || "$ident" == "${store%%s*}" || "$whole" == "${store%%s*}" ]]; then
-      die "拒绝修复系统盘: $ident"
+      die "refused to repair system disk: $ident"
     fi
     i=$((i + 1))
   done
@@ -1264,30 +1282,30 @@ refuse_eject_target() {
   local plist wplist internal winternal sys store i root_plist
   vlog "$DISKUTIL" info -plist "$ident"
   plist="$("$DISKUTIL" info -plist "$ident" 2>/dev/null || true)"
-  [[ -n "$plist" ]] || die "读不到磁盘信息: $ident"
+  [[ -n "$plist" ]] || die "cannot read disk info: $ident"
   internal="$(printf '%s' "$plist" | /usr/bin/plutil -extract Internal raw - 2>/dev/null || true)"
   if [[ "$internal" == "true" ]]; then
-    die "拒绝推出内置磁盘: $ident"
+    die "refused to eject internal disk: $ident"
   fi
   if valid_whole "$whole" && [[ "$whole" != "$ident" ]]; then
     wplist="$("$DISKUTIL" info -plist "$whole" 2>/dev/null || true)"
     winternal="$(printf '%s' "$wplist" | /usr/bin/plutil -extract Internal raw - 2>/dev/null || true)"
     if [[ "$winternal" == "true" ]]; then
-      die "拒绝推出内置磁盘: $ident"
+      die "refused to eject internal disk: $ident"
     fi
   fi
   vlog "$DISKUTIL" info -plist /
   root_plist="$("$DISKUTIL" info -plist / 2>/dev/null || true)"
   sys="$(printf '%s' "$root_plist" | /usr/bin/plutil -extract ParentWholeDisk raw - 2>/dev/null || true)"
   if [[ -n "$sys" && ("$ident" == "$sys" || "$whole" == "$sys" || "$ident" == "${sys%%s*}") ]]; then
-    die "拒绝推出系统盘: $ident"
+    die "refused to eject system disk: $ident"
   fi
   i=0
   while [[ $i -le 8 ]]; do
     store="$(printf '%s' "$root_plist" | /usr/bin/plutil -extract "APFSPhysicalStores.$i.APFSPhysicalStore" raw - 2>/dev/null || true)"
     [[ -n "$store" && "$store" != "null" ]] || break
     if [[ "$ident" == "$store" || "$whole" == "$store" || "$ident" == "${store%%s*}" || "$whole" == "${store%%s*}" ]]; then
-      die "拒绝推出系统盘: $ident"
+      die "refused to eject system disk: $ident"
     fi
     i=$((i + 1))
   done
@@ -1309,11 +1327,11 @@ do_format() {
   local ident="$1"
   local label
   CURRENT_IDENT="$ident"
-  valid_whole "$ident" || die "非法设备: ${ident}（格式化需要整个磁盘，例如 disk4）"
+  valid_whole "$ident" || die "invalid device: ${ident} (format needs a whole disk, for example disk4)"
   refuse_format_target "$ident"
-  [[ -e "/dev/$ident" ]] || die "设备不存在: /dev/$ident"
-  [[ -n "$MKNTFS" && -x "$MKNTFS" ]] || die "找不到捆绑的 mkntfs。请把 NTFSMount.app 重新装到 /Applications"
-  [[ -n "$NTFS3G_DIR" && -f "${NTFS3G_DIR}/libntfs-3g.90.dylib" ]] || die "找不到捆绑的 libntfs-3g。请把 NTFSMount.app 重新装到 /Applications"
+  [[ -e "/dev/$ident" ]] || die "no such device: /dev/$ident"
+  [[ -n "$MKNTFS" && -x "$MKNTFS" ]] || die "bundled mkntfs not found. Reinstall NTFSMount.app to /Applications"
+  [[ -n "$NTFS3G_DIR" && -f "${NTFS3G_DIR}/libntfs-3g.90.dylib" ]] || die "bundled libntfs-3g not found. Reinstall NTFSMount.app to /Applications"
   label="$(sanitize_label "${2:-NTFS}")"
 
   export PATH="${NTFS3G_DIR}:/usr/bin:/bin:/usr/sbin:/sbin"
@@ -1331,7 +1349,7 @@ do_format() {
   out="$("$DISKUTIL" eraseDisk ExFAT _NTFSFMT "$ident" 2>&1)"
   rc=$?
   set -e
-  [[ $rc -eq 0 ]] || die "分区失败: $out"
+  [[ $rc -eq 0 ]] || die "partition failed: $out"
 
   vlog "$DISKUTIL" unmountDisk "$ident"
   if ! "$DISKUTIL" unmountDisk "$ident" >/dev/null 2>&1; then
@@ -1340,17 +1358,17 @@ do_format() {
     "$DISKUTIL" unmountDisk force "$ident" >/dev/null 2>&1 || true
   fi
   part="$(data_partition "$ident")"
-  valid_id "$part" || die "找不到数据分区: $ident"
+  valid_id "$part" || die "data partition not found: $ident"
   # macOS /dev/rdisk* is a character device; mkntfs needs a block device.
   dev="/dev/$part"
-  [[ -b "$dev" ]] || die "不是块设备: $dev"
+  [[ -b "$dev" ]] || die "not a block device: $dev"
 
   set +e
   vlog "$MKNTFS" -F -Q -L "$label" "$dev"
   out="$("$MKNTFS" -F -Q -L "$label" "$dev" 2>&1)"
   rc=$?
   set -e
-  [[ $rc -eq 0 ]] || die "mkntfs 失败: $out"
+  [[ $rc -eq 0 ]] || die "mkntfs failed: $out"
   /bin/sync
   # DiskArbitration 在探测前仍会报 ExFAT；先 mount 一次让系统认出 NTFS。
   vlog "$DISKUTIL" mount "$part"
@@ -1361,12 +1379,12 @@ do_format() {
 do_fix() {
   local ident="$1"
   CURRENT_IDENT="$ident"
-  valid_id "$ident" || die "非法设备: $ident"
+  valid_id "$ident" || die "invalid device: $ident"
   refuse_fix_target "$ident"
-  [[ -e "/dev/$ident" ]] || die "设备不存在: /dev/$ident"
+  [[ -e "/dev/$ident" ]] || die "no such device: /dev/$ident"
   require_ntfs "$ident"
-  [[ -n "$NTFSFIX" && -x "$NTFSFIX" ]] || die "找不到捆绑的 ntfsfix。请把 NTFSMount.app 重新装到 /Applications"
-  [[ -n "$NTFS3G_DIR" && -f "${NTFS3G_DIR}/libntfs-3g.90.dylib" ]] || die "找不到捆绑的 libntfs-3g。请把 NTFSMount.app 重新装到 /Applications"
+  [[ -n "$NTFSFIX" && -x "$NTFSFIX" ]] || die "bundled ntfsfix not found. Reinstall NTFSMount.app to /Applications"
+  [[ -n "$NTFS3G_DIR" && -f "${NTFS3G_DIR}/libntfs-3g.90.dylib" ]] || die "bundled libntfs-3g not found. Reinstall NTFSMount.app to /Applications"
 
   export PATH="${NTFS3G_DIR}:/usr/bin:/bin:/usr/sbin:/sbin"
   ensure_unmounted "$ident"
@@ -1379,7 +1397,7 @@ do_fix() {
   [[ -n "$probe" ]] && printf '%s\n' "$probe"
   if looks_like_hiber "$probe"; then
     echo "classify: Windows is hibernated"
-    die "该卷处于 Windows 休眠（hiberfil）。不会运行 ntfsfix，以免破坏休眠数据。请在 Windows 彻底关机（不要休眠/快速启动）后再试。"
+    die "This volume is hibernated in Windows (hiberfil). ntfsfix will not run, so hibernation data is not destroyed. Shut Windows down fully (not hibernate or Fast Startup), then try again."
   fi
 
   # man ntfsfix: -d 在可修复时清除 dirty，以便挂载。不用 -d 反而会把 dirty 再标上。
@@ -1390,7 +1408,7 @@ do_fix() {
   rc=$?
   set -e
   [[ -n "$out" ]] && printf '%s\n' "$out"
-  [[ $rc -eq 0 ]] || die "ntfsfix 失败: $out"
+  [[ $rc -eq 0 ]] || die "ntfsfix failed: $out"
   /bin/sync
   echo "classify: volume is dirty"
   echo "ok fixed $ident"
@@ -1401,7 +1419,7 @@ DAEMON_PLIST="/Library/LaunchDaemons/${DAEMON_LABEL}.plist"
 LEGACY_DAEMON_LABEL="local.ntfsmount.automount"
 
 require_root() {
-  [[ "$(/usr/bin/id -u)" -eq 0 ]] || die "需要 root"
+  [[ "$(/usr/bin/id -u)" -eq 0 ]] || die "root is required"
 }
 
 is_ntfs() {
@@ -1474,7 +1492,7 @@ writable_accepted() {
 do_enable_automount() {
   require_root
   local helper
-  helper="$(installed_helper_path)" || die "请先安装挂载助手"
+  helper="$(installed_helper_path)" || die "Install the mount helper first."
   "$LAUNCHCTL" bootout "system/${DAEMON_LABEL}" >/dev/null 2>&1 || true
   "$LAUNCHCTL" bootout "system/${LEGACY_DAEMON_LABEL}" >/dev/null 2>&1 || true
   /bin/rm -f "/Library/LaunchDaemons/${LEGACY_DAEMON_LABEL}.plist"
@@ -1487,7 +1505,7 @@ do_enable_automount() {
   /usr/bin/plutil -insert ThrottleInterval -integer 5 "$DAEMON_PLIST"
   /usr/sbin/chown root:wheel "$DAEMON_PLIST"
   /bin/chmod 644 "$DAEMON_PLIST"
-  "$LAUNCHCTL" bootstrap system "$DAEMON_PLIST" || die "launchctl bootstrap 失败"
+  "$LAUNCHCTL" bootstrap system "$DAEMON_PLIST" || die "launchctl bootstrap failed"
   echo "ok automount enabled"
 }
 
@@ -1535,15 +1553,6 @@ is_ntfsmount_runtime_path() {
     fi
   fi
   return 1
-}
-
-installed_app_macos() {
-  local f="/Library/Application Support/NTFSMount/app.path" app
-  [[ -f "$f" ]] || return 1
-  app="$(/bin/cat "$f" 2>/dev/null || true)"
-  app="${app%%$'\n'*}"
-  [[ -n "$app" && -d "${app}/Contents/MacOS" ]] || return 1
-  printf '%s' "${app}/Contents/MacOS"
 }
 
 is_repair_mount_point() {
@@ -1814,121 +1823,133 @@ do_repair_env() {
 
 do_selftest() {
   if ! valid_id disk12s1; then
-    die "selftest: disk12s1 应为合法"
+    die "selftest: disk12s1 should be valid"
   fi
   if valid_id "disk12s1;whoami"; then
-    die "selftest: 注入 id 应拒绝"
+    die "selftest: injected id should be rejected"
   fi
   if valid_id "disk 12s1"; then
-    die "selftest: 空白 id 应拒绝"
+    die "selftest: id with whitespace should be rejected"
   fi
   if ! valid_whole disk12; then
-    die "selftest: disk12 应为合法整盘"
+    die "selftest: disk12 should be a valid whole disk"
   fi
   if valid_whole disk12s1; then
-    die "selftest: 分区不应当作整盘"
+    die "selftest: a partition must not count as a whole disk"
   fi
   if valid_id '../disk1s1'; then
-    die "selftest: 路径 id 应拒绝"
+    die "selftest: path id should be rejected"
   fi
   if valid_id 'disk5s1$(whoami)'; then
-    die "selftest: 命令替换 id 应拒绝"
+    die "selftest: command-substitution id should be rejected"
   fi
   if valid_id 'disk5s1;whoami'; then
-    die "selftest: 分号 id 应拒绝"
+    die "selftest: semicolon id should be rejected"
   fi
   if valid_whole 'disk4;id'; then
-    die "selftest: 整盘注入应拒绝"
+    die "selftest: whole-disk injection should be rejected"
   fi
-  local mp name needle sample got
+  local mp name needle sample got dir macos resolved
   name="My Passport"
   mp="$(volume_mount_point "$name")"
-  [[ "$mp" == "/Volumes/My Passport" ]] || die "selftest: 带空格卷名应为单一挂载点"
+  [[ "$mp" == "/Volumes/My Passport" ]] || die "selftest: a volume name with spaces should be one mount point"
   name="Seagate Expansion"
   mp="$(volume_mount_point "$name")"
-  [[ "$mp" == "/Volumes/Seagate Expansion" ]] || die "selftest: Seagate Expansion 应为单一挂载点"
+  [[ "$mp" == "/Volumes/Seagate Expansion" ]] || die "selftest: Seagate Expansion should be one mount point"
   mp="$(volume_mount_point "$name" 1)"
-  [[ "$mp" == "/Volumes/Seagate Expansion 1" ]] || die "selftest: leftover 挂载点应保留空格"
+  [[ "$mp" == "/Volumes/Seagate Expansion 1" ]] || die "selftest: leftover mount point should keep spaces"
   name="移动硬盘"
   mp="$(volume_mount_point "$name")"
-  [[ "$mp" == "/Volumes/移动硬盘" ]] || die "selftest: 中文卷名应为单一挂载点"
+  [[ "$mp" == "/Volumes/移动硬盘" ]] || die "selftest: a CJK volume name should be one mount point"
   mp="$(volume_mount_point "$name" 1)"
-  [[ "$mp" == "/Volumes/移动硬盘 1" ]] || die "selftest: 中文 leftover 挂载点应保留空格"
-  [[ "$(fuse_opt_escape '移动,硬盘')" == '移动\,硬盘' ]] || die "selftest: CJK 卷名逗号应转义"
-  [[ "${ALLOW_FORCE}" -eq 0 ]] || die "selftest: ALLOW_FORCE 默认必须为 0"
-  [[ "$(fuse_opt_escape 'Seagate, Expansion')" == 'Seagate\, Expansion' ]] || die "selftest: FUSE volname 逗号应转义"
+  [[ "$mp" == "/Volumes/移动硬盘 1" ]] || die "selftest: a CJK leftover mount point should keep spaces"
+  [[ "$(fuse_opt_escape '移动,硬盘')" == '移动\,硬盘' ]] || die "selftest: a comma in a CJK volume name should be escaped"
+  [[ "${ALLOW_FORCE}" -eq 0 ]] || die "selftest: ALLOW_FORCE must default to 0"
+  [[ "$(fuse_opt_escape 'Seagate, Expansion')" == 'Seagate\, Expansion' ]] || die "selftest: a comma in a FUSE volname should be escaped"
   got="$(NTFS_LOCALE=zh_CN.UTF-8 ntfs3g_base_opts 'Seagate\, Expansion' 501 20)"
-  [[ "$got" == *'volname=Seagate\, Expansion'* ]] || die "selftest: base 须含 volname"
-  [[ "$got" == *',local,'* ]] || die "selftest: base 须含 local"
-  [[ "$got" == *',allow_other,'* ]] || die "selftest: base 须含 allow_other"
-  [[ "$got" == *',auto_xattr,'* ]] || die "selftest: base 须含 auto_xattr"
-  [[ "$got" == *',uid=501,gid=20,'* ]] || die "selftest: base 须把卷属主设为登录用户"
-  [[ "$got" == *',locale=zh_CN.UTF-8' ]] || die "selftest: base 须含 UTF-8 locale"
+  [[ "$got" == *'volname=Seagate\, Expansion'* ]] || die "selftest: base options must include volname"
+  [[ "$got" == *',local,'* ]] || die "selftest: base options must include local"
+  [[ "$got" == *',allow_other,'* ]] || die "selftest: base options must include allow_other"
+  [[ "$got" == *',auto_xattr,'* ]] || die "selftest: base options must include auto_xattr"
+  [[ "$got" == *',uid=501,gid=20,'* ]] || die "selftest: base options must set the volume owner to the console user"
+  [[ "$got" == *',locale=zh_CN.UTF-8' ]] || die "selftest: base options must include a UTF-8 locale"
   sample='   1: Windows_NTFS Seagate Expansion     1.0 TB     disk7s1'
   got="$(printf '%s\n' "$sample" | /usr/bin/awk '/Windows_NTFS/ && $NF ~ /^disk[0-9]+s[0-9]+$/ { print $NF }')"
-  [[ "$got" == disk7s1 ]] || die "selftest: diskutil list 末字段在卷名有空格时仍是 diskNsM"
-  [[ "$(regex_escape 'Data (1)')" == 'Data \(1\)' ]] || die "selftest: pkill 卷名应转义正则"
+  [[ "$got" == disk7s1 ]] || die "selftest: the last diskutil list field must stay diskNsM when the volume name has spaces"
+  [[ "$(regex_escape 'Data (1)')" == 'Data \(1\)' ]] || die "selftest: pkill volume names must escape regex metacharacters"
   needle="$(ntfs3g_pkill_needle disk4)"
-  [[ "$needle" == "ntfs-3g /dev/disk4 " ]] || die "selftest: pkill needle 须带尾随空格"
+  [[ "$needle" == "ntfs-3g /dev/disk4 " ]] || die "selftest: the pkill needle must have a trailing space"
   sample="ntfs-3g /dev/disk4 /Volumes/X"
-  printf '%s' "$sample" | /usr/bin/grep -qE -- "$needle" || die "selftest: disk4 应匹配自身"
+  printf '%s' "$sample" | /usr/bin/grep -qE -- "$needle" || die "selftest: disk4 should match itself"
   sample="ntfs-3g /dev/disk40 /Volumes/Y"
   if printf '%s' "$sample" | /usr/bin/grep -qE -- "$needle"; then
-    die "selftest: disk4 不得匹配 disk40"
+    die "selftest: disk4 must not match disk40"
   fi
   sample="ntfs-3g /dev/disk4s1 /Volumes/Z"
   if printf '%s' "$sample" | /usr/bin/grep -qE -- "$needle"; then
-    die "selftest: disk4 不得匹配 disk4s1"
+    die "selftest: disk4 must not match disk4s1"
   fi
-  helper_automount_should_run 0 0 0 || die "selftest: 未挂载外置应自动挂"
+  helper_automount_should_run 0 0 0 || die "selftest: an unmounted external volume should automount"
   if helper_automount_should_run 0 1 0; then
-    die "selftest: 已是本助手 fuse 应跳过"
+    die "selftest: an existing helper fuse mount should be skipped"
   fi
   if helper_automount_should_run 0 0 1; then
-    die "selftest: 已可写应跳过"
+    die "selftest: an already-writable mount should be skipped"
   fi
   if helper_automount_should_run 1 0 0; then
-    die "selftest: 内置盘不得自动挂"
+    die "selftest: an internal disk must not automount"
   fi
-  [[ "$(volume_state_from_text 'Volume is dirty. Please run chkdsk.')" == dirty ]] || die "selftest: dirty 分类"
-  [[ "$(volume_state_from_text 'Windows is hibernated, refused to mount.')" == hiber ]] || die "selftest: hiber 分类"
-  [[ "$(volume_state_from_text 'NTFS volume may be corrupted')" == corrupt ]] || die "selftest: corrupt 分类"
-  [[ "$(volume_state_from_text 'NTFS partition /dev/disk4s1 was processed successfully.')" == clean ]] || die "selftest: clean 分类"
-  [[ "$(volume_state_from_text 'Volume is dirty. Windows is hibernated.')" == hiber ]] || die "selftest: hiber 优先于 dirty"
-  [[ "$(classify_line_for_state dirty)" == "classify: volume is dirty" ]] || die "selftest: dirty classify 行"
-  [[ "$(classify_line_for_state corrupt)" == "classify: volume may be corrupted" ]] || die "selftest: corrupt classify 行"
-  is_ntfsmount_runtime_path "/Applications/NTFSMount.app/Contents/MacOS/ntfs-3g" || die "selftest: bundle ntfs-3g 应算本应用"
-  is_ntfsmount_runtime_path "/Applications/NTFSMount.app/Contents/MacOS/go-nfsv4" || die "selftest: bundle go-nfsv4 应算本应用"
-  is_ntfsmount_runtime_path "/Library/Application Support/NTFSMount/ntfs-rw-helper" || die "selftest: sealed helper 路径应算本应用"
+  [[ "$(volume_state_from_text 'Volume is dirty. Please run chkdsk.')" == dirty ]] || die "selftest: dirty classification"
+  [[ "$(volume_state_from_text 'Windows is hibernated, refused to mount.')" == hiber ]] || die "selftest: hiber classification"
+  [[ "$(volume_state_from_text 'NTFS volume may be corrupted')" == corrupt ]] || die "selftest: corrupt classification"
+  [[ "$(volume_state_from_text 'NTFS partition /dev/disk4s1 was processed successfully.')" == clean ]] || die "selftest: clean classification"
+  [[ "$(volume_state_from_text 'Volume is dirty. Windows is hibernated.')" == hiber ]] || die "selftest: hiber takes priority over dirty"
+  [[ "$(classify_line_for_state dirty)" == "classify: volume is dirty" ]] || die "selftest: dirty classify line"
+  [[ "$(classify_line_for_state corrupt)" == "classify: volume may be corrupted" ]] || die "selftest: corrupt classify line"
+  is_ntfsmount_runtime_path "/Applications/NTFSMount.app/Contents/MacOS/ntfs-3g" || die "selftest: bundled ntfs-3g should count as this app"
+  is_ntfsmount_runtime_path "/Applications/NTFSMount.app/Contents/MacOS/go-nfsv4" || die "selftest: bundled go-nfsv4 should count as this app"
+  is_ntfsmount_runtime_path "/Library/Application Support/NTFSMount/ntfs-rw-helper" || die "selftest: the sealed helper path should count as this app"
   if is_ntfsmount_runtime_path "/usr/local/bin/ntfs-3g"; then
-    die "selftest: Homebrew ntfs-3g 不得算本应用"
+    die "selftest: Homebrew ntfs-3g must not count as this app"
   fi
   if is_ntfsmount_runtime_path "/opt/homebrew/bin/ntfs-3g"; then
-    die "selftest: Homebrew ntfs-3g 不得算本应用"
+    die "selftest: Homebrew ntfs-3g must not count as this app"
+  fi
+  for dir in "${BUNDLE_DIRS[@]+"${BUNDLE_DIRS[@]}"}"; do
+    case "$dir" in
+    /opt/homebrew | /opt/homebrew/* | /usr/local/bin | /usr/local/Cellar | /usr/local/Cellar/* | /usr/local/opt | /usr/local/opt/*)
+      die "selftest: BUNDLE_DIRS must not include a package-manager prefix"
+      ;;
+    esac
+  done
+  macos="$(installed_app_macos || true)"
+  if [[ -n "$macos" && -d "$macos" ]]; then
+    resolved="$(cd "$macos" && /bin/pwd -P)"
+    [[ "${BUNDLE_DIRS[0]}" == "$resolved" ]] || die "selftest: when app.path exists, BUNDLE_DIRS must prefer it"
   fi
   if is_ntfsmount_runtime_path "/Library/Application Support/fuse-t/bin/go-nfsv4"; then
-    die "selftest: 系统 FUSE-T go-nfsv4 不得算本应用"
+    die "selftest: system FUSE-T go-nfsv4 must not count as this app"
   fi
-  is_localhost_nfs_source "127.0.0.1:/vol" || die "selftest: 127.0.0.1 NFS 应识别"
-  is_localhost_nfs_source "localhost:/vol" || die "selftest: localhost NFS 应识别"
+  is_localhost_nfs_source "127.0.0.1:/vol" || die "selftest: 127.0.0.1 NFS should be recognized"
+  is_localhost_nfs_source "localhost:/vol" || die "selftest: localhost NFS should be recognized"
   if is_localhost_nfs_source "fileserver.local:/share"; then
-    die "selftest: 远程 NFS 不得当作本机残留"
+    die "selftest: remote NFS must not count as a local leftover"
   fi
   if is_localhost_nfs_source "192.168.1.5:/export"; then
-    die "selftest: 局域网 NFS 不得当作本机残留"
+    die "selftest: LAN NFS must not count as a local leftover"
   fi
-  is_repair_mount_point "/Volumes/My Passport" || die "selftest: /Volumes 挂载点应允许"
+  is_repair_mount_point "/Volumes/My Passport" || die "selftest: a /Volumes mount point should be allowed"
   if is_repair_mount_point "/"; then
-    die "selftest: 根目录不得卸载"
+    die "selftest: the root directory must not be unmounted"
   fi
   if is_repair_mount_point "/System/Volumes/Data"; then
-    die "selftest: 系统卷不得卸载"
+    die "selftest: the system volume must not be unmounted"
   fi
   if is_repair_mount_point "/Users/name"; then
-    die "selftest: 用户目录不得卸载"
+    die "selftest: a home directory must not be unmounted"
   fi
-  is_localhost_nfs_line "127.0.0.1:/abc on /Volumes/Foo (nfs, nodev, nosuid)" || die "selftest: FUSE-T NFS 行应识别"
-  [[ "${ALLOW_FORCE}" -eq 0 ]] || die "selftest: repair 路径后 ALLOW_FORCE 仍须为 0"
+  is_localhost_nfs_line "127.0.0.1:/abc on /Volumes/Foo (nfs, nodev, nosuid)" || die "selftest: a FUSE-T NFS line should be recognized"
+  [[ "${ALLOW_FORCE}" -eq 0 ]] || die "selftest: ALLOW_FORCE must still be 0 after the repair path"
 
   local st_dir st_pid st_names
   st_dir="$(/usr/bin/mktemp -d /tmp/ntfsmount-lsof.XXXXXX)"
@@ -1940,16 +1961,16 @@ do_selftest() {
   /bin/kill "$st_pid" >/dev/null 2>&1 || true
   wait "$st_pid" 2>/dev/null || true
   /bin/rm -rf "$st_dir" >/dev/null 2>&1 || true
-  printf '%s' "$st_names" | /usr/bin/grep -qi sleep || die "selftest: lsof/fuser 应在占用目录上看到 sleep，得到: ${st_names:-empty} status=${OCCUPIERS_STATUS}"
-  [[ "$OCCUPIERS_STATUS" == "busy" ]] || die "selftest: 占用目录 OCCUPIERS_STATUS 应为 busy"
+  printf '%s' "$st_names" | /usr/bin/grep -qi sleep || die "selftest: lsof/fuser should see sleep on the busy directory, got: ${st_names:-empty} status=${OCCUPIERS_STATUS}"
+  [[ "$OCCUPIERS_STATUS" == "busy" ]] || die "selftest: OCCUPIERS_STATUS on a busy directory should be busy"
 
   echo "ok selftest HELPER_VERSION=${HELPER_VERSION}"
 }
 
 usage() {
   cat <<'EOF'
-用法: ntfs-rw-helper [--verbose] <mount|unmount|eject|format|fix|probe|automount|enable-automount|disable-automount|repair-env|version|selftest> [diskNsM|diskN] [label|force]
-  示例: ntfs-rw-helper mount disk5s1
+usage: ntfs-rw-helper [--verbose] <mount|unmount|eject|format|fix|probe|automount|enable-automount|disable-automount|repair-env|version|selftest> [diskNsM|diskN] [label|force]
+  example: ntfs-rw-helper mount disk5s1
       ntfs-rw-helper --verbose mount disk5s1
       ntfs-rw-helper probe disk5s1
       ntfs-rw-helper unmount disk5s1

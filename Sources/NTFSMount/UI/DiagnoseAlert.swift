@@ -99,9 +99,9 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
 
   private func updateActions(_ snap: DiagnoseSnapshot) {
     if EnvironmentDiagnose.bundledComponentsBroken(snap) {
-      setHint(L10n.t("diagnose.brokenBundle"))
+      setHint(L10n.t("diagnose.brokenBundle") + "\n" + L10n.t("fda.body"))
     } else {
-      setHint(L10n.t("diagnose.exportHint"))
+      setHint(L10n.t("diagnose.exportHint") + "\n" + L10n.t("fda.body"))
     }
 
     let helperOffer = EnvironmentDiagnose.helperNeedsInstall(snap)
@@ -152,6 +152,10 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
 
   @objc private func exportClicked() {
     exportReport()
+  }
+
+  @objc private func openFullDiskAccess() {
+    FullDiskAccessSettings.openPane()
   }
 
   @objc private func installHelper() {
@@ -389,6 +393,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
   private struct ButtonChrome {
     let copy: NSButton
     let export: NSButton
+    let fda: NSButton
     let repair: NSButton
     let install: NSButton
     let shareRow: NSStackView
@@ -408,6 +413,13 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     )
     export.bezelStyle = .rounded
     export.isEnabled = false
+
+    let fda = NSButton(
+      title: L10n.t("fda.open"),
+      target: self,
+      action: #selector(openFullDiskAccess)
+    )
+    fda.bezelStyle = .rounded
 
     let repair = NSButton(
       title: L10n.t("menu.repairEnv"),
@@ -432,7 +444,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     spacer.setContentHuggingPriority(.fittingSizeCompression, for: .horizontal)
     spacer.setContentCompressionResistancePriority(.fittingSizeCompression, for: .horizontal)
 
-    let shareRow = NSStackView(views: [copy, export])
+    let shareRow = NSStackView(views: [copy, export, fda])
     shareRow.orientation = .horizontal
     shareRow.alignment = .centerY
     shareRow.spacing = 12
@@ -452,6 +464,7 @@ final class DiagnoseWindowController: NSObject, NSWindowDelegate {
     return ButtonChrome(
       copy: copy,
       export: export,
+      fda: fda,
       repair: repair,
       install: install,
       shareRow: shareRow,

@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import NTFSMountCore
 
@@ -11,5 +12,15 @@ enum MacOSCompat {
       return L10n.t("compat.belowMin")
     }
     return L10n.t("compat.ok")
+  }
+}
+
+enum FullDiskAccessSettings {
+  @discardableResult
+  static func openPane() -> Bool {
+    for url in FullDiskAccess.settingsURLs(macosMajor: MacOSCompat.major) {
+      if NSWorkspace.shared.open(url) { return true }
+    }
+    return false
   }
 }

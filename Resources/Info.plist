@@ -30,7 +30,7 @@
   <key>CFBundleShortVersionString</key>
   <string>1.0.0</string>
   <key>CFBundleVersion</key>
-  <string>3</string>
+  <string>4</string>
   <key>LSMinimumSystemVersion</key>
   <string>13.0</string>
   <key>LSUIElement</key>
@@ -47,5 +47,9 @@
   <false/>
   <key>SUPublicEDKey</key>
   <string>eYTv+7eN7vILS2DyrQncIsJLkBKmQR5uU/KgqdBdaek=</string>
+  <key>NSSystemAdministrationUsageDescription</key>
+  <string>NTFSMount needs an administrator password once to install the mount helper that mounts and unmounts external NTFS volumes.</string>
+  <key>NSRemovableVolumesUsageDescription</key>
+  <string>NTFSMount needs access to removable volumes to list, mount, and unmount external NTFS disks.</string>
 </dict>
 </plist>

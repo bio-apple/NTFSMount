@@ -72,6 +72,14 @@ final class FormatPolicyTests: XCTestCase {
       ForceUnmountCopy.body(volumeName: "DATA", occupiers: "Finder[412]", locale: Locale(identifier: "en"))
         .contains("Finder[412]")
     )
+    let truncated = ForceUnmountCopy.body(
+      volumeName: "DATA",
+      occupiers: "Finder[412], TextEdit[901], Preview[1], Terminal[2]",
+      locale: Locale(identifier: "en")
+    )
+    XCTAssertTrue(truncated.contains("Finder[412]"))
+    XCTAssertTrue(truncated.contains(L10n.format("error.occupiersMore", 1, locale: Locale(identifier: "en"))))
+    XCTAssertFalse(truncated.contains("Terminal[2]"))
     XCTAssertEqual(ForceUnmountCopy.forceTitle(locale: zh), "强制卸载")
     XCTAssertEqual(AlertDefaultPolicy.forceUnmount, .cancelDefault)
   }

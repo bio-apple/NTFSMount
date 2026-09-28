@@ -6,7 +6,7 @@
 # 禁止 brew install macfuse / fuse-t。FUSE-T 钉死版本见 FUSE_T_VERSION 与 versions.txt。
 set -euo pipefail
 if [[ "$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null || true)" != "1" && "$(/usr/bin/uname -m)" != "arm64" ]]; then
-  echo "error: NTFSMount 仅支持 Apple Silicon（M 芯片 / arm64），不支持 Intel Mac（x86_64）。当前架构：$(/usr/bin/uname -m)" >&2
+  echo "error: NTFSMount supports Apple Silicon (M-series / arm64) only, not Intel Macs (x86_64). This machine: $(/usr/bin/uname -m)" >&2
   exit 1
 fi
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -108,27 +108,27 @@ print_fuse_t_install_help() {
     pkg_sha="$(/usr/bin/awk -v n="$FUSE_T_PKG_NAME" '$1 !~ /^#/ && NF>=2 && $2==n {print $1; exit}' "$SUMS")"
   fi
   cat <<EOF >&2
-FUSE-T 不是 GPL，通常不在 Homebrew。不要 brew install fuse-t（专有软件；未获书面许可不可当产品再分发）。
+FUSE-T is not GPL and is usually not in Homebrew. Do not brew install fuse-t (proprietary; do not redistribute it as a product without written permission).
 
-钉死版本：FUSE-T ${FUSE_T_VERSION}（与 runtime/versions.txt、runtime/SHA256SUMS 一致）
-官方 pkg（GitHub release，不是 Homebrew）：
+Pinned version: FUSE-T ${FUSE_T_VERSION} (matches runtime/versions.txt and runtime/SHA256SUMS)
+Official pkg (GitHub release, not Homebrew):
   ${FUSE_T_URL}
-安装到本机（可选；本脚本不会静默安装 FUSE-T）：
+Install locally (optional; this script does not silently install FUSE-T):
   curl -fL -o /tmp/${FUSE_T_PKG_NAME} '${FUSE_T_URL}'
-  shasum -a 256 /tmp/${FUSE_T_PKG_NAME}   # 期望 ${pkg_sha:-见 runtime/SHA256SUMS}
+  shasum -a 256 /tmp/${FUSE_T_PKG_NAME}   # expected ${pkg_sha:-see runtime/SHA256SUMS}
   open /tmp/${FUSE_T_PKG_NAME}
 
-本脚本查找本机文件（pkg 安装后即出现，不必先启动 FUSE-T.app）：
+This script looks for local files (they appear after the pkg install; you do not need to launch FUSE-T.app first):
   ${FUSE_T_BIN_DIR}/go-nfsv4-${FUSE_T_VERSION}
   ${FUSE_T_BIN_DIR}/go-nfsv4
   ${FUSE_T_LIB_DIR}/libfuse-t-${FUSE_T_VERSION}.dylib
   /usr/local/lib/libfuse-t-${FUSE_T_VERSION}.dylib
-不使用 /usr/local/lib/libfuse.2.dylib（那是 macFUSE）。不查找 /usr/local/bin/go-nfsv4。
-哈希与 SHA256SUMS 一致才用本机副本，否则改下官方 ${FUSE_T_VERSION} pkg 并解出二进制（不会把 FUSE-T 装进系统）。
+Does not use /usr/local/lib/libfuse.2.dylib (that is macFUSE). Does not look for /usr/local/bin/go-nfsv4.
+A local copy is used only when its hash matches SHA256SUMS. Otherwise download the official ${FUSE_T_VERSION} pkg and extract the binaries (FUSE-T is not installed system-wide).
 
-不必启动 FUSE-T.app，也不必加载系统 FUSE-T 守护进程：prepare-runtime 只复制文件；NTFSMount 运行时用包内捆绑的 go-nfsv4（FUSE_NFSSRV_PATH），不依赖系统级 FUSE-T。
+You do not need to launch FUSE-T.app or load the system FUSE-T daemon. prepare-runtime only copies files. At runtime NTFSMount uses the bundled go-nfsv4 (FUSE_NFSSRV_PATH) and does not depend on system FUSE-T.
 
-未取得 FUSE-T 书面许可前仅供个人使用预发布，禁止当公开产品再分发。见 NOTICE。
+Until you have written permission for FUSE-T, this is a personal-use preview. Do not redistribute it as a public product. See NOTICE.
 EOF
 }
 
@@ -187,60 +187,60 @@ pkg_find_named() {
 
 check_build_deps() {
   local ver="" p="" brew_bin="" mp=""
-  echo "FUSE-T 钉死 ${FUSE_T_VERSION}（runtime/versions.txt）。" >&2
+  echo "FUSE-T pinned at ${FUSE_T_VERSION} (runtime/versions.txt)." >&2
   export_homebrew_path
 
   if brew_bin="$(find_brew)"; then
-    echo "已找到 Homebrew：$brew_bin" >&2
+    echo "Found Homebrew: $brew_bin" >&2
   else
-    echo "未找到 Homebrew（Apple Silicon 通常是 /opt/homebrew/bin/brew，不是 /usr/local）。" >&2
+    echo "Homebrew not found (on Apple Silicon it is usually /opt/homebrew/bin/brew, not /usr/local)." >&2
   fi
   if local_fuse_t_present; then
     ver="$(local_fuse_t_version || true)"
     if [[ -z "$ver" ]]; then
-      echo "本机有 FUSE-T 文件，但读不出版本；哈希须等于 SHA256SUMS 中的 ${FUSE_T_VERSION}，否则改下官方 pkg。" >&2
+      echo "Local FUSE-T files exist, but the version could not be read. The hash must match ${FUSE_T_VERSION} in SHA256SUMS, otherwise download the official pkg." >&2
     elif [[ "$ver" != "$FUSE_T_VERSION" ]]; then
-      echo "warning: 本机 FUSE-T ${ver} 不是钉死的 ${FUSE_T_VERSION}，拒绝使用本机副本。" >&2
+      echo "warning: local FUSE-T ${ver} is not the pinned ${FUSE_T_VERSION}; refusing the local copy." >&2
       print_fuse_t_install_help
     else
-      echo "本机 FUSE-T ${ver}。哈希一致则复制，不必启动 FUSE-T.app。" >&2
+      echo "Local FUSE-T ${ver}. If the hash matches, it is copied. You do not need to launch FUSE-T.app." >&2
     fi
   else
-    echo "未找到本机 FUSE-T ${FUSE_T_VERSION}（${FUSE_T_BIN_DIR}）。将下载官方 pkg 解出 go-nfsv4 / libfuse，不会把 FUSE-T 装进系统。" >&2
+    echo "Local FUSE-T ${FUSE_T_VERSION} not found (${FUSE_T_BIN_DIR}). The official pkg will be downloaded and go-nfsv4 / libfuse extracted. FUSE-T will not be installed system-wide." >&2
     print_fuse_t_install_help
   fi
 
   if bundled_ntfs3g_present; then
-    echo "已找到捆绑 ntfs-3g：$RUNTIME/ntfs-3g（不执行 brew）" >&2
+    echo "Found bundled ntfs-3g: $RUNTIME/ntfs-3g (not running brew)" >&2
   elif p="$(find_ntfs3g_bin)"; then
-    echo "已找到 ntfs-3g：$p" >&2
+    echo "Found ntfs-3g: $p" >&2
   elif find_brew >/dev/null && brew_ntfs3g_has_macos_bottle; then
-    echo "未找到 ntfs-3g。将执行：brew install --force-bottle ntfs-3g" >&2
+    echo "ntfs-3g not found. Will run: brew install --force-bottle ntfs-3g" >&2
   else
-    echo "未找到捆绑 ntfs-3g，且 Homebrew 无 macOS bottle（homebrew/core 现为 Linux-only）。" >&2
+    echo "Bundled ntfs-3g not found, and Homebrew has no macOS bottle (homebrew/core is Linux-only)." >&2
   fi
   if mp="$(find_mount_ntfs)"; then
-    echo "（可选）本机 mount_ntfs：$mp — 运行时不用它，只用捆绑 ntfs-3g。" >&2
+    echo "(optional) local mount_ntfs: $mp — runtime does not use it; only bundled ntfs-3g is used." >&2
   fi
 }
 
 expected_sha() {
   local name="$1" line
   line="$(/usr/bin/awk -v n="$name" '$1 !~ /^#/ && NF>=2 && $2==n {print $1; exit}' "$SUMS")"
-  [[ -n "$line" ]] || die "runtime/SHA256SUMS 没有 $name"
+  [[ -n "$line" ]] || die "runtime/SHA256SUMS has no entry for $name"
   printf '%s' "$line"
 }
 
 verify_file() {
   local file="$1" name="$2" want have
-  [[ -f "$file" ]] || die "找不到 $file"
+  [[ -f "$file" ]] || die "not found: $file"
   want="$(expected_sha "$name")"
   have="$(/usr/bin/shasum -a 256 "$file" | /usr/bin/awk '{print $1}')"
   if [[ "$have" != "$want" ]]; then
-    die "SHA256 不符：$name
-  得到 $have
-  期望 $want
-请确认来源版本，或在审核后更新 runtime/SHA256SUMS。"
+    die "SHA256 mismatch: $name
+  got $have
+  expected $want
+Confirm the source version, or update runtime/SHA256SUMS after review."
   fi
 }
 
@@ -325,14 +325,14 @@ obtain_fuse_t() {
   local_ver="$(local_fuse_t_version || true)"
 
   if [[ -n "$local_ver" && "$local_ver" != "$FUSE_T_VERSION" ]]; then
-    echo "warning: 本机 FUSE-T ${local_ver} 超出钉死版本 ${FUSE_T_VERSION}，不用本机副本。" >&2
+    echo "warning: local FUSE-T ${local_ver} is not the pinned ${FUSE_T_VERSION}; not using the local copy." >&2
   elif [[ -f "$go_src" && -n "$fuse_src" && -f "$fuse_src" ]]; then
     copy_if_exec "$go_src" "$WORK/go-nfsv4"
     copy_if_exec "$fuse_src" "$WORK/libfuse.2.dylib"
     if hashes_ok "$WORK/go-nfsv4" go-nfsv4 && hashes_ok "$WORK/libfuse.2.dylib" libfuse.2.dylib; then
       return 0
     fi
-    echo "本机 FUSE-T 与 SHA256SUMS 不符（需要 ${FUSE_T_VERSION}），改下官方 pkg" >&2
+    echo "Local FUSE-T does not match SHA256SUMS (need ${FUSE_T_VERSION}). Download the official pkg." >&2
   fi
 
   pkg="$CACHE/$FUSE_T_PKG_NAME"
@@ -352,8 +352,8 @@ obtain_fuse_t() {
   fuse_src="$(pkg_find_named "$expanded" "libfuse.2.dylib")"
   [[ -n "$fuse_src" && -f "$fuse_src" ]] || fuse_src="$(pkg_find_named "$expanded" "libfuse-t-${FUSE_T_VERSION}.dylib")"
   [[ -n "$fuse_src" && -f "$fuse_src" ]] || fuse_src="$(pkg_find_named "$expanded" "libfuse-t.dylib")"
-  [[ -n "$go_src" && -f "$go_src" ]] || die "pkg 里没有 go-nfsv4"
-  [[ -n "$fuse_src" && -f "$fuse_src" ]] || die "pkg 里没有 libfuse-t / libfuse.2.dylib"
+  [[ -n "$go_src" && -f "$go_src" ]] || die "pkg does not contain go-nfsv4"
+  [[ -n "$fuse_src" && -f "$fuse_src" ]] || die "pkg does not contain libfuse-t / libfuse.2.dylib"
   copy_if_exec "$go_src" "$WORK/go-nfsv4"
   copy_if_exec "$fuse_src" "$WORK/libfuse.2.dylib"
   verify_file "$WORK/go-nfsv4" go-nfsv4
@@ -378,7 +378,7 @@ ntfs3g_prefix() {
 
 assert_arm64() {
   local file="$1"
-  /usr/bin/file "$file" | /usr/bin/grep -q 'arm64' || die "$file 不是 arm64 Mach-O"
+  /usr/bin/file "$file" | /usr/bin/grep -q 'arm64' || die "$file is not an arm64 Mach-O"
 }
 
 copy_beside_or() {
@@ -397,7 +397,7 @@ obtain_ntfs3g() {
   local prefix brew_bin bin
   export_homebrew_path
   if copy_bundled_ntfs3g; then
-    echo "使用已捆绑的 runtime ntfs-3g（跳过 brew）" >&2
+    echo "Using bundled runtime ntfs-3g (skipping brew)" >&2
     return 0
   fi
   if ! prefix="$(ntfs3g_prefix)"; then
@@ -406,21 +406,21 @@ obtain_ntfs3g() {
       echo "brew install --force-bottle ntfs-3g" >&2
       HOMEBREW_NO_BOTTLE_SOURCE_FALLBACK=1 "$brew_bin" install --force-bottle ntfs-3g
       export_homebrew_path
-      prefix="$(ntfs3g_prefix)" || die "brew install --force-bottle ntfs-3g 后仍找不到 ntfs-3g"
+      prefix="$(ntfs3g_prefix)" || die "ntfs-3g still not found after brew install --force-bottle ntfs-3g"
     else
-      die "未找到可用的 ntfs-3g。homebrew/core 现为 Linux-only，GitHub-hosted macOS 没有 bottle。
-不要 brew install --build-from-source ntfs-3g（慢，还可能拖 macfuse）。
-不要 brew install macfuse / fuse-t。
-把已校验的 ntfs-3g / mkntfs / ntfsfix / libntfs-3g.90.dylib 放进 runtime/ 后重跑；
-打包机仅在该 OS 有 bottle 时才：brew install --force-bottle ntfs-3g && ./scripts/prepare-runtime.sh"
+      die "No usable ntfs-3g. homebrew/core is Linux-only, and GitHub-hosted macOS has no bottle.
+Do not brew install --build-from-source ntfs-3g (slow, and it may pull macfuse).
+Do not brew install macfuse / fuse-t.
+Put verified ntfs-3g / mkntfs / ntfsfix / libntfs-3g.90.dylib into runtime/ and run again.
+On a packaging machine, only when that OS has a bottle: brew install --force-bottle ntfs-3g && ./scripts/prepare-runtime.sh"
     fi
   fi
-  bin="$(find_ntfs3g_bin)" || die "找不到 ntfs-3g"
+  bin="$(find_ntfs3g_bin)" || die "ntfs-3g not found"
   copy_if_exec "$bin" "$WORK/ntfs-3g"
-  copy_beside_or "$WORK/mkntfs" mkntfs "$prefix" || die "找不到 mkntfs（Homebrew ntfs-3g 通常自带）"
-  copy_beside_or "$WORK/ntfsfix" ntfsfix "$prefix" || die "找不到 ntfsfix（Homebrew ntfs-3g 通常自带）"
+  copy_beside_or "$WORK/mkntfs" mkntfs "$prefix" || die "mkntfs not found (Homebrew ntfs-3g usually includes it)"
+  copy_beside_or "$WORK/ntfsfix" ntfsfix "$prefix" || die "ntfsfix not found (Homebrew ntfs-3g usually includes it)"
   copy_if_exec "$prefix/lib/libntfs-3g.90.dylib" "$WORK/libntfs-3g.90.dylib" ||
-    die "找不到 libntfs-3g.90.dylib（应在 $(printf '%s' "$prefix")/lib）"
+    die "libntfs-3g.90.dylib not found (expected under $(printf '%s' "$prefix")/lib)"
   assert_arm64 "$WORK/ntfs-3g"
   assert_arm64 "$WORK/mkntfs"
   assert_arm64 "$WORK/ntfsfix"
@@ -443,7 +443,7 @@ relink_ntfs3g_libs() {
   fi
 }
 
-[[ -f "$SUMS" ]] || die "缺少 $SUMS"
+[[ -f "$SUMS" ]] || die "missing $SUMS"
 
 # shellcheck source=ntfs3g-version.sh
 . "$ROOT/scripts/ntfs3g-version.sh"
@@ -480,13 +480,13 @@ pin="${pin:-$NTFS3G_PINNED}"
 if ! ntfs3g_version_allowed "$ntfs3g_ver"; then
   cat <<EOF >&2
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-warning: 捆绑 ntfs-3g 版本 ${ntfs3g_ver:-unknown} 不在允许列表（${NTFS3G_ALLOW_HUMAN}）。
-未知版本有写入风险。请改用已测试版本，或审核后更新 runtime/versions.txt 与 Ntfs3gVersion.swift。
+warning: bundled ntfs-3g ${ntfs3g_ver:-unknown} is not on the allow list (${NTFS3G_ALLOW_HUMAN}).
+An unknown version is risky to write with. Use a tested version, or update runtime/versions.txt and Ntfs3gVersion.swift after review.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 EOF
 fi
 if [[ -n "$pin" && -n "$ntfs3g_ver" && "$ntfs3g_ver" != "$pin" ]]; then
-  echo "warning: 下载到的 ntfs-3g ${ntfs3g_ver} 与 runtime/versions.txt 钉死的 ${pin} 不一致。请更新 versions.txt 后再当作新钉死版本，不要静默越过。" >&2
+  echo "warning: downloaded ntfs-3g ${ntfs3g_ver} does not match the pin ${pin} in runtime/versions.txt. Update versions.txt before treating it as the new pin. Do not skip the pin silently." >&2
 fi
 echo "runtime ready (SHA256 verified against $SUMS):"
 /bin/ls -lh "$RUNTIME/go-nfsv4" "$RUNTIME/ntfs-3g" "$RUNTIME/mkntfs" "$RUNTIME/ntfsfix" "$RUNTIME/libfuse.2.dylib" "$RUNTIME/libntfs-3g.90.dylib"

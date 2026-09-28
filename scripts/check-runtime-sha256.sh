@@ -6,7 +6,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SUMS="$ROOT/runtime/SHA256SUMS"
 [[ -f "$SUMS" ]] || {
-  echo "error: 缺少 $SUMS" >&2
+  echo "error: missing $SUMS" >&2
   exit 1
 }
 
@@ -23,10 +23,10 @@ while read -r hash name || [[ -n "${hash:-}" ]]; do
   elif [[ -f "$ROOT/runtime/.cache/$name" ]]; then
     src="$ROOT/runtime/.cache/$name"
   elif [[ "$name" == *.pkg ]]; then
-    echo "skip ${name}（prepare-runtime 用了本机 FUSE-T，未留下安装包）" >&2
+    echo "skip ${name} (prepare-runtime used a local FUSE-T and left no installer package)" >&2
     continue
   else
-    echo "error: SHA256SUMS 中的捆绑文件 $name 在 prepare-runtime 之后不存在" >&2
+    echo "error: bundled file $name from SHA256SUMS is missing after prepare-runtime" >&2
     exit 1
   fi
   /bin/ln -s "$src" "$work/$name"
@@ -35,7 +35,7 @@ while read -r hash name || [[ -n "${hash:-}" ]]; do
 done <"$SUMS"
 
 if [[ "$verified" -lt 1 ]]; then
-  echo "error: $SUMS 没有可校验的条目" >&2
+  echo "error: $SUMS has no entries to verify" >&2
   exit 1
 fi
 

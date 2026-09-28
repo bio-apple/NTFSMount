@@ -28,7 +28,7 @@ final class EnvironmentDiagnoseTests: XCTestCase {
     snap.spctl = "accepted"
     let lines = EnvironmentDiagnose.lines(from: snap, locale: Locale(identifier: "zh-Hans"))
     XCTAssertEqual(lines.map(\.id), [
-      "platform", "runtime", "ntfs_3g_version", "fuse_t", "helper", "gatekeeper",
+      "platform", "runtime", "ntfs_3g_version", "fuse_t", "helper", "full_disk_access", "gatekeeper",
     ])
     XCTAssertEqual(line(lines, "platform").status, .pass)
     XCTAssertTrue(line(lines, "platform").title.contains("Apple Silicon"))
@@ -36,6 +36,8 @@ final class EnvironmentDiagnoseTests: XCTestCase {
     XCTAssertEqual(line(lines, "fuse_t").status, .pass)
     XCTAssertTrue(line(lines, "fuse_t").title.contains("1.2.7"))
     XCTAssertEqual(line(lines, "helper").status, .pass)
+    XCTAssertEqual(line(lines, "full_disk_access").status, .info)
+    XCTAssertTrue(line(lines, "full_disk_access").title.contains("LaunchDaemon"))
     XCTAssertNil(lines.first { $0.id == "macfuse_conflict" })
     XCTAssertEqual(line(lines, "gatekeeper").status, .pass)
     let report = EnvironmentDiagnose.reportText(from: lines, locale: Locale(identifier: "zh-Hans"))
@@ -74,7 +76,9 @@ final class EnvironmentDiagnoseTests: XCTestCase {
     let lines = EnvironmentDiagnose.lines(from: snap, locale: zh)
     XCTAssertEqual(line(lines, "runtime").status, .fail)
     XCTAssertTrue(line(lines, "runtime").title.contains("ntfs-3g"))
+    XCTAssertTrue(line(lines, "runtime").title.contains("GitHub"))
     XCTAssertFalse(line(lines, "runtime").title.contains("macFUSE"))
+    XCTAssertFalse(line(lines, "runtime").title.contains("brew install"))
     XCTAssertEqual(line(lines, "fuse_t").status, .fail)
     XCTAssertTrue(line(lines, "fuse_t").title.contains("go-nfsv4"))
     XCTAssertFalse(line(lines, "fuse_t").title.contains("macFUSE"))
@@ -175,7 +179,8 @@ final class EnvironmentDiagnoseTests: XCTestCase {
         "kext_macfuse": "absent",
         "systemextensions_macfuse": "absent"
       },
-      "gatekeeper": { "quarantine": false, "spctl": "notarized" }
+      "gatekeeper": { "quarantine": false, "spctl": "notarized" },
+      "full_disk_access": { "process": "denied", "path": "/Library/Application Support/com.apple.TCC/TCC.db" }
     }
     """.data(using: .utf8)!
     let snap = EnvironmentDiagnose.parseJSON(json)
@@ -187,6 +192,7 @@ final class EnvironmentDiagnoseTests: XCTestCase {
     XCTAssertEqual(snap?.pinnedFuseT, "1.2.7")
     XCTAssertEqual(snap?.brewMacFuse, "brew_missing")
     XCTAssertEqual(snap?.spctl, "notarized")
+    XCTAssertEqual(snap?.fullDiskAccess, .denied)
     XCTAssertEqual(EnvironmentDiagnose.majorVersion("13.0.1"), 13)
   }
 

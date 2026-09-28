@@ -39,7 +39,12 @@ final class L10nTests: XCTestCase {
     XCTAssertEqual(L10n.t("window.firstInstall", locale: zh), "助手未安装（socket 不存在）。")
     XCTAssertTrue(L10n.t("window.helperMissingDetail", locale: zh).contains("管理员密码"))
     XCTAssertFalse(L10n.t("diagnose.brokenBundle", locale: en).contains("brew install macfuse"))
-    XCTAssertTrue(L10n.t("diagnose.brokenBundle", locale: zh).contains("重新下载"))
+    XCTAssertFalse(L10n.t("diagnose.brokenBundle", locale: en).contains("brew install ntfs-3g"))
+    XCTAssertTrue(L10n.t("diagnose.brokenBundle", locale: zh).contains("GitHub Latest"))
+    XCTAssertTrue(L10n.t("runtime.ntfs3gMissing", locale: en).contains("GitHub Latest"))
+    XCTAssertFalse(L10n.t("runtime.ntfs3gMissing", locale: en).contains("brew install"))
+    XCTAssertFalse(L10n.t("runtime.ntfs3gMissing", locale: en).contains("/opt/homebrew"))
+    XCTAssertTrue(L10n.t("runtime.ntfs3gMissing", locale: zh).contains("GitHub Latest"))
     XCTAssertEqual(
       L10n.t("window.emptyHint", locale: en),
       "Closing this window keeps the menu-bar NTFS icon. Use Eject to remove a disk. "
@@ -86,6 +91,98 @@ final class L10nTests: XCTestCase {
     XCTAssertEqual(L10n.t("settings.advanced", locale: Locale(identifier: "ja")), "詳細")
   }
 
+  func testCleanMacJunkCatalogs() {
+    let en = Locale(identifier: "en")
+    let zh = Locale(identifier: "zh-Hans")
+    let hant = Locale(identifier: "zh-Hant")
+    let ja = Locale(identifier: "ja")
+    let keys = [
+      "settings.cleanMacJunk", "settings.cleanMacJunkNote",
+      "cleanJunk.working", "cleanJunk.done", "cleanJunk.failedTitle",
+      "cleanJunk.failedBody", "cleanJunk.continueWithout",
+    ]
+    for key in keys {
+      XCTAssertNotEqual(L10n.t(key, locale: en), key, "missing en \(key)")
+      XCTAssertNotEqual(L10n.t(key, locale: zh), key, "missing zh-Hans \(key)")
+      XCTAssertNotEqual(L10n.t(key, locale: hant), key, "missing zh-Hant \(key)")
+      XCTAssertNotEqual(L10n.t(key, locale: ja), key, "missing ja \(key)")
+      XCTAssertNotEqual(L10n.t(key, locale: en), L10n.t(key, locale: zh))
+    }
+    XCTAssertEqual(L10n.t("settings.cleanMacJunk", locale: en), "Clean Mac junk files before eject")
+    XCTAssertTrue(L10n.t("settings.cleanMacJunkNote", locale: en).contains(".DS_Store"))
+    XCTAssertTrue(L10n.t("settings.cleanMacJunkNote", locale: en).contains("._*"))
+    XCTAssertTrue(L10n.t("settings.cleanMacJunkNote", locale: en).contains(".Trashes"))
+    XCTAssertTrue(L10n.t("settings.cleanMacJunkNote", locale: en).contains(".Spotlight-V100"))
+    XCTAssertTrue(L10n.t("settings.cleanMacJunkNote", locale: en).contains("Off by default"))
+    XCTAssertFalse(L10n.t("settings.cleanMacJunkNote", locale: en).contains("清理"))
+    XCTAssertTrue(L10n.t("settings.cleanMacJunk", locale: zh).contains("推出前"))
+    XCTAssertTrue(L10n.t("settings.cleanMacJunkNote", locale: hant).contains("預設關閉"))
+    XCTAssertTrue(L10n.t("cleanJunk.continueWithout", locale: ja).contains("続ける"))
+  }
+
+  func testBusyOccupierCatalogs() {
+    let en = Locale(identifier: "en")
+    let zh = Locale(identifier: "zh-Hans")
+    let hant = Locale(identifier: "zh-Hant")
+    let ja = Locale(identifier: "ja")
+    for key in ["error.diskBusyNamed", "error.occupiersMore", "error.diskBusyNeedFDA", "error.diskBusy"] {
+      XCTAssertNotEqual(L10n.t(key, locale: en), key, "missing en \(key)")
+      XCTAssertNotEqual(L10n.t(key, locale: zh), key, "missing zh-Hans \(key)")
+      XCTAssertNotEqual(L10n.t(key, locale: hant), key, "missing zh-Hant \(key)")
+      XCTAssertNotEqual(L10n.t(key, locale: ja), key, "missing ja \(key)")
+      XCTAssertNotEqual(L10n.t(key, locale: en), L10n.t(key, locale: zh))
+    }
+    XCTAssertEqual(
+      L10n.format("error.diskBusyNamed", "Finder", locale: en),
+      "The disk is in use by Finder. Close those programs, then retry."
+    )
+    XCTAssertEqual(
+      L10n.format("error.diskBusyNamed", "Finder", locale: zh),
+      "磁盘正被占用：Finder。请关闭这些程序后重试。"
+    )
+    XCTAssertEqual(L10n.format("error.occupiersMore", 2, locale: en), "and 2 more")
+    XCTAssertEqual(L10n.format("error.occupiersMore", 2, locale: zh), "等 2 个")
+    XCTAssertEqual(
+      L10n.t("error.diskBusyNeedFDA", locale: en),
+      "Grant Full Disk Access to see which app is using the disk."
+    )
+    XCTAssertEqual(
+      L10n.t("error.diskBusyNeedFDA", locale: zh),
+      "请授予完全磁盘访问权限以查看是哪个应用占用。"
+    )
+  }
+
+  func testFullDiskAccessCatalogs() {
+    let en = Locale(identifier: "en")
+    let zh = Locale(identifier: "zh-Hans")
+    let hant = Locale(identifier: "zh-Hant")
+    let ja = Locale(identifier: "ja")
+    let keys = [
+      "settings.fda", "fda.body", "fda.open", "fda.statusGranted", "fda.statusDenied",
+      "fda.helperPath", "helper.fdaHint", "diagnose.fdaGranted", "diagnose.fdaDenied",
+      "diagnose.fdaUnknown",
+    ]
+    for key in keys {
+      XCTAssertNotEqual(L10n.t(key, locale: en), key, "missing en \(key)")
+      XCTAssertNotEqual(L10n.t(key, locale: zh), key, "missing zh-Hans \(key)")
+      XCTAssertNotEqual(L10n.t(key, locale: hant), key, "missing zh-Hant \(key)")
+      XCTAssertNotEqual(L10n.t(key, locale: ja), key, "missing ja \(key)")
+      XCTAssertNotEqual(L10n.t(key, locale: en), L10n.t(key, locale: zh))
+    }
+    let body = L10n.t("fda.body", locale: en)
+    XCTAssertTrue(body.contains("Full Disk Access"))
+    XCTAssertTrue(body.contains("does not inherit"))
+    XCTAssertTrue(body.contains("occupier"))
+    XCTAssertTrue(body.contains("LaunchDaemon"))
+    XCTAssertFalse(body.localizedCaseInsensitiveContains("inherits the app"))
+    XCTAssertTrue(L10n.t("helper.fdaHint", locale: en).contains("does not inherit"))
+    XCTAssertTrue(L10n.t("fda.open", locale: en).contains("Full Disk Access"))
+    XCTAssertTrue(L10n.format("fda.helperPath", FullDiskAccess.helperInstallPath, locale: en)
+      .contains(FullDiskAccess.helperInstallPath))
+    XCTAssertTrue(L10n.t("diagnose.fdaUnknown", locale: zh).contains("不会继承"))
+    XCTAssertTrue(L10n.t("fda.body", locale: ja).contains("継承しません"))
+  }
+
   func testDiskStatusAndAboutCatalogs() {
     let en = Locale(identifier: "en")
     let zh = Locale(identifier: "zh-Hans")
@@ -129,9 +226,14 @@ final class L10nTests: XCTestCase {
       "diskStatus.journal", "diskStatus.journalUnknown", "diskStatus.journalDirty",
       "diskStatus.journalHibernated", "diskStatus.journalCorrupt", "diskStatus.journalClean",
       "settings.autoMount", "settings.autoMountNote", "settings.autoMountNeedHelper",
+      "settings.cleanMacJunk", "settings.cleanMacJunkNote", "cleanJunk.working", "cleanJunk.done",
+      "cleanJunk.failedTitle", "cleanJunk.failedBody", "cleanJunk.continueWithout",
       "helper.privilegeHint", "helper.hintAdHoc", "helper.hintNotarized", "privileged.authUnavailable",
+      "helper.fdaHint", "fda.body", "fda.open", "fda.statusGranted", "fda.statusDenied",
+      "fda.helperPath", "settings.fda", "diagnose.fdaGranted", "diagnose.fdaDenied", "diagnose.fdaUnknown",
       "dirty.title", "dirty.body", "premount.dirtyTitle", "premount.hiberTitle",
-      "status.roDirty", "error.diskBusy", "error.diskBusyNamed", "window.usageAfterMount",
+      "status.roDirty", "error.diskBusy", "error.diskBusyNamed", "error.occupiersMore",
+      "error.diskBusyNeedFDA", "window.usageAfterMount",
       "about.version", "menu.about",
     ]
     let han = try! NSRegularExpression(pattern: "\\p{Han}")

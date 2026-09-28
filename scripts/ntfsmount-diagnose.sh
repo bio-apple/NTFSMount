@@ -13,7 +13,7 @@ resolve_cmd() {
       return 0
     fi
   done
-  echo "error: 找不到命令 $n" >&2
+  echo "error: command not found: $n" >&2
   return 1
 }
 
@@ -52,14 +52,14 @@ while [[ $# -gt 0 ]]; do
     shift
     ;;
   -h | --help)
-    echo "用法: ntfsmount diagnose [--json]"
+    echo "usage: ntfsmount diagnose [--json]"
     echo "      $0 [--json]"
-    echo "只读诊断。不挂载、不装助手。--json 输出稳定英文 snake_case 键。"
+    echo "Read-only diagnose. Does not mount or install the helper. --json prints stable English snake_case keys."
     exit 0
     ;;
   *)
-    echo "error: 未知参数: $1" >&2
-    echo "用法: ntfsmount diagnose [--json]" >&2
+    echo "error: unknown argument: $1" >&2
+    echo "usage: ntfsmount diagnose [--json]" >&2
     exit 2
     ;;
   esac
@@ -88,6 +88,19 @@ json_obj() {
   /usr/bin/python3 -c 'import json,sys; print(json.dumps(json.loads(sys.argv[1]), ensure_ascii=False, separators=(",", ":")))' "$1"
 }
 
+# CLI diagnose: prefer the install-stamp app.path over a hardcoded /Applications path.
+if [[ "$IN_APP" -eq 0 ]]; then
+  stamped=""
+  if [[ -f "/Library/Application Support/NTFSMount/app.path" ]]; then
+    stamped="$(/bin/cat "/Library/Application Support/NTFSMount/app.path" 2>/dev/null || true)"
+    stamped="${stamped%%$'\n'*}"
+    stamped="$(trim "${stamped}")"
+  fi
+  if [[ -n "$stamped" && -d "$stamped/Contents/MacOS" ]]; then
+    APP_BUNDLE="$stamped"
+  fi
+fi
+
 # 驱动版本允许列表（与 Ntfs3gVersion.swift / runtime/versions.txt 一致）
 NTFS3G_VER_LIB=""
 for cand in "$SCRIPT_DIR/ntfs3g-version.sh" "$ROOT/scripts/ntfs3g-version.sh"; do
@@ -102,10 +115,10 @@ if [[ -n "$NTFS3G_VER_LIB" ]]; then
 else
   NTFS3G_PINNED="2026.7.7"
   NTFS3G_ALLOW_LIST="2026.7.7,2026.8.x"
-  NTFS3G_ALLOW_HUMAN="2026.7.7、2026.8.x"
+  NTFS3G_ALLOW_HUMAN="2026.7.7, 2026.8.x"
   ntfs3g_parse_version() { printf '%s' ""; }
   ntfs3g_version_allowed() { return 1; }
-  ntfs3g_human_line() { printf '%s' "无法加载版本校验脚本；允许 ${NTFS3G_ALLOW_HUMAN}"; }
+  ntfs3g_human_line() { printf '%s' "Could not load the version check script; allowed ${NTFS3G_ALLOW_HUMAN}"; }
 fi
 
 # --- app / helper 版本（读文件，不执行挂载路径） ---
@@ -262,6 +275,19 @@ done
 ntfsfix_present=false
 [[ -n "$bundled_ntfsfix" ]] && ntfsfix_present=true
 
+# Full Disk Access: readability of a gated path in this process. Not a TCC.db scrape.
+# A CLI/bash probe is this process, not NTFSMount.app or the LaunchDaemon.
+FDA_DB="/Library/Application Support/com.apple.TCC/TCC.db"
+fda_status="unknown"
+if [[ -e "$FDA_DB" ]]; then
+  if [[ -r "$FDA_DB" ]]; then
+    fda_status="granted"
+  else
+    fda_status="denied"
+  fi
+fi
+fda_note="Readability probe in this process; does not scrape TCC.db. NTFSMount.app and ntfsmount-helperd do not inherit each other's TCC."
+
 # --- helper socket ping（存在才连；校验失败说明守护进程活着。不触发安装） ---
 socket_exists=false
 [[ -e "$SOCK" || -S "$SOCK" ]] && socket_exists=true
@@ -304,7 +330,7 @@ PY
   ping_out="$(oneline "$ping_out")"
   ping_err="$(oneline "$ping_err")"
   if [[ -n "$ping_out" ]]; then
-    if printf '%s' "$ping_out" | /usr/bin/grep -q '调用方未通过签名校验'; then
+    if printf '%s' "$ping_out" | /usr/bin/grep -qiE '调用方未通过签名校验|caller failed the signature check'; then
       ping_result="alive_caller_rejected"
     elif printf '%s' "$ping_out" | /usr/bin/grep -q 'HELPER_VERSION='; then
       ping_result="$(printf '%s' "$ping_out" | /usr/bin/tr -d '\r')"
@@ -392,7 +418,7 @@ fi
 # 仍按截图探测 bridge/vmnet，但诚实标注「不依赖」。
 vmnet_ifaces_json="[]"
 vmnet_status="absent"
-vmnet_human_ifaces="无"
+vmnet_human_ifaces="none"
 iface_list="$(timeout_run 3 /sbin/ifconfig -l || true)"
 iface_list="$(oneline "$iface_list")"
 vmnet_bits=""
@@ -422,7 +448,7 @@ else
 fi
 if [[ -n "$vmnet_bits" ]]; then
   vmnet_ifaces_json="[$vmnet_bits]"
-  vmnet_human_ifaces="$(/usr/bin/python3 -c 'import json,sys; arr=json.loads(sys.argv[1]); print(", ".join("%s/%s"% (x.get("name","?"), "up" if x.get("up") else "down") for x in arr) or "无")' "$vmnet_ifaces_json" 2>/dev/null || echo "见 JSON")"
+  vmnet_human_ifaces="$(/usr/bin/python3 -c 'import json,sys; arr=json.loads(sys.argv[1]); print(", ".join("%s/%s"% (x.get("name","?"), "up" if x.get("up") else "down") for x in arr) or "none")' "$vmnet_ifaces_json" 2>/dev/null || echo "see JSON")"
 fi
 
 lc_fuse=""
@@ -532,9 +558,9 @@ add_mount() {
   fi
   mounts_bits="$mounts_bits$item"
   if [[ -z "$occ" ]]; then
-    occ="无"
+    occ="none"
   fi
-  mounts_human="${mounts_human}  ${device}  ${mp}  (${kind}/${fs})  占用: ${occ}"$'\n'
+  mounts_human="${mounts_human}  ${device}  ${mp}  (${kind}/${fs})  occupiers: ${occ}"$'\n'
 }
 
 # 只收 diskNsM（末字段）。卷名「Seagate Expansion」不会把 ident 拆开。不要 ls /Volumes。
@@ -585,12 +611,12 @@ done < <(printf '%s\n' "$mount_text")
 
 mounts_json="[]"
 [[ -n "$mounts_bits" ]] && mounts_json="[$mounts_bits]"
-[[ -n "$mounts_human" ]] || mounts_human="  （无 NTFS / FUSE 挂载）"$'\n'
+[[ -n "$mounts_human" ]] || mounts_human="  (no NTFS / FUSE mounts)"$'\n'
 
 # --- BitLocker：macOS 看不到 Windows 解锁状态；只报 diskutil 线索 ---
 bl_bits=""
 bl_status="not_seen"
-bl_human="未见 diskutil 加密线索（macOS 无法确认 BitLocker，这不是阴性证明）"
+bl_human="No diskutil encryption clue (macOS cannot confirm BitLocker; this is not a true negative)"
 while IFS= read -r ident; do
   [[ "$ident" == disk* ]] || continue
   info=""
@@ -627,11 +653,11 @@ done < <(disk_idents_from_list "$diskutil_list")
 bl_json="[]"
 [[ -n "$bl_bits" ]] && bl_json="[$bl_bits]"
 if [[ "$bl_status" == "possible" ]]; then
-  bl_human="可能加密（仅 diskutil 线索，不能当作已确认的 BitLocker）"
+  bl_human="Possibly encrypted (diskutil clue only; not a confirmed BitLocker volume)"
 fi
 if [[ -z "$diskutil_list" ]]; then
   bl_status="unknown"
-  bl_human="diskutil list 失败或超时（unknown）"
+  bl_human="diskutil list failed or timed out (unknown)"
 fi
 
 vmnet_note="This project uses bundled FUSE-T go-nfsv4 over local NFS, not a vmnet microVM. Absent/down vmnet is expected."
@@ -643,19 +669,20 @@ helper_json="$(json_obj "{\"socket_path\":$(json_str "$SOCK"),\"socket_exists\":
 runtime_json="$(json_obj "{\"ntfs_3g_path\":$(json_str "$bundled_ntfs3g"),\"ntfs_3g_present\":$ntfs_3g_present,\"ntfs_3g_version\":$(json_str "$ntfs3g_ver"),\"ntfs_3g_raw\":$(json_str "$ntfs3g_raw"),\"ntfs_3g_allowed\":$ntfs3g_allowed,\"ntfs_3g_allow_list\":$(json_str "$NTFS3G_ALLOW_LIST"),\"pinned_ntfs_3g\":$(json_str "$pinned_ntfs3g"),\"ntfsfix_path\":$(json_str "$bundled_ntfsfix"),\"ntfsfix_present\":$ntfsfix_present,\"go_nfsv4_path\":$(json_str "$bundled_go"),\"go_nfsv4_present\":$bundled_present,\"pinned_fuse_t\":$(json_str "$pinned_fuse_t")}")"
 conflicts_json="$(json_obj "{\"brew_macfuse\":$(json_str "$brew_macfuse"),\"kext_macfuse\":$(json_str "$kext_macfuse"),\"systemextensions_macfuse\":$(json_str "$sysext_macfuse"),\"note\":$(json_str "macFUSE is not required; present kext/formula may interfere with FUSE-T.")}")"
 gatekeeper_json="$(json_obj "{\"target\":$(json_str "$gk_target"),\"quarantine\":$quarantine,\"spctl\":$(json_str "$spctl_status"),\"spctl_detail\":$(json_str "$spctl_detail")}")"
+fda_json="$(json_obj "{\"process\":$(json_str "$fda_status"),\"path\":$(json_str "$FDA_DB"),\"note\":$(json_str "$fda_note")}")"
 vmnet_json="$(json_obj "{\"status\":$(json_str "$vmnet_status"),\"interfaces\":$vmnet_ifaces_json,\"launchctl\":$lc_json,\"note\":$(json_str "$vmnet_note")}")"
 nfs_json="$(json_obj "{\"nfsd_enabled\":$nfsd_enabled,\"nfsd_running\":$nfsd_running,\"nfsd_status\":$(json_str "$nfsd_out_line"),\"nfsstat\":$(json_str "$nfsstat_line"),\"showmount\":$(json_str "$showmount_line"),\"go_nfsv4_processes\":$go_procs_json,\"localhost_listeners\":$listen_json,\"note\":$(json_str "$nfs_note")}")"
 bitlocker_json="$(json_obj "{\"status\":$(json_str "$bl_status"),\"volumes\":$bl_json,\"note\":$(json_str "$bitlocker_note")}")"
 
 if [[ "$JSON" -eq 1 ]]; then
   /usr/bin/python3 -c 'import json,sys
-keys=["schema_version","app_version","installed_app_version","macos_product_name","macos_version","macos_build","hw_model","arch","apple_silicon","chip","fuse_t","helper","runtime","conflicts","gatekeeper","vmnet","nfs","mounts","bitlocker"]
+keys=["schema_version","app_version","installed_app_version","macos_product_name","macos_version","macos_build","hw_model","arch","apple_silicon","chip","fuse_t","helper","runtime","conflicts","gatekeeper","full_disk_access","vmnet","nfs","mounts","bitlocker"]
 vals=sys.argv[1:]
 obj={"schema_version":2}
 for k,v in zip(keys[1:], vals):
     if k in ("apple_silicon",):
         obj[k] = (v == "true")
-    elif k in ("fuse_t","helper","runtime","conflicts","gatekeeper","vmnet","nfs","bitlocker") or k=="mounts":
+    elif k in ("fuse_t","helper","runtime","conflicts","gatekeeper","full_disk_access","vmnet","nfs","bitlocker") or k=="mounts":
         obj[k] = json.loads(v) if v else None
     else:
         obj[k] = v
@@ -675,6 +702,7 @@ print()' \
     "$runtime_json" \
     "$conflicts_json" \
     "$gatekeeper_json" \
+    "$fda_json" \
     "$vmnet_json" \
     "$nfs_json" \
     "$mounts_json" \
@@ -686,88 +714,90 @@ fi
 silicon_h="$hw_model · $arch"
 [[ "$chip" != "unknown" && -n "$chip" ]] && silicon_h="$silicon_h · $chip"
 if [[ "$apple_silicon" != true ]]; then
-  silicon_h="非 Apple Silicon（${arch} / ${hw_model}）；本应用不支持 Intel"
+  silicon_h="Not Apple Silicon (${arch} / ${hw_model}); this app does not support Intel"
 fi
 
 vmnet_h="$vmnet_status"
 if [[ "$vmnet_status" == "absent" ]]; then
-  vmnet_h="absent（无 vmnet/vmenet/bridge100；本应用 FUSE-T 走本机 NFS，不依赖 vmnet）"
+  vmnet_h="absent (no vmnet/vmenet/bridge100; this app uses FUSE-T over local NFS and does not depend on vmnet)"
 elif [[ "$vmnet_status" == "down" ]]; then
-  vmnet_h="down（${vmnet_human_ifaces}；本应用不依赖 vmnet）"
+  vmnet_h="down (${vmnet_human_ifaces}; this app does not depend on vmnet)"
 elif [[ "$vmnet_status" == "up" ]]; then
-  vmnet_h="up（${vmnet_human_ifaces}；本应用不依赖 vmnet）"
+  vmnet_h="up (${vmnet_human_ifaces}; this app does not depend on vmnet)"
 elif [[ "$vmnet_status" == "unknown" ]]; then
-  vmnet_h="unknown（ifconfig 失败或权限不足）"
+  vmnet_h="unknown (ifconfig failed or permission denied)"
 fi
 
-nfs_h="系统 nfsd: "
+nfs_h="system nfsd: "
 if [[ "$nfsd_running" == true ]]; then
-  nfs_h="${nfs_h}运行中"
+  nfs_h="${nfs_h}running"
 elif [[ "$nfsd_enabled" == true ]]; then
-  nfs_h="${nfs_h}已启用但未运行（FUSE-T 不依赖系统 nfsd）"
+  nfs_h="${nfs_h}enabled but not running (FUSE-T does not depend on system nfsd)"
 else
   nfs_h="${nfs_h}${nfsd_out_line}"
 fi
-nfs_h="${nfs_h}；go-nfsv4 进程 ${go_proc_count}"
+nfs_h="${nfs_h}; go-nfsv4 processes ${go_proc_count}"
 
-helper_h="socket 不存在（未安装或未启动；本命令不会去安装）"
+helper_h="socket absent (not installed or not started; this command will not install it)"
 if [[ "$socket_exists" == true ]]; then
   case "$ping_result" in
-  alive_caller_rejected) helper_h="socket 在，守护进程活着（CLI 无 App 签名，ping 被拒绝，属预期）" ;;
-  HELPER_VERSION=*) helper_h="socket 在，ping ${ping_result}" ;;
-  *) helper_h="socket 在，ping: ${ping_result}" ;;
+  alive_caller_rejected) helper_h="socket present, daemon alive (the CLI has no app signature, so ping is rejected; that is expected)" ;;
+  HELPER_VERSION=*) helper_h="socket present, ping ${ping_result}" ;;
+  *) helper_h="socket present, ping: ${ping_result}" ;;
   esac
 fi
 
-fuse_h="捆绑 go-nfsv4: "
+fuse_h="bundled go-nfsv4: "
 if [[ "$bundled_present" == true ]]; then
-  fuse_h="${fuse_h}有（${bundled_go}）"
+  fuse_h="${fuse_h}present (${bundled_go})"
 else
-  fuse_h="${fuse_h}无（需 ./scripts/prepare-runtime.sh）"
+  fuse_h="${fuse_h}absent (run ./scripts/prepare-runtime.sh)"
 fi
 if [[ -n "$system_go" ]]; then
-  fuse_h="${fuse_h}；系统 FUSE-T: $system_fuse_ver"
+  fuse_h="${fuse_h}; system FUSE-T: $system_fuse_ver"
 else
-  fuse_h="${fuse_h}；系统 FUSE-T: 未安装（应用不要求）"
+  fuse_h="${fuse_h}; system FUSE-T: not installed (the app does not require it)"
 fi
-fuse_h="${fuse_h}；钉死 ${pinned_fuse_t}"
+fuse_h="${fuse_h}; pinned ${pinned_fuse_t}"
 
 runtime_h="ntfs-3g: "
 if [[ "$ntfs_3g_present" == true ]]; then
-  runtime_h="${runtime_h}有（${bundled_ntfs3g}）"
+  runtime_h="${runtime_h}present (${bundled_ntfs3g})"
 else
-  runtime_h="${runtime_h}无"
+  runtime_h="${runtime_h}absent"
 fi
-runtime_h="${runtime_h}；ntfsfix: "
+runtime_h="${runtime_h}; ntfsfix: "
 if [[ "$ntfsfix_present" == true ]]; then
-  runtime_h="${runtime_h}有（${bundled_ntfsfix}）"
+  runtime_h="${runtime_h}present (${bundled_ntfsfix})"
 else
-  runtime_h="${runtime_h}无"
+  runtime_h="${runtime_h}absent"
 fi
 
 conflict_h=""
 if [[ "$brew_macfuse" == present || "$kext_macfuse" == present || "$sysext_macfuse" == present ]]; then
-  conflict_h="macFUSE 冲突: brew=${brew_macfuse} kext=${kext_macfuse} sysext=${sysext_macfuse}（可能干扰 FUSE-T）
+  conflict_h="macFUSE conflict: brew=${brew_macfuse} kext=${kext_macfuse} sysext=${sysext_macfuse} (may interfere with FUSE-T)
 "
 fi
 gk_h="quarantine=${quarantine} spctl=${spctl_status}"
+fda_h="${fda_status} (this process checks whether a gate path is readable; it does not read TCC.db; the LaunchDaemon does not inherit the app grant)"
 
 cat <<EOF
-NTFSMount 诊断（只读，app ${app_version}）
+NTFSMount diagnose (read-only, app ${app_version})
 
-• macOS 版本: ${macos_product} ${macos_version} (${macos_build})
-• Apple Silicon 型号: ${silicon_h}
-• 捆绑 ntfs-3g / ntfsfix: ${runtime_h}
-• 驱动版本校验: ${ntfs3g_h}
-• vmnet 是否正常: ${vmnet_h}
-• NFS 服务状态: ${nfs_h}
-• 挂载点占用情况:
-${mounts_human}• BitLocker 状态: ${bl_human}
+• macOS: ${macos_product} ${macos_version} (${macos_build})
+• Apple Silicon: ${silicon_h}
+• bundled ntfs-3g / ntfsfix: ${runtime_h}
+• driver version check: ${ntfs3g_h}
+• vmnet: ${vmnet_h}
+• NFS: ${nfs_h}
+• mount occupancy:
+${mounts_human}• BitLocker: ${bl_human}
 
-助手: ${helper_h}
-捆绑 HELPER_VERSION=${helper_version}
+helper: ${helper_h}
+bundled HELPER_VERSION=${helper_version}
 FUSE-T / go-nfsv4: ${fuse_h}
 ${conflict_h}Gatekeeper: ${gk_h}
+Full Disk Access: ${fda_h}
 
-提交 Bug 或给 CI 收日志请附上本输出；机器可读: ./scripts/ntfsmount diagnose --json
+Attach this output when filing a bug or collecting CI logs. Machine-readable: ./scripts/ntfsmount diagnose --json
 EOF

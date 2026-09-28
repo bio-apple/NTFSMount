@@ -1,3 +1,8 @@
 /* NTFSMount InfoPlist */
 
 "CFBundleDisplayName" = "NTFS 読み書き";
+
+"NSSystemAdministrationUsageDescription" = "NTFSMount は、外付け NTFS ボリュームのマウントとアンマウントを行うヘルパーをインストールするため、管理者パスワードを一度だけ必要とします。";
+
+"NSRemovableVolumesUsageDescription" = "NTFSMount は、外付け NTFS ディスクの一覧表示・マウント・アンマウントのためにリムーバブルボリュームへのアクセスが必要です。";
+

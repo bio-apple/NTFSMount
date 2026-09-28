@@ -178,12 +178,12 @@ cmd_status() {
     return 0
   fi
   if ! valid_slice "$ident"; then
-    emit_error "invalid_device" "非法设备: $ident" "$ident"
+    emit_error "invalid_device" "invalid device: $ident" "$ident"
     return 2
   fi
   rec="$(volume_record_json "$ident" || true)"
   if [[ -z "$rec" ]]; then
-    emit_error "not_found" "不是已连接的 NTFS 卷: $ident" "$ident"
+    emit_error "not_found" "not a connected NTFS volume: $ident" "$ident"
     return 1
   fi
   emit_ok_volume "$rec"
@@ -193,11 +193,11 @@ run_helper_cmd() {
   local verb="$1" ident="$2"
   local helper out rc rec
   if [[ "$(/usr/bin/id -u)" -ne 0 ]]; then
-    emit_error "not_root" "mount/unmount 需已安装的特权助手（LaunchDaemon）。请用菜单栏应用安装助手后操作。" "$ident"
+    emit_error "not_root" "mount/unmount needs the installed privileged helper (LaunchDaemon). Install the helper from the menu-bar app, then try again." "$ident"
     return 1
   fi
   helper="$(find_sealed_helper)" || {
-    emit_error "helper_missing" "找不到已安装的 ntfs-rw-helper" "$ident"
+    emit_error "helper_missing" "installed ntfs-rw-helper not found" "$ident"
     return 1
   }
   set +e
@@ -225,11 +225,11 @@ print(json.dumps({"ok":True,"action":sys.argv[1],"device":sys.argv[2],"detail":s
 cmd_mount() {
   local ident="$1"
   if [[ -z "$ident" ]]; then
-    emit_error "missing_device" "用法: ntfsmount mount <diskNsM> [--json]"
+    emit_error "missing_device" "usage: ntfsmount mount <diskNsM> [--json]"
     return 2
   fi
   if ! valid_slice "$ident"; then
-    emit_error "invalid_device" "非法设备: $ident" "$ident"
+    emit_error "invalid_device" "invalid device: $ident" "$ident"
     return 2
   fi
   run_helper_cmd mount "$ident"
@@ -238,11 +238,11 @@ cmd_mount() {
 cmd_unmount() {
   local ident="$1"
   if [[ -z "$ident" ]]; then
-    emit_error "missing_device" "用法: ntfsmount unmount <diskNsM> [--json]"
+    emit_error "missing_device" "usage: ntfsmount unmount <diskNsM> [--json]"
     return 2
   fi
   if ! valid_slice "$ident"; then
-    emit_error "invalid_device" "非法设备: $ident" "$ident"
+    emit_error "invalid_device" "invalid device: $ident" "$ident"
     return 2
   fi
   run_helper_cmd unmount "$ident"

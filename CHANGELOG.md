@@ -6,12 +6,17 @@ All notable **released** changes are listed here, newest first. Current GitHub t
 
 ## [Unreleased]
 
+None.
+
 ## [1.0.0] - 2026-09-28
+
+Build 4 of the same `1.0.0` tag. Marketing version stays `1.0.0`.
 
 Version-number reset of the current personal-use tree. Includes the 1.2.1 feature set plus post-1.2.1 work that had not been tagged. Facts match [docs/RELEASE_NOTES/1.0.0.md](docs/RELEASE_NOTES/1.0.0.md).
 
 ### Added
 
+- Optional Settings toggle to remove macOS junk (`.DS_Store`, AppleDouble `._*` files, `.Trashes`, `.Spotlight-V100`, `.fseventsd`, `.TemporaryItems`) from a writable external NTFS volume before eject/unmount. Off by default.
 - Safer unmount: `diskutil unmount force` only after the UI confirms a busy volume; otherwise busy is returned to the user.
 - Helper `repair-env`: clear leftover numbered mount points / orphan localhost NFS without force-unmount, ntfsfix, or clearing hiberfile.
 - Disk status rows in the window (mount mode, used space, encryption hint, journal).
@@ -24,6 +29,8 @@ Version-number reset of the current personal-use tree. Includes the 1.2.1 featur
 
 ### Fixed
 
+- Eject/unmount busy copy names occupier processes (Finder, …) from helper `busy-occupiers`, truncated to three names plus “and N more”. When lsof cannot list them, generic busy stays and one line asks for Full Disk Access.
+- Shell scripts such as `uninstall.sh` print English. Comments stay as they were.
 - Helper install on macOS without `/usr/bin/realpath`.
 - Helper `CommandPath` resolution when installing the LaunchDaemon.
 - Diagnose no longer treats leftover macFUSE noise as a blocking error.

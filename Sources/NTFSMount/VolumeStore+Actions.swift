@@ -61,7 +61,7 @@ extension VolumeStore {
       if fromAutoMount { markAutoMountFinished(vol.id, userRefused: true, helperReturned: false) }
       return
     }
-    if !confirmDriverIfNeeded() {
+    if !confirmDriverIfNeeded(volumeId: vol.id) {
       if fromAutoMount { markAutoMountFinished(vol.id, userRefused: true, helperReturned: false) }
       return
     }
@@ -182,7 +182,7 @@ extension VolumeStore {
 
   func unmount(_ vol: NTFSVolume) async {
     skippedUnmount.insert(vol.id)
-    await run("unmount", vol)
+    await removeThen("unmount", vol)
   }
 
   func eject(_ vol: NTFSVolume) async {
@@ -191,7 +191,60 @@ extension VolumeStore {
       return
     }
     skippedUnmount.insert(vol.id)
-    await run("eject", vol)
+    await removeThen("eject", vol)
+  }
+
+  private func removeThen(_ cmd: String, _ vol: NTFSVolume, extra: [String] = []) async {
+    guard await cleanMacJunkIfNeeded(vol, command: cmd, isForce: extra.contains("force")) else {
+      return
+    }
+    await run(cmd, vol, extra: extra)
+  }
+
+  /// Returns false when the user cancels after a clean failure.
+  private func cleanMacJunkIfNeeded(_ vol: NTFSVolume, command: String, isForce: Bool) async -> Bool {
+    guard MacJunkCleanup.shouldRun(
+      enabled: cleanMacJunkBeforeEject,
+      isInternal: vol.isInternal,
+      isWritableFuse: vol.isWritableFuse,
+      mountPoint: vol.mountPoint,
+      command: command,
+      isForce: isForce
+    ) else { return true }
+    busyId = vol.id
+    setMessage(L10n.t("cleanJunk.working"), volumeId: vol.id)
+    let root = vol.mountPoint
+    let outcome = await withCheckedContinuation { (cont: CheckedContinuation<MacJunkCleanup.Outcome, Never>) in
+      DispatchQueue.global(qos: .userInitiated).async {
+        cont.resume(returning: MacJunkCleanup.clean(at: root))
+      }
+    }
+    AppLog.append(
+      "clean-junk \(vol.id) removed=\(outcome.removedCount) failed=\(outcome.failedPaths.count)"
+    )
+    if outcome.failedPaths.isEmpty {
+      // Do not overlay helper stderr. Eject/unmount busy text includes busy-occupiers.
+      return true
+    }
+    busyId = nil
+    setMessage(MacJunkCleanup.Copy.failedBody(volumeName: vol.name), volumeId: vol.id)
+    if confirmContinueWithoutClean(vol) {
+      return true
+    }
+    setMessage(L10n.t("error.canceled"), volumeId: vol.id)
+    return false
+  }
+
+  private func confirmContinueWithoutClean(_ vol: NTFSVolume) -> Bool {
+    NSApp.activate(ignoringOtherApps: true)
+    let alert = NSAlert()
+    alert.alertStyle = .warning
+    alert.messageText = MacJunkCleanup.Copy.failedTitle()
+    alert.informativeText = MacJunkCleanup.Copy.failedBody(volumeName: vol.name)
+    alert.addButton(withTitle: MacJunkCleanup.Copy.continueTitle())
+    alert.addButton(withTitle: FormatPolicy.cancelTitle)
+    makeSafeDefault(alert)
+    return alert.runModal() == .alertFirstButtonReturn
   }
 
   func mountAll() {
@@ -316,6 +369,14 @@ extension VolumeStore {
     applyDockPolicy()
   }
 
+  func toggleCleanMacJunkBeforeEject() {
+    cleanMacJunkBeforeEject.toggle()
+    UserDefaults.standard.set(
+      cleanMacJunkBeforeEject,
+      forKey: AppIdentity.Defaults.cleanMacJunkBeforeEject
+    )
+  }
+
   func applyDockPolicy() {
     if showDock {
       NSApp.setActivationPolicy(.regular)
@@ -436,6 +497,7 @@ extension VolumeStore {
     openFinder: Bool,
     extra: [String] = []
   ) async {
+    // Helper stderr is the source of truth (busy-occupiers / busy-pids). Do not replace it.
     let shown = display(result.text)
     AppLog.volume.info("\(cmd, privacy: .public) \(vol.id, privacy: .public) ok=\(result.ok, privacy: .public)")
     AppLog.volume.info("name=\(vol.name, privacy: .private) mp=\(vol.mountPoint, privacy: .private)")
@@ -453,6 +515,11 @@ extension VolumeStore {
        confirmForceUnmount(vol, helperText: result.text) {
       await run("unmount", vol, extra: ["force"])
       return
+    }
+    if !result.ok,
+       cmd == "eject",
+       UserFacingError.kind(from: result.text) == .diskBusy {
+      alertDiskBusy(shown)
     }
     if result.ok, cmd == "mount", openFinder {
       NSWorkspace.shared.open(URL(fileURLWithPath: vol.expectedMountPoint))

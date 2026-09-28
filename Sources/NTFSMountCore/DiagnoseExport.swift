@@ -234,6 +234,11 @@ public enum DiagnoseExport {
         "quarantine": optionalJSON(snap.quarantine),
         "spctl": snap.spctl,
       ],
+      "full_disk_access": [
+        "app": snap.fullDiskAccess.rawValue,
+        "path": FullDiskAccess.gatedPath,
+        "note": "Readability of a gated path in this process; not a TCC.db scrape. LaunchDaemon does not inherit the app grant.",
+      ],
     ]
   }
 

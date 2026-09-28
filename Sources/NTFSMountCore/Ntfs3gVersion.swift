@@ -5,7 +5,7 @@ import Foundation
 public enum Ntfs3gVersion {
   /// 与 runtime/versions.txt 的 `ntfs-3g` 钉死版本一致。
   public static let pinned = "2026.7.7"
-  public static let allowListHuman = "2026.7.7、2026.8.x"
+  public static let allowListHuman = "2026.7.7, 2026.8.x"
   public static let diagnoseLineId = "ntfs_3g_version"
 
   public enum Status: Equatable, Sendable {
@@ -85,7 +85,7 @@ public enum Ntfs3gVersion {
   public static func settingsLine(_ parsed: Parsed, locale: Locale? = nil) -> String {
     switch parsed.status {
     case .missing:
-      return L10n.t("ntfs3g.diagnoseMissing", locale: locale)
+      return L10n.t("runtime.ntfs3gMissing", locale: locale)
     case .allowed:
       return L10n.format("ntfs3g.settingsAllowed", parsed.displayVersion, allowListHuman, locale: locale)
     case .untested:

@@ -494,7 +494,7 @@ static void handle(int fd, const char *app) {
 
   if (!peer_ok(fd, app)) {
     os_log_error(helperd_log(), "peer rejected app=%{private}s", app);
-    const char *m = "ERR\n调用方未通过签名校验。\n";
+    const char *m = "ERR\nCaller failed the signature check.\n";
     write_all(fd, m, strlen(m));
     return;
   }
@@ -512,7 +512,7 @@ static void handle(int fd, const char *app) {
     argc = hdrn;
   }
   if (ver == 0 || argc < 1 || argc > MAX_ARGS) {
-    const char *m = "ERR\n协议错误。\n";
+    const char *m = "ERR\nProtocol error.\n";
     write_all(fd, m, strlen(m));
     return;
   }
@@ -520,7 +520,7 @@ static void handle(int fd, const char *app) {
   char *argv[MAX_ARGS + 2];
   const char *helper = HELPER_SEALED;
   if (!helper_root_owned(helper) || !stamp_matches(helper)) {
-    const char *m = "ERR\n挂载助手副本校验失败，请重新安装助手。\n";
+    const char *m = "ERR\nMount helper copy failed verification. Reinstall the helper.\n";
     write_all(fd, m, strlen(m));
     return;
   }
@@ -528,7 +528,7 @@ static void handle(int fd, const char *app) {
   for (int i = 0; i < argc; i++) {
     if (ver == 2) {
       if (read_v2_arg(fd, args[i], MAX_ARG) != 0) {
-        const char *m = "ERR\n协议错误。\n";
+        const char *m = "ERR\nProtocol error.\n";
         write_all(fd, m, strlen(m));
         return;
       }
@@ -536,7 +536,7 @@ static void handle(int fd, const char *app) {
       return;
     }
     if (i == 0 && !allowed_cmd(args[i])) {
-      const char *m = "ERR\n不允许的命令。\n";
+      const char *m = "ERR\nCommand not allowed.\n";
       write_all(fd, m, strlen(m));
       return;
     }
@@ -547,7 +547,7 @@ static void handle(int fd, const char *app) {
          "cmd=%{public}s disk=%{public}s extra=%{private}s app=%{private}s helper=%{private}s",
          args[0], argc > 1 ? args[1] : "-", argc > 2 ? args[2] : "-", app, helper);
   if (access(helper, X_OK) != 0) {
-    const char *m = "ERR\n找不到已钉扎的挂载助手，请重新安装助手。\n";
+    const char *m = "ERR\nPinned mount helper not found. Reinstall the helper.\n";
     write_all(fd, m, strlen(m));
     return;
   }
@@ -585,7 +585,7 @@ static void handle(int fd, const char *app) {
   int ok = wr == 0 && WIFEXITED(st) && WEXITSTATUS(st) == 0;
   if (wr == -2) {
     os_log_error(helperd_log(), "cmd=%{public}s timeout", args[0]);
-    const char *m = "ERR\n挂载助手执行超时。\n";
+    const char *m = "ERR\nMount helper timed out.\n";
     write_all(fd, m, strlen(m));
     write_all(fd, body, n);
     return;

@@ -43,7 +43,7 @@ submit_notary() {
 
 if [[ -f "$TARGET" ]]; then
   if ! has_notary_creds; then
-    echo "warning: 无公证凭据，跳过 $TARGET" >&2
+    echo "warning: no notary credentials, skipping $TARGET" >&2
     exit 0
   fi
   submit_notary "$TARGET"
@@ -54,7 +54,7 @@ fi
 
 APP="$TARGET"
 [[ -d "$APP" ]] || {
-  echo "error: 找不到 $APP" >&2
+  echo "error: not found: $APP" >&2
   exit 1
 }
 MACOS="$APP/Contents/MacOS"
@@ -81,7 +81,7 @@ sign_nested() {
 }
 
 if [[ -z "$ID" ]]; then
-  echo "warning: 未设置 CODESIGN_IDENTITY，使用 ad-hoc 签名（Gatekeeper 会拦截）" >&2
+  echo "warning: CODESIGN_IDENTITY is unset; using an ad-hoc signature (Gatekeeper will block this)" >&2
   sign_nested - --options runtime --entitlements "$ENTITLEMENTS"
   exit 0
 fi
@@ -90,7 +90,7 @@ sign_nested "$ID" --options runtime --timestamp --entitlements "$ENTITLEMENTS"
 codesign --verify --strict --deep "$APP"
 
 if ! has_notary_creds; then
-  echo "warning: 已用 Developer ID 签名，但未设置 NOTARY_PROFILE / APPLE_API_KEY_*，跳过公证" >&2
+  echo "warning: signed with a Developer ID, but NOTARY_PROFILE / APPLE_API_KEY_* is unset; skipping notarization" >&2
   exit 0
 fi
 

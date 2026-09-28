@@ -237,6 +237,20 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "settings.autoMountNeedHelper" = "自動マウントをオンにする前に、マウントヘルパーをインストールまたは更新してください。";
 
+"settings.cleanMacJunk" = "取り出す前に Mac の不要ファイルを削除";
+
+"settings.cleanMacJunkNote" = "オンにすると、取り出しまたはマウント解除の前に、その外付けの書き込み可能な NTFS 上の .DS_Store、AppleDouble（._*）、.Trashes、.Spotlight-V100、.fseventsd、.TemporaryItems を削除します。既定はオフです。hiberfil.sys、pagefile、書類は削除しません。";
+
+"cleanJunk.working" = "Mac の不要ファイルを削除しています…";
+
+"cleanJunk.done" = "Mac の不要ファイルを %d 個削除しました。";
+
+"cleanJunk.failedTitle" = "Mac の不要ファイルを削除できませんでした";
+
+"cleanJunk.failedBody" = "「%@」上の一部の macOS 隠しファイルを削除できませんでした。削除せずに取り出す／マウント解除できます。";
+
+"cleanJunk.continueWithout" = "削除せずに続ける";
+
 "settings.appearance" = "外観と起動";
 
 "settings.launchAtLogin" = "ログイン時に開く";
@@ -288,6 +302,20 @@ Return で同意します。同意しない場合は「終了」を押してく�
 "helper.hintAdHoc" = "ad-hoc / 未公証ビルドでは SMAppService を登録できないことがほとんどです。インストールは Authorization Services（システムの管理者ダイアログ）を使います。SIP は有効のまま、kext は使いません。";
 
 "helper.privilegeHint" = "マウントヘルパーは root で動作し、外付けディスクのマウント、アンマウント、フォーマットができます。一度きりのインストールは macOS Authorization Services を使い、パスワードは保存しません。SIP は有効のままです。このアプリはカーネル拡張を使わず、sudoers も書きません。";
+
+"helper.fdaHint" = "Apple Silicon と Sequoia 以降では、NTFSMount.app にフルディスクアクセスを許可してください。LaunchDaemon はその許可を継承しません。マウントできない場合は、同じリストに ntfsmount-helperd を追加してください。";
+
+"settings.fda" = "フルディスクアクセス";
+
+"fda.body" = "NTFSMount.app にフルディスクアクセスを許可してください（システム設定 → プライバシーとセキュリティ → フルディスクアクセス）。Sequoia 以降の使用中プロセス検出と一部のボリュームメタデータに必要です。LaunchDaemon は別プロセスで、アプリの TCC は継承しません。アプリに許可してもマウントできない場合は、同じリストにヘルパー ntfsmount-helperd を追加してください。";
+
+"fda.open" = "フルディスクアクセスを開く…";
+
+"fda.statusGranted" = "このアプリはフルディスクアクセスで保護されたパスを読めます。";
+
+"fda.statusDenied" = "このアプリのフルディスクアクセスは検出されませんでした。";
+
+"fda.helperPath" = "マウントできない場合は、同じリストにヘルパーを追加してください: %@";
 
 "alert.updateHelperTitle" = "マウントヘルパーを更新";
 
@@ -353,6 +381,8 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "error.missingBinary" = "必要なプログラムが見つかりません（ntfs-3g またはマウント部品の欠落の可能性）。アプリを再インストールしてください。詳細はログに書き込まれました。";
 
+"runtime.ntfs3gMissing" = "同梱の ntfs-3g がありません。GitHub Latest から NTFSMount.app を再インストールしてください。Homebrew は使いません。";
+
 "error.adminDenied" = "管理者権限を取得できませんでした。キャンセルした場合は再試行できます。詳細はログに書き込まれました。";
 
 "error.helperNeedsUpdate" = "マウントヘルパーの更新が必要です。ウィンドウで「更新…」を押してください。";
@@ -360,6 +390,10 @@ Return で同意します。同意しない場合は「終了」を押してく�
 "error.diskBusy" = "ディスク使用中：Finder のウィンドウ／ファイルを閉じてから取り出してください";
 
 "error.diskBusyNamed" = "ディスクは %@ が使用中です。それらのプログラムを閉じてから再試行してください。";
+
+"error.occupiersMore" = "他 %d 件";
+
+"error.diskBusyNeedFDA" = "フルディスクアクセスを許可すると、使用中のアプリを確認できます。";
 
 "error.failedWithLog" = "操作に失敗しました。詳細は %@ に書き込まれました";
 
@@ -466,7 +500,7 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "diagnose.installFailed" = "マウントヘルパーのインストールに失敗しました";
 
-"diagnose.brokenBundle" = "同梱の ntfs-3g / go-nfsv4 がありません。このコピーは不完全です。アプリを再ダウンロードしてください。";
+"diagnose.brokenBundle" = "同梱の ntfs-3g / go-nfsv4 がありません。GitHub Latest から NTFSMount.app を再インストールしてください。";
 
 "diagnose.openLog" = "ログを開く";
 
@@ -480,7 +514,7 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "diagnose.runtimeOK" = "同梱の ntfs-3g / ntfsfix / go-nfsv4 はすべてあります";
 
-"diagnose.runtimeMissing" = "同梱の %@ がありません（アプリを再インストール。Homebrew ntfs-3g-mac は不要）";
+"diagnose.runtimeMissing" = "同梱の %@ がありません。GitHub Latest から NTFSMount.app を再インストールしてください（Homebrew は不要）";
 
 "diagnose.fuseOK" = "同梱 go-nfsv4（FUSE-T %@ を固定）";
 
@@ -518,6 +552,12 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "diagnose.gatekeeper" = "Gatekeeper：%@";
 
+"diagnose.fdaGranted" = "このアプリはフルディスクアクセスのゲートパスを読めます（LaunchDaemon はこの許可を継承しません）";
+
+"diagnose.fdaDenied" = "NTFSMount.app のフルディスクアクセスは未検出です。Sequoia 以降では使用中プロセス名と一部のボリュームメタデータが欠けることがあります";
+
+"diagnose.fdaUnknown" = "Sequoia 以降の使用中プロセス検出と一部のボリュームメタデータのため、NTFSMount.app にフルディスクアクセスを許可してください。LaunchDaemon はこの許可を継承しません。マウントできない場合は同じリストに ntfsmount-helperd を追加してください";
+
 "settings.diagnoseHint" = "同梱コンポーネントとヘルパーの読み取り専用チェック。マウントもヘルパー導入もしません。Issue 用に ZIP を書き出せます。";
 
 "premount.dirtyTitle" = "NTFS ボリュームが破損しているか、正常にアンマウントされていません";
@@ -534,7 +574,7 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "premount.hiberBody" = "「%@」はまだ Windows の休止または高速スタートアップ中です。\n休止データを壊さないよう読み取り専用でマウントします。書き込み可能でマウントする前に、Windows を完全にシャットダウンしてください（休止／高速スタートアップは使わない）。\nntfsfix は実行せず、休止ファイルも消しません。";
 
-"ntfs3g.diagnoseMissing" = "同梱の ntfs-3g が見つからず、ドライバ版を確認できません（PATH は検索していません）";
+"ntfs3g.diagnoseMissing" = "同梱の ntfs-3g が見つかりません。GitHub Latest から NTFSMount.app を再インストールしてください（PATH は検索していません）";
 
 "ntfs3g.mountWarningTitle" = "未テストの ntfs-3g バージョン";
 

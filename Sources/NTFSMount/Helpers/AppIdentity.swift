@@ -22,6 +22,7 @@ enum AppIdentity {
   enum Defaults {
     static let autoMountUserOff = "com.bioapple.ntfsmount.autoMountUserOff"
     static let showDock = "com.bioapple.ntfsmount.showDock"
+    static let cleanMacJunkBeforeEject = "com.bioapple.ntfsmount.cleanMacJunkBeforeEject"
     static let didShowWindow = "com.bioapple.ntfsmount.didShowWindow"
     static let didShowCompat = "com.bioapple.ntfsmount.didShowCompatNotice"
     static let didMigrate = "com.bioapple.ntfsmount.didMigrateDefaults"

@@ -5,7 +5,7 @@
 #   ./scripts/check-fuse-deps.sh --install # 缺 ntfs-3g 时 brew install ntfs-3g；不装 macFUSE
 set -euo pipefail
 if [[ "$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null || true)" != "1" && "$(/usr/bin/uname -m)" != "arm64" ]]; then
-  echo "error: NTFSMount 仅支持 Apple Silicon（M 芯片 / arm64），不支持 Intel Mac（x86_64）。当前架构：$(/usr/bin/uname -m)" >&2
+  echo "error: NTFSMount supports Apple Silicon (M-series / arm64) only, not Intel Macs (x86_64). This machine: $(/usr/bin/uname -m)" >&2
   exit 1
 fi
 
@@ -23,18 +23,18 @@ WARN=0
 
 usage() {
   cat <<EOF
-用法: $0 [--install]
+usage: $0 [--install]
 
-检查本机构建/运行 NTFSMount 所需依赖。推荐 FUSE-T（用户态 NFS/WebDAV），无需关闭 SIP。
+Check dependencies for building and running NTFSMount. Prefer FUSE-T (userspace NFS/WebDAV). SIP stays enabled.
 
-  （默认）     只检查，缺件时退出码 1
-  --install    缺 ntfs-3g 时执行 brew install ntfs-3g
-               不安装 macFUSE / osxfuse 内核扩展
-               FUSE-T 请用 ./scripts/prepare-runtime.sh（官方 pkg，钉死 ${FUSE_T_VERSION}）
+  (default)    check only; exit 1 when something required is missing
+  --install    run brew install ntfs-3g when ntfs-3g is missing
+               does not install the macFUSE / osxfuse kernel extension
+               for FUSE-T, use ./scripts/prepare-runtime.sh (official pkg, pinned ${FUSE_T_VERSION})
 
-不要:
-  brew install macfuse     # kext；本项目不用。SIP 保持开启
-  brew install fuse-t      # 本仓库钉死官方 pkg ${FUSE_T_VERSION}，不用 Homebrew 配方
+Do not:
+  brew install macfuse     # kext; this project does not use it. SIP stays enabled
+  brew install fuse-t      # this repo pins official pkg ${FUSE_T_VERSION}, not a Homebrew formula
 EOF
 }
 
@@ -63,10 +63,10 @@ for arg in "$@"; do
     INSTALL=1
     ;;
   --install-macfuse | macfuse)
-    die "本项目不安装 macFUSE / osxfuse 内核扩展。SIP 保持开启。请用 FUSE-T：./scripts/prepare-runtime.sh"
+    die "This project does not install the macFUSE / osxfuse kernel extension. SIP stays enabled. Use FUSE-T: ./scripts/prepare-runtime.sh"
     ;;
   *)
-    die "未知参数: $arg（见 --help）"
+    die "unknown argument: $arg (see --help)"
     ;;
   esac
 done
@@ -150,8 +150,8 @@ brew_macfuse_listed() {
     "$brew_bin" list --cask macfuse >/dev/null 2>&1
 }
 
-echo "NTFSMount 依赖检查（Apple Silicon / 用户态 FUSE-T，无需关闭 SIP）"
-echo "钉死 FUSE-T ${FUSE_T_VERSION}（runtime/versions.txt）。应用捆绑 go-nfsv4，不加载 kext。"
+echo "NTFSMount dependency check (Apple Silicon / userspace FUSE-T, SIP stays enabled)"
+echo "Pinned FUSE-T ${FUSE_T_VERSION} (runtime/versions.txt). The app bundles go-nfsv4 and does not load a kext."
 echo
 
 export_homebrew_path
@@ -161,7 +161,7 @@ BREW=""
 if BREW="$(find_brew)"; then
   ok "Homebrew  $BREW"
 else
-  bad "未找到 Homebrew。Apple Silicon 通常是 /opt/homebrew/bin/brew。
+  bad "Homebrew not found. On Apple Silicon it is usually /opt/homebrew/bin/brew.
   /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
 fi
 
@@ -171,64 +171,64 @@ if NTFS3G="$(find_ntfs3g_bin)"; then
   ok "ntfs-3g   $NTFS3G"
 elif [[ "$INSTALL" -eq 1 ]]; then
   if [[ -z "$BREW" ]]; then
-    bad "无法 brew install ntfs-3g：没有 Homebrew"
+    bad "cannot brew install ntfs-3g: Homebrew is missing"
   else
     echo "run   $BREW install ntfs-3g"
     "$BREW" install ntfs-3g
     export_homebrew_path
     if NTFS3G="$(find_ntfs3g_bin)"; then
-      ok "ntfs-3g   $NTFS3G（刚安装）"
+      ok "ntfs-3g   $NTFS3G (just installed)"
     else
-      bad "brew install ntfs-3g 后仍找不到 ntfs-3g"
+      bad "ntfs-3g still not found after brew install ntfs-3g"
     fi
   fi
 else
   if [[ -n "$BREW" ]]; then
-    bad "未找到 ntfs-3g。请执行：$BREW install ntfs-3g
-  或一次性：$0 --install"
+    bad "ntfs-3g not found. Run: $BREW install ntfs-3g
+  or once: $0 --install"
   else
-    bad "未找到 ntfs-3g，且没有 Homebrew"
+    bad "ntfs-3g not found, and Homebrew is missing"
   fi
 fi
 
 # --- FUSE-T（官方 pkg / 捆绑；不用 brew install fuse-t）---
 FUSE_OK=0
 if [[ -x "$RUNTIME/go-nfsv4" ]]; then
-  ok "FUSE-T    仓库 runtime/go-nfsv4（prepare-runtime 已取出）"
+  ok "FUSE-T    repo runtime/go-nfsv4 (extracted by prepare-runtime)"
   FUSE_OK=1
 fi
 if [[ -x "${FUSE_T_BIN_DIR}/go-nfsv4-${FUSE_T_VERSION}" || -x "${FUSE_T_BIN_DIR}/go-nfsv4" ]]; then
-  ok "FUSE-T    本机 ${FUSE_T_BIN_DIR}（可选；打包时会校验 SHA256）"
+  ok "FUSE-T    local ${FUSE_T_BIN_DIR} (optional; packaging checks SHA256)"
   FUSE_OK=1
 elif [[ -d /Applications/FUSE-T.app ]]; then
-  warn "本机有 FUSE-T.app，但未找到 ${FUSE_T_BIN_DIR}/go-nfsv4-${FUSE_T_VERSION}。运行时用捆绑副本，不必启动 FUSE-T.app。"
+  warn "FUSE-T.app is installed, but ${FUSE_T_BIN_DIR}/go-nfsv4-${FUSE_T_VERSION} was not found. Runtime uses the bundled copy; you do not need to launch FUSE-T.app."
 fi
 if [[ "$FUSE_OK" -eq 0 ]]; then
-  warn "未找到 runtime/go-nfsv4 或本机 FUSE-T ${FUSE_T_VERSION}。构建前请运行：
+  warn "runtime/go-nfsv4 or local FUSE-T ${FUSE_T_VERSION} was not found. Before building, run:
   ./scripts/prepare-runtime.sh
-  （下载官方 pkg，不把 FUSE-T 静默装进系统；不要 brew install fuse-t）"
+  (downloads the official pkg and does not silently install FUSE-T system-wide; do not brew install fuse-t)"
 fi
 
 # --- 弃用 kext ---
 if kext_macfuse_present; then
-  warn "检测到 macFUSE / osxfuse 内核扩展。本应用不使用 kext，可能干扰 FUSE-T。SIP 必须保持开启。"
+  warn "macFUSE / osxfuse kernel extension detected. This app does not use a kext, and it may interfere with FUSE-T. SIP must stay enabled."
 elif brew_macfuse_listed; then
-  warn "Homebrew 列出了 macfuse。本应用不需要它。不要 brew install macfuse。SIP 保持开启。"
+  warn "Homebrew lists macfuse. This app does not need it. Do not brew install macfuse. SIP stays enabled."
 fi
 
 echo
-echo "推荐路径：FUSE-T（NFS/WebDAV 用户态）+ Homebrew ntfs-3g。"
-echo "不要 brew install macfuse（kext）。不要 brew install fuse-t（本仓库用官方 pkg）。"
-echo "不必关闭 SIP，也不必允许内核扩展。"
+echo "Preferred path: FUSE-T (userspace NFS/WebDAV) plus Homebrew ntfs-3g."
+echo "Do not brew install macfuse (kext). Do not brew install fuse-t (this repo uses the official pkg)."
+echo "Do not turn SIP off, and do not allow a kernel extension."
 
 if [[ "$FAIL" -ne 0 ]]; then
   echo
-  echo "检查未通过。补齐 ntfs-3g 后可再跑 $0；取 FUSE-T 二进制请用 ./scripts/prepare-runtime.sh"
+  echo "Check failed. Install ntfs-3g and run $0 again. For the FUSE-T binary, use ./scripts/prepare-runtime.sh"
   exit 1
 fi
 if [[ "$WARN" -ne 0 && "$FUSE_OK" -eq 0 ]]; then
   echo
-  echo "检查有告警。最终构建仍须 ./scripts/prepare-runtime.sh"
+  echo "Check finished with warnings. The final build still needs ./scripts/prepare-runtime.sh"
   exit 1
 fi
 echo

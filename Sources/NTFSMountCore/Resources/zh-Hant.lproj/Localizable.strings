@@ -237,6 +237,20 @@ Return 即同意。不同意請點「結束」。";
 
 "settings.autoMountNeedHelper" = "請先安裝或更新掛載助手，然後才能打開自動掛載。";
 
+"settings.cleanMacJunk" = "推出前清理 Mac 垃圾檔案";
+
+"settings.cleanMacJunkNote" = "打開後，推出或卸載時會刪除該外接可寫 NTFS 上的 .DS_Store、AppleDouble（._*）、.Trashes、.Spotlight-V100、.fseventsd 和 .TemporaryItems。預設關閉。不會刪除 hiberfil.sys、pagefile 或你的文件。";
+
+"cleanJunk.working" = "正在清理 Mac 垃圾檔案…";
+
+"cleanJunk.done" = "已刪除 %d 個 Mac 垃圾檔案。";
+
+"cleanJunk.failedTitle" = "無法清理 Mac 垃圾檔案";
+
+"cleanJunk.failedBody" = "「%@」上部分 macOS 隱藏檔案無法刪除。可以不清理就推出或卸載。";
+
+"cleanJunk.continueWithout" = "不清理並繼續";
+
 "settings.appearance" = "外觀與啟動";
 
 "settings.launchAtLogin" = "登入時打開";
@@ -288,6 +302,20 @@ Return 即同意。不同意請點「結束」。";
 "helper.hintAdHoc" = "ad-hoc / 未公證套件通常無法註冊 SMAppService。安裝走 Authorization Services（系統管理員對話框）。SIP 保持開啟，不使用核心延伸模組。";
 
 "helper.privilegeHint" = "掛載助手以 root 執行，可以掛載、卸載、格式化外接碟。一次性安裝使用 macOS Authorization Services，不儲存密碼。SIP 保持開啟。本 App 不使用核心延伸模組，也不寫 sudoers。";
+
+"helper.fdaHint" = "在 Apple Silicon 與 Sequoia 及之後，請為 NTFSMount.app 授予完整磁碟取用權限。LaunchDaemon 不會繼承該授權；若仍無法掛載，請在同一列表中加入 ntfsmount-helperd。";
+
+"settings.fda" = "完整磁碟取用權限";
+
+"fda.body" = "請為 NTFSMount.app 授予「完整磁碟取用權限」（系統設定 → 隱私權與安全性 → 完整磁碟取用權限）。用於占用偵測以及 Sequoia 及之後的部分卷中繼資料；LaunchDaemon 是獨立行程，不會繼承 App 的 TCC。若已給 App 授權後仍無法掛載，請在同一列表中加入助手 ntfsmount-helperd。";
+
+"fda.open" = "打開完整磁碟取用權限…";
+
+"fda.statusGranted" = "本 App 可以讀取完整磁碟取用權限所保護的路徑。";
+
+"fda.statusDenied" = "未偵測到本 App 的完整磁碟取用權限。";
+
+"fda.helperPath" = "若仍無法掛載，請在同一列表中加入助手：%@";
 
 "alert.updateHelperTitle" = "更新掛載助手";
 
@@ -353,6 +381,8 @@ Return 即同意。不同意請點「結束」。";
 
 "error.missingBinary" = "找不到所需程式（可能缺少 ntfs-3g 或掛載元件）。請重新安裝 App。詳情已寫入紀錄。";
 
+"runtime.ntfs3gMissing" = "找不到內附的 ntfs-3g。請從 GitHub Latest 重新安裝 NTFSMount.app，不要用 Homebrew。";
+
 "error.adminDenied" = "未能取得管理員權限。若剛才點了取消，可再試。詳情已寫入紀錄。";
 
 "error.helperNeedsUpdate" = "掛載助手需要更新。請在視窗點「更新…」。";
@@ -360,6 +390,10 @@ Return 即同意。不同意請點「結束」。";
 "error.diskBusy" = "磁碟正被占用：請關閉 Finder 視窗／檔案後點推出";
 
 "error.diskBusyNamed" = "磁碟正被占用：%@。請關閉這些程式後重試。";
+
+"error.occupiersMore" = "等 %d 個";
+
+"error.diskBusyNeedFDA" = "請授予完整磁碟取用權限以查看是哪個應用程式占用。";
 
 "error.failedWithLog" = "操作失敗。詳情已寫入 %@";
 
@@ -466,7 +500,7 @@ Return 即同意。不同意請點「結束」。";
 
 "diagnose.installFailed" = "安裝掛載助手失敗";
 
-"diagnose.brokenBundle" = "內附的 ntfs-3g / go-nfsv4 缺失。這是不完整的安裝包，請重新下載本 App。";
+"diagnose.brokenBundle" = "內附的 ntfs-3g / go-nfsv4 缺失。請從 GitHub Latest 重新安裝 NTFSMount.app。";
 
 "diagnose.openLog" = "打開紀錄";
 
@@ -480,7 +514,7 @@ Return 即同意。不同意請點「結束」。";
 
 "diagnose.runtimeOK" = "內附 ntfs-3g / ntfsfix / go-nfsv4 齊全";
 
-"diagnose.runtimeMissing" = "缺少內附 %@（請重新安裝 App；不必裝 Homebrew ntfs-3g-mac）";
+"diagnose.runtimeMissing" = "缺少內附 %@。請從 GitHub Latest 重新安裝 NTFSMount.app（不要用 Homebrew）";
 
 "diagnose.fuseOK" = "內附 go-nfsv4（釘死 FUSE-T %@）";
 
@@ -518,6 +552,12 @@ Return 即同意。不同意請點「結束」。";
 
 "diagnose.gatekeeper" = "Gatekeeper：%@";
 
+"diagnose.fdaGranted" = "本 App 可讀取完整磁碟取用權限門控路徑（LaunchDaemon 不會繼承該授權）";
+
+"diagnose.fdaDenied" = "未偵測到 NTFSMount.app 的完整磁碟取用權限；Sequoia 及之後占用行程名稱和部分卷中繼資料可能缺失";
+
+"diagnose.fdaUnknown" = "請為 NTFSMount.app 授予完整磁碟取用權限，用於占用偵測以及 Sequoia 及之後的部分卷中繼資料。LaunchDaemon 不會繼承該授權；若仍無法掛載，請在同一列表中加入 ntfsmount-helperd";
+
 "settings.diagnoseHint" = "唯讀檢查內附元件與助手，不掛載、不裝助手。提交 Issue 時可匯出 zip 附件。";
 
 "premount.dirtyTitle" = "NTFS 卷可能已損壞／未正常卸載";
@@ -534,7 +574,7 @@ Return 即同意。不同意請點「結束」。";
 
 "premount.hiberBody" = "「%@」仍處於 Windows 休眠或快速啟動。\n將唯讀掛載，以免破壞休眠資料。請在 Windows 徹底關機（不要休眠／快速啟動）後再以可寫方式掛載。\n不會執行 ntfsfix，也不會清除休眠檔。";
 
-"ntfs3g.diagnoseMissing" = "找不到內附 ntfs-3g，無法校驗驅動程式版本（未查 PATH）";
+"ntfs3g.diagnoseMissing" = "找不到內附 ntfs-3g。請從 GitHub Latest 重新安裝 NTFSMount.app（未查 PATH）";
 
 "ntfs3g.mountWarningTitle" = "未經測試的 ntfs-3g 版本";
 

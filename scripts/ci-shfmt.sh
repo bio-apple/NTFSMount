@@ -13,7 +13,7 @@ die() {
 
 SHFMT="$(command -v shfmt || true)"
 if [[ -z "$SHFMT" ]]; then
-  die "未找到 shfmt。CI 会安装；本机: brew install shfmt"
+  die "shfmt not found. CI installs it; locally: brew install shfmt"
 fi
 
 # 与 scripts/ci-shellcheck.sh 同一文件列表。不要扫 .build / runtime。
@@ -27,9 +27,9 @@ done < <(
   } | /usr/bin/awk 'NF && !seen[$0]++' | /usr/bin/sort
 )
 
-[[ ${#files[@]} -gt 0 ]] || die "没有要检查的脚本"
+[[ ${#files[@]} -gt 0 ]] || die "no scripts to check"
 for f in "${files[@]}"; do
-  [[ -f "$f" ]] || die "缺少 $f"
+  [[ -f "$f" ]] || die "missing $f"
 done
 
 echo "shfmt -d -i 2 (${#files[@]} files):"

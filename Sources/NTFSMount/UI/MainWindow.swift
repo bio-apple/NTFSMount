@@ -208,6 +208,10 @@ struct HelperInstallBanner: View {
           .font(.caption)
           .foregroundStyle(.secondary)
           .fixedSize(horizontal: false, vertical: true)
+        Text(L10n.t("helper.fdaHint"))
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .fixedSize(horizontal: false, vertical: true)
       }
       Spacer(minLength: 12)
       Button(store.helperInstallBusy
