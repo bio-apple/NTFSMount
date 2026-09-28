@@ -32,8 +32,17 @@ enum AdminAuthorization {
     guard let bash = CommandPath.find("bash") else {
       return (false, L10n.t("privileged.commFailed"))
     }
-    // Merge stderr into the communications pipe so install-helper failures are visible.
-    let wrapped = ["-c", "exec 2>&1; exec \"$0\" \"$@\"", tool] + Array(parts.dropFirst())
+    // security_authtrampoline is setuid-root and execs bash with euid 0 and the user's
+    // real uid. Without -p, bash resets euid to that real uid, so install-helper.sh
+    // prints "root is required" after the administrator prompt succeeds.
+    let rest = Array(parts.dropFirst())
+    let command: [String]
+    if (tool as NSString).lastPathComponent == "bash" {
+      command = [bash, "-p"] + rest
+    } else {
+      command = [tool] + rest
+    }
+    let wrapped = ["-p", "-c", "exec 2>&1; exec \"$@\"", bash] + command
     return execute(tool: bash, arguments: wrapped)
   }
 

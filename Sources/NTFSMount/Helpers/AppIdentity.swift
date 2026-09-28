@@ -24,7 +24,6 @@ enum AppIdentity {
     static let showDock = "com.bioapple.ntfsmount.showDock"
     static let cleanMacJunkBeforeEject = "com.bioapple.ntfsmount.cleanMacJunkBeforeEject"
     static let didShowWindow = "com.bioapple.ntfsmount.didShowWindow"
-    static let didAutoInstallHelper = "com.bioapple.ntfsmount.didAutoInstallHelper"
     static let didShowCompat = "com.bioapple.ntfsmount.didShowCompatNotice"
     static let didMigrate = "com.bioapple.ntfsmount.didMigrateDefaults"
     static let didAcceptLegal = "com.bioapple.ntfsmount.didAcceptLegal"

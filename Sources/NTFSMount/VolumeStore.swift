@@ -112,19 +112,10 @@ final class VolumeStore: ObservableObject {
     showMainWindow()
   }
 
-  /// After the legal dialog: install the mount helper once if its socket is missing.
+  /// After the legal dialog: install the mount helper when its socket is missing.
   func installHelperOnFirstLaunch() {
-    let defaults = UserDefaults.standard
-    let key = AppIdentity.Defaults.didAutoInstallHelper
     guard LegalGate.hasAcceptedLegal else { return }
-    guard AutoMountPolicy.shouldAutoInstallHelper(
-      alreadyAttempted: defaults.bool(forKey: key),
-      daemonReady: Privileged.daemonReady
-    ) else {
-      if Privileged.daemonReady { defaults.set(true, forKey: key) }
-      return
-    }
-    defaults.set(true, forKey: key)
+    guard AutoMountPolicy.shouldAutoInstallHelper(daemonReady: Privileged.daemonReady) else { return }
     Task { _ = await installHelper() }
   }
 
