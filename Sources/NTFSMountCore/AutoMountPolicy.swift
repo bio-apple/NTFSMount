@@ -61,13 +61,13 @@ public enum AutoMountPolicy {
     legalAccepted && !alreadyFinished
   }
 
-  /// Toggle stays off until helper is installed, legal copy is accepted, and the writable stamp exists.
+  /// On by default once the helper is installed and the legal copy is accepted.
+  /// A stored opt-out stays off.
   public static func shouldAutoEnable(
     helperInstalled: Bool,
     legalAccepted: Bool,
-    writableStampPresent: Bool,
     userOptedOff: Bool
   ) -> Bool {
-    helperInstalled && legalAccepted && writableStampPresent && !userOptedOff
+    helperInstalled && legalAccepted && !userOptedOff
   }
 }

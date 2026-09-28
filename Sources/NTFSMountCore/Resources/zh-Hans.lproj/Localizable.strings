@@ -233,7 +233,7 @@
 
 "settings.autoMount" = "插入时自动挂载外置 NTFS";
 
-"settings.autoMountNote" = "打开后，插入健康的外置 NTFS 会自动以可写方式挂载。脏盘或 Windows 休眠保持只读（不会自动修复或清除休眠文件）。内置盘不自动可写。可随时在此关闭。";
+"settings.autoMountNote" = "默认打开。插入健康的外置 NTFS 会自动以可写方式挂载。脏盘或 Windows 休眠保持只读（不会自动修复或清除休眠文件）。内置盘不自动可写。可随时在此关闭。";
 
 "settings.autoMountNeedHelper" = "请先安装或更新挂载助手，然后才能打开自动挂载。";
 

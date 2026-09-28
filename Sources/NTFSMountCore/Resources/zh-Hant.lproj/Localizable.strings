@@ -233,7 +233,7 @@ Return 即同意。不同意請點「結束」。";
 
 "settings.autoMount" = "插入時自動掛載外接 NTFS";
 
-"settings.autoMountNote" = "打開後，插入健康的外接 NTFS 會自動以可寫方式掛載。髒盤或 Windows 休眠保持唯讀（不會自動修復或清除休眠檔）。內建磁碟不自動可寫。可隨時在此關閉。";
+"settings.autoMountNote" = "預設打開。插入健康的外接 NTFS 會自動以可寫方式掛載。髒盤或 Windows 休眠保持唯讀（不會自動修復或清除休眠檔）。內建磁碟不自動可寫。可隨時在此關閉。";
 
 "settings.autoMountNeedHelper" = "請先安裝或更新掛載助手，然後才能打開自動掛載。";
 

@@ -64,30 +64,25 @@ final class AutoMountPolicyTests: XCTestCase {
     XCTAssertTrue(AutoMountPolicy.shouldRecordAttempt(userRefused: false, helperReturned: true))
   }
 
-  func testToggleStaysOffUntilHelperLegalAndWritableStamp() {
+  func testAutoMountDefaultsOnAfterHelperAndLegal() {
     XCTAssertFalse(
       AutoMountPolicy.shouldAutoEnable(
-        helperInstalled: false, legalAccepted: true, writableStampPresent: true, userOptedOff: false
+        helperInstalled: false, legalAccepted: true, userOptedOff: false
       )
     )
     XCTAssertFalse(
       AutoMountPolicy.shouldAutoEnable(
-        helperInstalled: true, legalAccepted: false, writableStampPresent: true, userOptedOff: false
+        helperInstalled: true, legalAccepted: false, userOptedOff: false
       )
     )
     XCTAssertFalse(
       AutoMountPolicy.shouldAutoEnable(
-        helperInstalled: true, legalAccepted: true, writableStampPresent: false, userOptedOff: false
-      )
-    )
-    XCTAssertFalse(
-      AutoMountPolicy.shouldAutoEnable(
-        helperInstalled: true, legalAccepted: true, writableStampPresent: true, userOptedOff: true
+        helperInstalled: true, legalAccepted: true, userOptedOff: true
       )
     )
     XCTAssertTrue(
       AutoMountPolicy.shouldAutoEnable(
-        helperInstalled: true, legalAccepted: true, writableStampPresent: true, userOptedOff: false
+        helperInstalled: true, legalAccepted: true, userOptedOff: false
       )
     )
   }

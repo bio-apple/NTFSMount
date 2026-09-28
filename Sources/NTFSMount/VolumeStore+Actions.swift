@@ -394,9 +394,9 @@ extension VolumeStore {
     guard AutoMountPolicy.shouldAutoEnable(
       helperInstalled: helperInstalled,
       legalAccepted: LegalGate.hasAcceptedLegal,
-      writableStampPresent: FileManager.default.fileExists(atPath: AppIdentity.writableStampURL.path),
       userOptedOff: UserDefaults.standard.bool(forKey: AppIdentity.Defaults.autoMountUserOff)
     ) else { return }
+    AppIdentity.markWritableAccepted()
     busyId = "automount"
     Task {
       let result = await Privileged.run("enable-automount")

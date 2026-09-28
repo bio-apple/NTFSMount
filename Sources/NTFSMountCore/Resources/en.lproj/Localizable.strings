@@ -233,7 +233,7 @@ Return means you agree. Click “Quit” if you do not.";
 
 "settings.autoMount" = "Auto-mount external NTFS when inserted";
 
-"settings.autoMountNote" = "When on, inserting a healthy external NTFS disk mounts it writable. Dirty or hibernated volumes stay read-only (no auto-repair, no hiberfile clear). Internal disks are skipped. You can turn this off here.";
+"settings.autoMountNote" = "On by default. Inserting a healthy external NTFS disk mounts it writable. Dirty or hibernated volumes stay read-only (no auto-repair, no hiberfile clear). Internal disks are skipped. You can turn this off here.";
 
 "settings.autoMountNeedHelper" = "Install or update the mount helper before turning on auto-mount.";
 
