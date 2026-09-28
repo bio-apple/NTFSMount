@@ -2,7 +2,10 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 HELPER="$ROOT/helper/ntfs-rw-helper"
-[[ "$(/usr/bin/head -1 "$HELPER")" == "#!/bin/bash" ]] || { echo "ntfs-rw-helper must be in-repo bash source" >&2; exit 1; }
+[[ "$(/usr/bin/head -1 "$HELPER")" == "#!/bin/bash" ]] || {
+  echo "ntfs-rw-helper must be in-repo bash source" >&2
+  exit 1
+}
 echo "helper sha256=$(/usr/bin/shasum -a 256 "$HELPER" | /usr/bin/awk '{print $1}')"
 
 PRIV_SCAN=()
@@ -157,8 +160,8 @@ if ! /usr/bin/grep -q 'allowed.cdhash' "$HELPERD_C"; then
   echo "helperd must compare stored allowed.cdhash" >&2
   exit 1
 fi
-if ! /usr/bin/grep -q 'AuthorizationCreate' "$ROOT/Sources/NTFSMount/AdminAuthorization.swift" \
-  || ! /usr/bin/grep -q 'sealedHelperMatchesBundle' "$ROOT/Sources/NTFSMount/Privileged.swift"; then
+if ! /usr/bin/grep -q 'AuthorizationCreate' "$ROOT/Sources/NTFSMount/AdminAuthorization.swift" ||
+  ! /usr/bin/grep -q 'sealedHelperMatchesBundle' "$ROOT/Sources/NTFSMount/Privileged.swift"; then
   echo "SMAppService install must confirm sealed helper pins; ad-hoc uses Authorization Services" >&2
   exit 1
 fi
@@ -465,10 +468,10 @@ if /usr/bin/awk '
   exit 1
 fi
 if /usr/bin/grep -nE 'pfctl|/etc/pf.conf|vmnet' "${STORE[@]}" \
-    "$ROOT/Sources/NTFSMount/Privileged.swift" \
-    "$ROOT/Sources/NTFSMount/UI/DiagnoseAlert.swift" \
-    "$ROOT/Sources/NTFSMount/UI/MenuRoot.swift" \
-    "$ROOT/Sources/NTFSMountCore/FormatPolicy.swift"; then
+  "$ROOT/Sources/NTFSMount/Privileged.swift" \
+  "$ROOT/Sources/NTFSMount/UI/DiagnoseAlert.swift" \
+  "$ROOT/Sources/NTFSMount/UI/MenuRoot.swift" \
+  "$ROOT/Sources/NTFSMountCore/FormatPolicy.swift"; then
   echo "repair UI/helper client must not call pfctl or vmnet" >&2
   exit 1
 fi
@@ -503,10 +506,10 @@ if /usr/bin/awk '
   exit 1
 fi
 if /usr/bin/grep -nE '修复挂载|未能修复挂载|正在修复挂载' \
-    "${STORE[@]}" \
-    "$ROOT/Sources/NTFSMount/UI/DiagnoseAlert.swift" \
-    "$ROOT/Sources/NTFSMount/UI/MenuRoot.swift" \
-    "$ROOT/Sources/NTFSMountCore/FormatPolicy.swift"; then
+  "${STORE[@]}" \
+  "$ROOT/Sources/NTFSMount/UI/DiagnoseAlert.swift" \
+  "$ROOT/Sources/NTFSMount/UI/MenuRoot.swift" \
+  "$ROOT/Sources/NTFSMountCore/FormatPolicy.swift"; then
   echo "repair UI copy must go through L10n, not Chinese literals" >&2
   exit 1
 fi
@@ -682,9 +685,15 @@ fi
 
 out="$("$HELPER" selftest)"
 echo "$out"
-[[ "$out" == ok\ selftest* ]] || { echo "selftest failed" >&2; exit 1; }
+[[ "$out" == ok\ selftest* ]] || {
+  echo "selftest failed" >&2
+  exit 1
+}
 ver="$("$HELPER" version)"
-[[ "$ver" == HELPER_VERSION=10 ]] || { echo "version mismatch: $ver" >&2; exit 1; }
+[[ "$ver" == HELPER_VERSION=10 ]] || {
+  echo "version mismatch: $ver" >&2
+  exit 1
+}
 
 # shellcheck disable=SC2016 # literal $(whoami) payload the helper must reject
 for bad in 'disk12s1;whoami' 'disk 12s1' '../disk1s1' 'disk5s1$(whoami)' 'disk4;id' 'mount'; do
@@ -726,7 +735,10 @@ done
 quote_tmp="$(/usr/bin/mktemp -d /tmp/ntfsmount-space.XXXXXX)"
 space_mp="${quote_tmp}/My Passport"
 /bin/mkdir -p "$space_mp"
-[[ -d "$space_mp" ]] || { echo "quoted mkdir with spaces failed: $space_mp" >&2; exit 1; }
+[[ -d "$space_mp" ]] || {
+  echo "quoted mkdir with spaces failed: $space_mp" >&2
+  exit 1
+}
 /bin/rm -rf "$quote_tmp"
 
 # format 必须在 mkntfs / eraseDisk 之前拒绝系统盘与 APFS 物理卷。不真正抹盘。
@@ -742,7 +754,10 @@ if [[ -n "$store" && "$store" != "null" ]]; then
   refuse_ids+=("$store")
   refuse_ids+=("${store%%s*}")
 fi
-[[ ${#refuse_ids[@]} -gt 0 ]] || { echo "cannot identify system disk for format-refusal test" >&2; exit 1; }
+[[ ${#refuse_ids[@]} -gt 0 ]] || {
+  echo "cannot identify system disk for format-refusal test" >&2
+  exit 1
+}
 seen_refuse=
 for ident in "${refuse_ids[@]}"; do
   [[ "$ident" =~ ^disk[0-9]+$ ]] || continue
@@ -758,7 +773,10 @@ for ident in "${refuse_ids[@]}"; do
     exit 1
   fi
 done
-[[ -n "$seen_refuse" ]] || { echo "format did not refuse any system/internal whole disk" >&2; exit 1; }
+[[ -n "$seen_refuse" ]] || {
+  echo "format did not refuse any system/internal whole disk" >&2
+  exit 1
+}
 
 # fix/ntfsfix 必须在真正 ntfsfix 之前拒绝系统盘与 APFS 物理卷。不真正修用户盘。
 fix_ids=()
@@ -772,7 +790,10 @@ for ident in "${refuse_ids[@]}"; do
     fix_ids+=("${ident}s1")
   fi
 done
-[[ ${#fix_ids[@]} -gt 0 ]] || { echo "cannot identify system partition for fix-refusal test" >&2; exit 1; }
+[[ ${#fix_ids[@]} -gt 0 ]] || {
+  echo "cannot identify system partition for fix-refusal test" >&2
+  exit 1
+}
 seen_fix_refuse=
 for ident in "${fix_ids[@]}"; do
   [[ "$ident" =~ ^disk[0-9]+s[0-9]+$ ]] || continue
@@ -794,7 +815,10 @@ for ident in "${fix_ids[@]}"; do
     exit 1
   fi
 done
-[[ -n "$seen_fix_refuse" ]] || { echo "fix did not refuse any system/internal disk" >&2; exit 1; }
+[[ -n "$seen_fix_refuse" ]] || {
+  echo "fix did not refuse any system/internal disk" >&2
+  exit 1
+}
 
 # eject：非法 id 已在上面拒绝。系统盘/内置分区不得成功推出（不真正 eject 用户外置盘）。
 seen_eject_refuse=
@@ -817,14 +841,20 @@ for ident in "${refuse_ids[@]}"; do
     exit 1
   fi
 done
-[[ -n "$seen_eject_refuse" ]] || { echo "eject did not refuse any system/internal partition" >&2; exit 1; }
+[[ -n "$seen_eject_refuse" ]] || {
+  echo "eject did not refuse any system/internal partition" >&2
+  exit 1
+}
 
 SDK="$(xcrun --sdk macosx --show-sdk-path)"
 TMPD="$(/usr/bin/mktemp -d /tmp/ntfsmount-helperd.XXXXXX)"
 clang -O2 -arch arm64 -mmacosx-version-min=13.0 -isysroot "$SDK" \
   -framework Security -framework CoreFoundation \
   -o "$TMPD/helperd" "$ROOT/helper/ntfsmount-helperd.c"
-file "$TMPD/helperd" | /usr/bin/grep -q 'arm64' || { echo "helperd not arm64" >&2; exit 1; }
+file "$TMPD/helperd" | /usr/bin/grep -q 'arm64' || {
+  echo "helperd not arm64" >&2
+  exit 1
+}
 /bin/rm -rf "$TMPD"
 
 # README 与界面不得再写「没有程序坞」或「点盘名即可挂载」
@@ -857,13 +887,34 @@ if ! /usr/bin/grep -q '2026.8.x' "$ROOT/Sources/NTFSMountCore/Ntfs3gVersion.swif
 fi
 # shellcheck source=ntfs3g-version.sh
 . "$ROOT/scripts/ntfs3g-version.sh"
-[[ "$(ntfs3g_parse_version 'ntfs-3g 2026.7.7 external FUSE 29')" == "2026.7.7" ]] || { echo "parse 2026.7.7 failed" >&2; exit 1; }
-[[ "$(ntfs3g_parse_version 'ntfs-3g 2026.8.1 integrated FUSE 29')" == "2026.8.1" ]] || { echo "parse 2026.8.1 failed" >&2; exit 1; }
-ntfs3g_version_allowed 2026.7.7 || { echo "allow 2026.7.7" >&2; exit 1; }
-ntfs3g_version_allowed 2026.8.1 || { echo "allow 2026.8.1" >&2; exit 1; }
-if ntfs3g_version_allowed 2024.2.1; then echo "2024.x must warn" >&2; exit 1; fi
-if ntfs3g_version_allowed 2026.9.0; then echo "2026.9 must warn" >&2; exit 1; fi
-if ntfs3g_version_allowed garbage; then echo "garbage must warn" >&2; exit 1; fi
+[[ "$(ntfs3g_parse_version 'ntfs-3g 2026.7.7 external FUSE 29')" == "2026.7.7" ]] || {
+  echo "parse 2026.7.7 failed" >&2
+  exit 1
+}
+[[ "$(ntfs3g_parse_version 'ntfs-3g 2026.8.1 integrated FUSE 29')" == "2026.8.1" ]] || {
+  echo "parse 2026.8.1 failed" >&2
+  exit 1
+}
+ntfs3g_version_allowed 2026.7.7 || {
+  echo "allow 2026.7.7" >&2
+  exit 1
+}
+ntfs3g_version_allowed 2026.8.1 || {
+  echo "allow 2026.8.1" >&2
+  exit 1
+}
+if ntfs3g_version_allowed 2024.2.1; then
+  echo "2024.x must warn" >&2
+  exit 1
+fi
+if ntfs3g_version_allowed 2026.9.0; then
+  echo "2026.9 must warn" >&2
+  exit 1
+fi
+if ntfs3g_version_allowed garbage; then
+  echo "garbage must warn" >&2
+  exit 1
+fi
 if /usr/bin/grep -nF 'copy_if_exec /usr/local/bin/ntfs-3g' "$ROOT/scripts/prepare-runtime.sh"; then
   echo "prepare-runtime must not copy ntfs-3g only from /usr/local/bin" >&2
   exit 1

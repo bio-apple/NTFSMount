@@ -38,27 +38,36 @@ usage() {
 EOF
 }
 
-die() { echo "error: $*" >&2; exit 1; }
+die() {
+  echo "error: $*" >&2
+  exit 1
+}
 
 ok() { echo "ok    $*"; }
-warn() { echo "warn  $*"; WARN=1; }
-bad() { echo "fail  $*"; FAIL=1; }
+warn() {
+  echo "warn  $*"
+  WARN=1
+}
+bad() {
+  echo "fail  $*"
+  FAIL=1
+}
 
 for arg in "$@"; do
   case "$arg" in
-    -h|--help)
-      usage
-      exit 0
-      ;;
-    --install)
-      INSTALL=1
-      ;;
-    --install-macfuse|macfuse)
-      die "本项目不安装 macFUSE / osxfuse 内核扩展。SIP 保持开启。请用 FUSE-T：./scripts/prepare-runtime.sh"
-      ;;
-    *)
-      die "未知参数: $arg（见 --help）"
-      ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  --install)
+    INSTALL=1
+    ;;
+  --install-macfuse | macfuse)
+    die "本项目不安装 macFUSE / osxfuse 内核扩展。SIP 保持开启。请用 FUSE-T：./scripts/prepare-runtime.sh"
+    ;;
+  *)
+    die "未知参数: $arg（见 --help）"
+    ;;
   esac
 done
 
@@ -82,8 +91,11 @@ export_homebrew_path() {
   brew_bin="$(find_brew)" || return 0
   dir="$(/usr/bin/dirname "$brew_bin")"
   case ":$PATH:" in
-    *":$dir:"*) ;;
-    *) PATH="$dir:$PATH"; export PATH ;;
+  *":$dir:"*) ;;
+  *)
+    PATH="$dir:$PATH"
+    export PATH
+    ;;
   esac
 }
 
@@ -105,8 +117,7 @@ find_ntfs3g_bin() {
     /opt/homebrew/bin/ntfs-3g \
     /opt/homebrew/opt/ntfs-3g/bin/ntfs-3g \
     /usr/local/opt/ntfs-3g/bin/ntfs-3g \
-    /usr/local/bin/ntfs-3g
-  do
+    /usr/local/bin/ntfs-3g; do
     if [[ -x "$p" ]]; then
       printf '%s' "$p"
       return 0
@@ -135,8 +146,8 @@ kext_macfuse_present() {
 brew_macfuse_listed() {
   local brew_bin
   brew_bin="$(find_brew)" || return 1
-  "$brew_bin" list --formula macfuse >/dev/null 2>&1 \
-    || "$brew_bin" list --cask macfuse >/dev/null 2>&1
+  "$brew_bin" list --formula macfuse >/dev/null 2>&1 ||
+    "$brew_bin" list --cask macfuse >/dev/null 2>&1
 }
 
 echo "NTFSMount 依赖检查（Apple Silicon / 用户态 FUSE-T，无需关闭 SIP）"

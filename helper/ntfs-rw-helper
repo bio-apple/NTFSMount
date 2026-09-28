@@ -177,11 +177,14 @@ resolve_nfs_srv() {
   find_bundled go-nfsv4
 }
 
-die() { echo "error: $*" >&2; exit 1; }
+die() {
+  echo "error: $*" >&2
+  exit 1
+}
 
 now_ms() {
-  /usr/bin/perl -MTime::HiRes=time -e 'printf("%d\n", int(time() * 1000))' 2>/dev/null \
-    || echo $(($(/bin/date +%s) * 1000))
+  /usr/bin/perl -MTime::HiRes=time -e 'printf("%d\n", int(time() * 1000))' 2>/dev/null ||
+    echo $(($(/bin/date +%s) * 1000))
 }
 
 log_ts() {
@@ -308,11 +311,11 @@ volume_state_from_text() {
 
 classify_line_for_state() {
   case "$1" in
-    hiber) printf '%s' "classify: Windows is hibernated" ;;
-    dirty) printf '%s' "classify: volume is dirty" ;;
-    corrupt) printf '%s' "classify: volume may be corrupted" ;;
-    clean) printf '%s' "classify: volume is clean" ;;
-    *) printf '%s' "classify: unknown" ;;
+  hiber) printf '%s' "classify: Windows is hibernated" ;;
+  dirty) printf '%s' "classify: volume is dirty" ;;
+  corrupt) printf '%s' "classify: volume may be corrupted" ;;
+  clean) printf '%s' "classify: volume is clean" ;;
+  *) printf '%s' "classify: unknown" ;;
   esac
 }
 
@@ -599,9 +602,9 @@ OCCUPIERS_STATUS="ok"
 
 skip_occupier_cmd() {
   case "${1##*/}" in
-    lsof|fuser|ps|ntfs-rw-helper|ntfsmount-helperd|ntfs-3g|go-nfsv4|nfsd|nfsiod|kernel_task)
-      return 0
-      ;;
+  lsof | fuser | ps | ntfs-rw-helper | ntfsmount-helperd | ntfs-3g | go-nfsv4 | nfsd | nfsiod | kernel_task)
+    return 0
+    ;;
   esac
   return 1
 }
@@ -712,9 +715,9 @@ print_busy_occupiers() {
 
 busy_hint_for_cmd() {
   case "${CURRENT_CMD:-}" in
-    eject) printf '%s' "请关闭访达窗口/文件后点推出" ;;
-    unmount) printf '%s' "请关闭访达窗口/文件后点卸载" ;;
-    *) printf '%s' "请关闭访达窗口/文件后重试" ;;
+  eject) printf '%s' "请关闭访达窗口/文件后点推出" ;;
+  unmount) printf '%s' "请关闭访达窗口/文件后点卸载" ;;
+  *) printf '%s' "请关闭访达窗口/文件后重试" ;;
   esac
 }
 
@@ -803,9 +806,9 @@ unmount_numbered_leftovers() {
       continue
     }
     case "$line" in
-      "/dev/${ident} on "*)
-        try_unmount_target "$mp" || true
-        ;;
+    "/dev/${ident} on "*)
+      try_unmount_target "$mp" || true
+      ;;
     esac
     if [[ -z "$(mount_line "$mp")" && -d "$mp" ]]; then
       /bin/rmdir "$mp" 2>/dev/null || true
@@ -859,7 +862,7 @@ volume_still_mounted() {
   local line
   line="$(mount_line "$(volume_mount_point "$name" 1)")"
   case "$line" in
-    "/dev/${ident} on "*) return 0 ;;
+  "/dev/${ident} on "*) return 0 ;;
   esac
   [[ -n "$("$MOUNT" | /usr/bin/awk -v d="/dev/${ident}" '$1 == d && $2 == "on" { print; exit }')" ]]
 }
@@ -907,7 +910,10 @@ try_mount() {
   log="/tmp/ntfs-rw-last.log"
   : >"$log"
   nfs="$(resolve_nfs_srv || true)"
-  [[ -n "$nfs" ]] || { echo "找不到捆绑的 go-nfsv4" >>"$log"; return 1; }
+  [[ -n "$nfs" ]] || {
+    echo "找不到捆绑的 go-nfsv4" >>"$log"
+    return 1
+  }
   export FUSE_NFSSRV_PATH="$nfs"
   # Prefer bundled binaries on PATH for any child lookup.
   export PATH="${NTFS3G_DIR}:/usr/bin:/bin:/usr/sbin:/sbin"
@@ -1182,7 +1188,7 @@ data_partition() {
     [[ -n "$ident" ]] || continue
     content="$("$DISKUTIL" info -plist "$ident" 2>/dev/null | /usr/bin/plutil -extract Content raw - 2>/dev/null || true)"
     case "$content" in
-      EFI|C12A7328-F81F-11D2-BA4B-00A0C93EC93B) continue ;;
+    EFI | C12A7328-F81F-11D2-BA4B-00A0C93EC93B) continue ;;
     esac
     p="$ident"
   done < <(list_slice_idents "$1")
@@ -1206,7 +1212,7 @@ refuse_format_target() {
   vlog "$DISKUTIL" info -plist /
   root_plist="$("$DISKUTIL" info -plist / 2>/dev/null || true)"
   sys="$(printf '%s' "$root_plist" | /usr/bin/plutil -extract ParentWholeDisk raw - 2>/dev/null || true)"
-  if [[ -n "$sys" && ( "$ident" == "$sys" || "$ident" == "${sys%%s*}" ) ]]; then
+  if [[ -n "$sys" && ("$ident" == "$sys" || "$ident" == "${sys%%s*}") ]]; then
     die "拒绝格式化系统盘: $ident"
   fi
   i=0
@@ -1238,7 +1244,7 @@ refuse_fix_target() {
   vlog "$DISKUTIL" info -plist /
   root_plist="$("$DISKUTIL" info -plist / 2>/dev/null || true)"
   sys="$(printf '%s' "$root_plist" | /usr/bin/plutil -extract ParentWholeDisk raw - 2>/dev/null || true)"
-  if [[ -n "$sys" && ( "$ident" == "$sys" || "$whole" == "$sys" || "$ident" == "${sys%%s*}" ) ]]; then
+  if [[ -n "$sys" && ("$ident" == "$sys" || "$whole" == "$sys" || "$ident" == "${sys%%s*}") ]]; then
     die "拒绝修复系统盘: $ident"
   fi
   i=0
@@ -1273,7 +1279,7 @@ refuse_eject_target() {
   vlog "$DISKUTIL" info -plist /
   root_plist="$("$DISKUTIL" info -plist / 2>/dev/null || true)"
   sys="$(printf '%s' "$root_plist" | /usr/bin/plutil -extract ParentWholeDisk raw - 2>/dev/null || true)"
-  if [[ -n "$sys" && ( "$ident" == "$sys" || "$whole" == "$sys" || "$ident" == "${sys%%s*}" ) ]]; then
+  if [[ -n "$sys" && ("$ident" == "$sys" || "$whole" == "$sys" || "$ident" == "${sys%%s*}") ]]; then
     die "拒绝推出系统盘: $ident"
   fi
   i=0
@@ -1443,7 +1449,7 @@ do_automount() {
       continue
     fi
     CURRENT_IDENT="$ident"
-    ( do_mount "$ident" ) || echo "automount skip $ident" >&2
+    (do_mount "$ident") || echo "automount skip $ident" >&2
   done < <(list_slice_idents)
   echo "ok automount"
 }
@@ -1499,10 +1505,10 @@ is_ntfsmount_runtime_path() {
   local p="$1" dir macos nfs
   [[ -n "$p" && "$p" == /* ]] || return 1
   case "$p" in
-    *"/NTFSMount.app/Contents/MacOS/ntfs-3g"|*"/NTFSMount.app/Contents/MacOS/go-nfsv4") return 0 ;;
+  *"/NTFSMount.app/Contents/MacOS/ntfs-3g" | *"/NTFSMount.app/Contents/MacOS/go-nfsv4") return 0 ;;
   esac
   if [[ "$p" == "/Library/Application Support/NTFSMount" ||
-        "$p" == "/Library/Application Support/NTFSMount/"* ]]; then
+    "$p" == "/Library/Application Support/NTFSMount/"* ]]; then
     return 0
   fi
   if [[ -n "$NTFS3G" && "$p" == "$NTFS3G" ]]; then
@@ -1553,8 +1559,8 @@ is_localhost_nfs_source() {
   local src="$1"
   [[ -n "$src" ]] || return 1
   if [[ "$src" == 127.0.0.1:* || "$src" == localhost:* ||
-        "$src" == "::1:"* || "$src" == "[::1]:"* ||
-        "$src" == "nfs://127.0.0.1/"* || "$src" == "nfs://localhost/"* ]]; then
+    "$src" == "::1:"* || "$src" == "[::1]:"* ||
+    "$src" == "nfs://127.0.0.1/"* || "$src" == "nfs://localhost/"* ]]; then
     return 0
   fi
   return 1
@@ -1644,7 +1650,7 @@ repair_has_numbered_leftover() {
     line="$(mount_line "$mp")"
     [[ -n "$line" ]] || continue
     case "$line" in
-      "/dev/${ident} on "*) return 0 ;;
+    "/dev/${ident} on "*) return 0 ;;
     esac
     is_localhost_nfs_line "$line" && return 0
   done
@@ -1926,7 +1932,7 @@ do_selftest() {
 
   local st_dir st_pid st_names
   st_dir="$(/usr/bin/mktemp -d /tmp/ntfsmount-lsof.XXXXXX)"
-  ( cd "$st_dir" && exec /bin/sleep 30 ) &
+  (cd "$st_dir" && exec /bin/sleep 30) &
   st_pid=$!
   /bin/sleep 0.4
   probe_mp_occupiers "$st_dir"
@@ -1958,8 +1964,8 @@ EOF
 POS=()
 for a in "$@"; do
   case "$a" in
-    --verbose|-v) VERBOSE=1 ;;
-    *) POS+=("$a") ;;
+  --verbose | -v) VERBOSE=1 ;;
+  *) POS+=("$a") ;;
   esac
 done
 
@@ -1975,18 +1981,21 @@ CMD_START_MS="$(now_ms)"
 trap on_exit EXIT
 
 case "$cmd" in
-  mount) do_mount "$id" ;;
-  unmount) do_unmount "$id" "${POS[2]:-}" ;;
-  eject) do_eject "$id" ;;
-  format) do_format "$id" "${POS[2]:-NTFS}" ;;
-  fix|ntfsfix) do_fix "$id" ;;
-  probe) do_probe "$id" ;;
-  automount) do_automount ;;
-  enable-automount) do_enable_automount ;;
-  disable-automount) do_disable_automount ;;
-  repair-env) do_repair_env ;;
-  version) echo "HELPER_VERSION=${HELPER_VERSION}" ;;
-  selftest) do_selftest ;;
-  -h|--help|help) usage ;;
-  *) usage; exit 2 ;;
+mount) do_mount "$id" ;;
+unmount) do_unmount "$id" "${POS[2]:-}" ;;
+eject) do_eject "$id" ;;
+format) do_format "$id" "${POS[2]:-NTFS}" ;;
+fix | ntfsfix) do_fix "$id" ;;
+probe) do_probe "$id" ;;
+automount) do_automount ;;
+enable-automount) do_enable_automount ;;
+disable-automount) do_disable_automount ;;
+repair-env) do_repair_env ;;
+version) echo "HELPER_VERSION=${HELPER_VERSION}" ;;
+selftest) do_selftest ;;
+-h | --help | help) usage ;;
+*)
+  usage
+  exit 2
+  ;;
 esac

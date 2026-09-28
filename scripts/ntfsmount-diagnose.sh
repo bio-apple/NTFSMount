@@ -21,14 +21,14 @@ SCRIPT_DIR="$(cd "$(/usr/bin/dirname "$0")" && pwd)"
 IN_APP=0
 APP_BUNDLE="/Applications/NTFSMount.app"
 case "$SCRIPT_DIR" in
-  *.app/Contents/Resources)
-    IN_APP=1
-    APP_BUNDLE="$(cd "$SCRIPT_DIR/../.." && pwd)"
-    ROOT="$SCRIPT_DIR"
-    ;;
-  *)
-    ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-    ;;
+*.app/Contents/Resources)
+  IN_APP=1
+  APP_BUNDLE="$(cd "$SCRIPT_DIR/../.." && pwd)"
+  ROOT="$SCRIPT_DIR"
+  ;;
+*)
+  ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+  ;;
 esac
 SOCK="/var/run/com.bioapple.ntfsmount.sock"
 HELPER_PLIST="/Library/LaunchDaemons/com.bioapple.ntfsmount.helper.plist"
@@ -46,19 +46,22 @@ NFSD="$(resolve_cmd nfsd || true)"
 JSON=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    diagnose) shift ;;
-    --json) JSON=1; shift ;;
-    -h|--help)
-      echo "用法: ntfsmount diagnose [--json]"
-      echo "      $0 [--json]"
-      echo "只读诊断。不挂载、不装助手。--json 输出稳定英文 snake_case 键。"
-      exit 0
-      ;;
-    *)
-      echo "error: 未知参数: $1" >&2
-      echo "用法: ntfsmount diagnose [--json]" >&2
-      exit 2
-      ;;
+  diagnose) shift ;;
+  --json)
+    JSON=1
+    shift
+    ;;
+  -h | --help)
+    echo "用法: ntfsmount diagnose [--json]"
+    echo "      $0 [--json]"
+    echo "只读诊断。不挂载、不装助手。--json 输出稳定英文 snake_case 键。"
+    exit 0
+    ;;
+  *)
+    echo "error: 未知参数: $1" >&2
+    echo "用法: ntfsmount diagnose [--json]" >&2
+    exit 2
+    ;;
   esac
 done
 
@@ -130,8 +133,7 @@ helper_src=""
 for cand in \
   "$ROOT/helper/ntfs-rw-helper" \
   "$SCRIPT_DIR/ntfs-rw-helper" \
-  "$APP_BUNDLE/Contents/Resources/ntfs-rw-helper"
-do
+  "$APP_BUNDLE/Contents/Resources/ntfs-rw-helper"; do
   if [[ -f "$cand" ]]; then
     helper_src="$cand"
     break
@@ -193,7 +195,7 @@ if [[ -z "$system_go" && -x "$FUSE_T_BIN/go-nfsv4" ]]; then
   if [[ -L "$system_go" ]]; then
     linkt="$(/usr/bin/readlink "$system_go" 2>/dev/null || true)"
     case "$linkt" in
-      go-nfsv4-*) system_fuse_ver="${linkt#go-nfsv4-}" ;;
+    go-nfsv4-*) system_fuse_ver="${linkt#go-nfsv4-}" ;;
     esac
   fi
 fi
@@ -207,8 +209,7 @@ system_app=false
 bundled_go=""
 for cand in \
   "$ROOT/runtime/go-nfsv4" \
-  "$APP_BUNDLE/Contents/MacOS/go-nfsv4"
-do
+  "$APP_BUNDLE/Contents/MacOS/go-nfsv4"; do
   if [[ -x "$cand" ]]; then
     bundled_go="$cand"
     break
@@ -220,8 +221,7 @@ bundled_present=false
 bundled_ntfs3g=""
 for cand in \
   "$ROOT/runtime/ntfs-3g" \
-  "$APP_BUNDLE/Contents/MacOS/ntfs-3g"
-do
+  "$APP_BUNDLE/Contents/MacOS/ntfs-3g"; do
   if [[ -x "$cand" ]]; then
     bundled_ntfs3g="$cand"
     break
@@ -253,8 +253,7 @@ ntfs3g_h="$(ntfs3g_human_line "$ntfs_3g_present" "$ntfs3g_ver" "$ntfs3g_allowed"
 bundled_ntfsfix=""
 for cand in \
   "$ROOT/runtime/ntfsfix" \
-  "$APP_BUNDLE/Contents/MacOS/ntfsfix"
-do
+  "$APP_BUNDLE/Contents/MacOS/ntfsfix"; do
   if [[ -x "$cand" ]]; then
     bundled_ntfsfix="$cand"
     break
@@ -276,7 +275,8 @@ if [[ "$socket_exists" == true ]]; then
   ping_out=""
   ping_err=""
   ping_errfile="$(/usr/bin/mktemp /tmp/ntfsmount-diagnose-ping.XXXXXX 2>/dev/null || echo /tmp/ntfsmount-diagnose-ping.$$)"
-  ping_out="$(/usr/bin/python3 - "$SOCK" <<'PY' 2>"$ping_errfile" || true
+  ping_out="$(
+    /usr/bin/python3 - "$SOCK" <<'PY' 2>"$ping_errfile" || true
 import socket, sys
 path = sys.argv[1]
 s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -298,7 +298,7 @@ except Exception as e:
     sys.stderr.write(str(e))
     sys.exit(1)
 PY
-)"
+  )"
   ping_err="$(/bin/cat "$ping_errfile" 2>/dev/null || true)"
   /bin/rm -f "$ping_errfile"
   ping_out="$(oneline "$ping_out")"
@@ -399,22 +399,22 @@ vmnet_bits=""
 if [[ -n "$iface_list" && "$iface_list" != "unknown" ]]; then
   for iface in $iface_list; do
     case "$iface" in
-      vmnet*|vmenet*|bridge10*|bridge11*)
-        flags="$(timeout_run 2 /sbin/ifconfig "$iface" || true)"
-        flags="$(printf '%s' "$flags" | /usr/bin/head -1 || true)"
-        flags="$(oneline "$flags")"
-        up=false
-        printf '%s' "$flags" | /usr/bin/grep -qw UP && up=true
-        if [[ -n "$vmnet_bits" ]]; then
-          vmnet_bits="$vmnet_bits,"
-        fi
-        vmnet_bits="${vmnet_bits}{\"name\":$(json_str "$iface"),\"up\":$up,\"flags\":$(json_str "$flags")}"
-        if [[ "$up" == true ]]; then
-          vmnet_status="up"
-        elif [[ "$vmnet_status" != "up" ]]; then
-          vmnet_status="down"
-        fi
-        ;;
+    vmnet* | vmenet* | bridge10* | bridge11*)
+      flags="$(timeout_run 2 /sbin/ifconfig "$iface" || true)"
+      flags="$(printf '%s' "$flags" | /usr/bin/head -1 || true)"
+      flags="$(oneline "$flags")"
+      up=false
+      printf '%s' "$flags" | /usr/bin/grep -qw UP && up=true
+      if [[ -n "$vmnet_bits" ]]; then
+        vmnet_bits="$vmnet_bits,"
+      fi
+      vmnet_bits="${vmnet_bits}{\"name\":$(json_str "$iface"),\"up\":$up,\"flags\":$(json_str "$flags")}"
+      if [[ "$up" == true ]]; then
+        vmnet_status="up"
+      elif [[ "$vmnet_status" != "up" ]]; then
+        vmnet_status="down"
+      fi
+      ;;
     esac
   done
 else
@@ -446,8 +446,8 @@ nfsd_running=false
 if printf '%s' "$nfsd_out" | /usr/bin/grep -q 'service is enabled'; then
   nfsd_enabled=true
 fi
-if printf '%s' "$nfsd_out" | /usr/bin/grep -q 'nfsd is running' && \
-   ! printf '%s' "$nfsd_out" | /usr/bin/grep -q 'nfsd is not running'; then
+if printf '%s' "$nfsd_out" | /usr/bin/grep -q 'nfsd is running' &&
+  ! printf '%s' "$nfsd_out" | /usr/bin/grep -q 'nfsd is not running'; then
   nfsd_running=true
 fi
 if [[ -z "$nfsd_out_line" ]]; then
@@ -612,8 +612,8 @@ while IFS= read -r ident; do
     hint="bitlocker_string"
   elif [[ "$enc" == "Yes" ]] && printf '%s' "$info_l" | /usr/bin/grep -qiE 'ntfs|microsoft|windows'; then
     hint="encrypted_windows_partition"
-  elif printf '%s' "$content" | /usr/bin/grep -qi 'Microsoft Basic Data' && \
-       [[ "$person" != "NTFS" && -z "$person" ]]; then
+  elif printf '%s' "$content" | /usr/bin/grep -qi 'Microsoft Basic Data' &&
+    [[ "$person" != "NTFS" && -z "$person" ]]; then
     hint="microsoft_basic_data_unrecognized"
   fi
   [[ -n "$hint" ]] || continue
@@ -713,9 +713,9 @@ nfs_h="${nfs_h}；go-nfsv4 进程 ${go_proc_count}"
 helper_h="socket 不存在（未安装或未启动；本命令不会去安装）"
 if [[ "$socket_exists" == true ]]; then
   case "$ping_result" in
-    alive_caller_rejected) helper_h="socket 在，守护进程活着（CLI 无 App 签名，ping 被拒绝，属预期）" ;;
-    HELPER_VERSION=*) helper_h="socket 在，ping ${ping_result}" ;;
-    *) helper_h="socket 在，ping: ${ping_result}" ;;
+  alive_caller_rejected) helper_h="socket 在，守护进程活着（CLI 无 App 签名，ping 被拒绝，属预期）" ;;
+  HELPER_VERSION=*) helper_h="socket 在，ping ${ping_result}" ;;
+  *) helper_h="socket 在，ping: ${ping_result}" ;;
   esac
 fi
 

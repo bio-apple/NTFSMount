@@ -1,0 +1,29 @@
+# shfmt：仓库内 bash（含 helper/ntfs-rw-helper、scripts/ntfsmount）。
+# push/PR 独立跑；build.yml 以 workflow_call 调用，打 tag 出 DMG 前必须先过检查。
+name: shfmt
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  shfmt:
+    name: shfmt
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shfmt
+        env:
+          SHFMT_VERSION: "3.11.0"
+        run: |
+          set -euo pipefail
+          url="https://github.com/mvdan/sh/releases/download/v${SHFMT_VERSION}/shfmt_v${SHFMT_VERSION}_linux_amd64"
+          curl -fsSL -o /tmp/shfmt "$url"
+          sudo install -m 755 /tmp/shfmt /usr/local/bin/shfmt
+          shfmt --version
+      - name: Check shell formatting
+        run: bash scripts/ci-shfmt.sh

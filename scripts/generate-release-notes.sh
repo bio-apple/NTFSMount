@@ -20,35 +20,35 @@ out=""
 since_override=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -o|--output)
-      [[ $# -ge 2 ]] || usage
-      out="$2"
-      shift 2
-      ;;
-    --since)
-      [[ $# -ge 2 ]] || usage
-      since_override="$2"
-      shift 2
-      ;;
-    -h|--help)
+  -o | --output)
+    [[ $# -ge 2 ]] || usage
+    out="$2"
+    shift 2
+    ;;
+  --since)
+    [[ $# -ge 2 ]] || usage
+    since_override="$2"
+    shift 2
+    ;;
+  -h | --help)
+    usage
+    ;;
+  --)
+    shift
+    break
+    ;;
+  -*)
+    echo "error: unknown flag $1" >&2
+    usage
+    ;;
+  *)
+    if [[ -n "$raw" ]]; then
+      echo "error: extra argument $1" >&2
       usage
-      ;;
-    --)
-      shift
-      break
-      ;;
-    -*)
-      echo "error: unknown flag $1" >&2
-      usage
-      ;;
-    *)
-      if [[ -n "$raw" ]]; then
-        echo "error: extra argument $1" >&2
-        usage
-      fi
-      raw="$1"
-      shift
-      ;;
+    fi
+    raw="$1"
+    shift
+    ;;
   esac
 done
 
@@ -57,7 +57,10 @@ ver="${raw#v}"
 tag="v${ver}"
 
 git_dir="$(git rev-parse --git-dir 2>/dev/null || true)"
-[[ -n "$git_dir" ]] || { echo "error: not a git repo" >&2; exit 1; }
+[[ -n "$git_dir" ]] || {
+  echo "error: not a git repo" >&2
+  exit 1
+}
 if [[ -f "$git_dir/shallow" ]]; then
   echo "warning: shallow clone; notes may miss commits. CI must checkout fetch-depth: 0." >&2
 fi
@@ -106,34 +109,34 @@ classify() {
   local sl
   sl="$(lower "$1")"
   case "$sl" in
-    breaking*|*" breaking "*|*breaking:*|*incompatible*|*helper_version*|*"reinstall helper"*)
-      printf '%s\n' breaking
-      return
-      ;;
+  breaking* | *" breaking "* | *breaking:* | *incompatible* | *helper_version* | *"reinstall helper"*)
+    printf '%s\n' breaking
+    return
+    ;;
   esac
   case "$sl" in
-    feat:*|feat\(*|"feat "*|add:*|add\(*|"add "*|added:*|"added "*|ship:*|"ship "*|new:*|"new "*)
-      printf '%s\n' feature
-      return
-      ;;
+  feat:* | feat\(* | "feat "* | add:* | add\(* | "add "* | added:* | "added "* | ship:* | "ship "* | new:* | "new "*)
+    printf '%s\n' feature
+    return
+    ;;
   esac
   case "$sl" in
-    fix:*|fix\(*|"fix "*|fixed:*|"fixed "*|fixes:*|"fixes "*|bug:*|"bug "*|bugfix:*|"bugfix "*)
-      printf '%s\n' fix
-      return
-      ;;
+  fix:* | fix\(* | "fix "* | fixed:* | "fixed "* | fixes:* | "fixes "* | bug:* | "bug "* | bugfix:* | "bugfix "*)
+    printf '%s\n' fix
+    return
+    ;;
   esac
   case "$sl" in
-    *" fix "*|*" fixed "*|*" fixes "*|*" bug "*|*" bugfix "*)
-      printf '%s\n' fix
-      return
-      ;;
+  *" fix "* | *" fixed "* | *" fixes "* | *" bug "* | *" bugfix "*)
+    printf '%s\n' fix
+    return
+    ;;
   esac
   case "$sl" in
-    *" add "*|*" added "*|*" helper ipc"*)
-      printf '%s\n' feature
-      return
-      ;;
+  *" add "* | *" added "* | *" helper ipc"*)
+    printf '%s\n' feature
+    return
+    ;;
   esac
   printf '%s\n' other
 }
@@ -142,7 +145,7 @@ helper_reason=""
 note_helper() {
   local item="$1"
   case "|${helper_reason}|" in
-    *"|${item}|"*) return ;;
+  *"|${item}|"*) return ;;
   esac
   if [[ -z "$helper_reason" ]]; then
     helper_reason="$item"
@@ -159,9 +162,9 @@ scan_helper() {
   case "$sl" in *ipc*) note_helper "IPC" ;; esac
   case "$sl" in *cdhash*) note_helper "CDHash" ;; esac
   case "$sl" in
-    *install-helper*|*"install helper"*|*"helper install"*)
-      note_helper "install-helper"
-      ;;
+  *install-helper* | *"install helper"* | *"helper install"*)
+    note_helper "install-helper"
+    ;;
   esac
 }
 
@@ -171,14 +174,14 @@ scan_config() {
   local sl
   sl="$(lower "$1")"
   case "$sl" in
-    *userdefaults*|*didmigrate*|*com.bioapple.ntfsmount*|*renamed*key*)
-      config_ud=1
-      ;;
+  *userdefaults* | *didmigrate* | *com.bioapple.ntfsmount* | *renamed*key*)
+    config_ud=1
+    ;;
   esac
   case "$sl" in
-    *automountuseroff*|*auto-mount*|*automount*|*launchdaemon*plist*)
-      config_automount=1
-      ;;
+  *automountuseroff* | *auto-mount* | *automount* | *launchdaemon*plist*)
+    config_automount=1
+    ;;
   esac
 }
 
@@ -208,10 +211,10 @@ while IFS= read -r subject; do
   count=$((count + 1))
   bucket="$(classify "$subject")"
   case "$bucket" in
-    feature) features+=("$subject") ;;
-    fix) fixes+=("$subject") ;;
-    breaking) breaking+=("$subject") ;;
-    *) other+=("$subject") ;;
+  feature) features+=("$subject") ;;
+  fix) fixes+=("$subject") ;;
+  breaking) breaking+=("$subject") ;;
+  *) other+=("$subject") ;;
   esac
 done < <(git log --no-merges --format='%s' "$range")
 
@@ -347,7 +350,7 @@ EOF
 
 CI appends SHA256 after packaging. Do not invent a hash here.
 EOF
-} > "$body"
+} >"$body"
 
 if [[ -n "$out" ]]; then
   out_dir="$(/usr/bin/dirname "$out")"

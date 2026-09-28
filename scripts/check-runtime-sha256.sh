@@ -5,7 +5,10 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SUMS="$ROOT/runtime/SHA256SUMS"
-[[ -f "$SUMS" ]] || { echo "error: 缺少 $SUMS" >&2; exit 1; }
+[[ -f "$SUMS" ]] || {
+  echo "error: 缺少 $SUMS" >&2
+  exit 1
+}
 
 work="$(/usr/bin/mktemp -d /tmp/ntfsmount-sha256.XXXXXX)"
 trap '/bin/rm -rf "$work"' EXIT
@@ -27,9 +30,9 @@ while read -r hash name || [[ -n "${hash:-}" ]]; do
     exit 1
   fi
   /bin/ln -s "$src" "$work/$name"
-  printf '%s  %s\n' "$hash" "$name" >> "$work/SHA256SUMS"
+  printf '%s  %s\n' "$hash" "$name" >>"$work/SHA256SUMS"
   verified=$((verified + 1))
-done < "$SUMS"
+done <"$SUMS"
 
 if [[ "$verified" -lt 1 ]]; then
   echo "error: $SUMS 没有可校验的条目" >&2

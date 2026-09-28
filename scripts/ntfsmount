@@ -23,12 +23,12 @@ JSON=0
 POS=()
 for a in "$@"; do
   case "$a" in
-    --json) JSON=1 ;;
-    -h|--help|help)
-      usage
-      exit 0
-      ;;
-    *) POS+=("$a") ;;
+  --json) JSON=1 ;;
+  -h | --help | help)
+    usage
+    exit 0
+    ;;
+  *) POS+=("$a") ;;
   esac
 done
 
@@ -40,26 +40,26 @@ cmd="${POS[0]}"
 device="${POS[1]:-}"
 
 case "$cmd" in
-  diagnose)
-    if [[ "$JSON" -eq 1 ]]; then
-      exec "$DIR/ntfsmount-diagnose.sh" --json
-    else
-      exec "$DIR/ntfsmount-diagnose.sh"
-    fi
-    ;;
-  list|status|mount|unmount)
-    # shellcheck source=ntfsmount-volumes.sh
-    . "$DIR/ntfsmount-volumes.sh"
-    case "$cmd" in
-      list) cmd_list ;;
-      status) cmd_status "$device" ;;
-      mount) cmd_mount "$device" ;;
-      unmount) cmd_unmount "$device" ;;
-    esac
-    ;;
-  *)
-    echo "error: 未知子命令: ${cmd}" >&2
-    usage
-    exit 2
-    ;;
+diagnose)
+  if [[ "$JSON" -eq 1 ]]; then
+    exec "$DIR/ntfsmount-diagnose.sh" --json
+  else
+    exec "$DIR/ntfsmount-diagnose.sh"
+  fi
+  ;;
+list | status | mount | unmount)
+  # shellcheck source=ntfsmount-volumes.sh
+  . "$DIR/ntfsmount-volumes.sh"
+  case "$cmd" in
+  list) cmd_list ;;
+  status) cmd_status "$device" ;;
+  mount) cmd_mount "$device" ;;
+  unmount) cmd_unmount "$device" ;;
+  esac
+  ;;
+*)
+  echo "error: 未知子命令: ${cmd}" >&2
+  usage
+  exit 2
+  ;;
 esac

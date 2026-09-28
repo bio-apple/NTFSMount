@@ -15,6 +15,26 @@ swiftlint lint --strict --config .swiftlint.yml
 
 Match existing style. Do not turn rules off to land a PR.
 
+## ShellCheck and shfmt
+
+CI runs [scripts/ci-shellcheck.sh](scripts/ci-shellcheck.sh) and [scripts/ci-shfmt.sh](scripts/ci-shfmt.sh) on `helper/*.sh`, `scripts/*.sh`, `uninstall.sh`, `helper/ntfs-rw-helper`, and `scripts/ntfsmount`.
+
+```bash
+brew install shellcheck shfmt   # once
+./scripts/ci-shellcheck.sh
+./scripts/ci-shfmt.sh
+```
+
+`shfmt -d -i 2`. Do not disable the job; format the script instead (`shfmt -w -i 2`).
+
+## Markdown lint
+
+CI lints `README.md` and `docs/*.md` with `markdownlint-cli2` ([.markdownlint-cli2.jsonc](.markdownlint-cli2.jsonc)). Line length is off; README HTML tables and mermaid fences are allowed.
+
+```bash
+npx markdownlint-cli2
+```
+
 ## Tests
 
 ```bash

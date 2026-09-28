@@ -30,7 +30,7 @@ Compiling from this Git tree and downloading a GitHub DMG are different distribu
 
 Before shipping or selling as a product: written FUSE-T commercial / bundling license; Developer ID Application signing **and** notarization; do not sell, third-party-mirror, or put this on the Mac App Store while those are missing. GPL obligations for ntfs-3g (corresponding source, notices) still apply if you distribute those binaries. Set `FUSE_T_REDISTRIBUTION_OK=1` only after written FUSE-T permission **and** notarization. **需律师确认.**
 
-Contact: https://www.fuse-t.org/
+Contact: [fuse-t.org](https://www.fuse-t.org/)
 
 ## 1. Apple 公证 · Notarization
 
@@ -51,13 +51,17 @@ NOTARY_PROFILE='notarytool-profile' \
 1. **按住 Control 点应用 → 打开**（或右键 → 打开），在对话框里确认打开。
 2. 或打开 **系统设置 → 隐私与安全性**，在被拦记录处点 **仍要打开**。
 3. 仍被隔离时，终端执行（与应用内提示相同）：
+
    ```bash
    xattr -d com.apple.quarantine /Applications/NTFSMount.app
    ```
+
    若整个包仍带隔离属性，可用递归：
+
    ```bash
    xattr -dr com.apple.quarantine /Applications/NTFSMount.app
    ```
+
    然后再次打开。自己用可以继续；作为产品发给别人请先公证。
 
 ### 本机公证凭据
@@ -77,7 +81,7 @@ NOTARY_PROFILE='notarytool-profile' \
 
 ### CI（GitHub Actions）
 
-`.github/workflows/build.yml`：push 到 `main` 与 PR 会跑 SwiftLint / UnitTest / Security Scan / Build；`main` 上另打 `.app` 工件。推送 `v*` tag 时打 DMG 并创建 GitHub Release。**不要在真盘 workflow 里公证**；`.github/workflows/manual-disk-test.yml` 不读这些 secrets。
+`.github/workflows/build.yml`：push 到 `main` 与 PR 会跑 SwiftLint / ShellCheck / shfmt / Markdown lint / UnitTest / Security Scan / Build（`swift build`，不 `brew install ntfs-3g`）；`main` 上另打 `.app` 工件。推送 `v*` tag 时打 DMG，在日志打印 `SHA256=`，并把 `NTFSMount.dmg` + `NTFSMount.dmg.sha256` 作为 Artifact 上传，再创建 GitHub Release。随后 **Release SHA256** 对已发布 DMG 再算一遍哈希。**不要在真盘 workflow 里公证**；`.github/workflows/manual-disk-test.yml` 不读这些 secrets。
 
 公证在 Actions 上不能用本机钥匙串 `NOTARY_PROFILE`。请在仓库 **Settings → Secrets and variables → Actions** 配置。`scripts/ci-import-signing.sh` 导入 .p12；`scripts/notarize.sh` 用 API Key 提交：
 
@@ -103,7 +107,7 @@ git push origin v0.1.0
 
 捆绑的 `go-nfsv4` **不是 GPL**。FUSE-T 写明个人使用免费；作为产品嵌入或分发可能需要商业许可。钉死 **FUSE-T 1.2.7**（`scripts/prepare-runtime.sh` 的 `FUSE_T_VERSION` 与 [runtime/versions.txt](../runtime/versions.txt)）；Package.swift 无法钉 macOS pkg。
 
-- 联系：https://www.fuse-t.org/
+- 联系：[fuse-t.org](https://www.fuse-t.org/)
 - 取得书面授权后：`FUSE_T_REDISTRIBUTION_OK=1 ./scripts/package-dmg.sh`，并把本文件此节改为「已授权」。
 - 未设置该变量时，DMG 带 `Personal Use.txt`。GitHub Latest 可以指向这份个人使用包（README 的 `/releases/latest/download/NTFSMount.dmg`），**不要**把它当成可再分发或可销售的产品，也禁止第三方镜像。
 - **当作产品对外再分发**仅当已公证并且 FUSE-T 许可证允许再分发（仓库变量 `vars.FUSE_T_REDISTRIBUTION_OK=1`）。缺一不可。
@@ -150,4 +154,3 @@ CI 在 `release: published` 时若 Release 已有 `NTFSMount.dmg` 但没有 side
 
 - Feed：`https://github.com/bio-apple/NTFSMount/releases/download/v1.2.0/appcast.xml`
 - 密钥与 `generate_appcast` 步骤：[docs/SPARKLE.md](./SPARKLE.md)
-

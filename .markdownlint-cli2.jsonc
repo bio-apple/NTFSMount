@@ -1,0 +1,31 @@
+{
+  // README + docs/*.md only. CHANGELOG.md is not in this glob.
+  "globs": [
+    "README.md",
+    "docs/*.md"
+  ],
+  "ignores": [
+    "CHANGELOG.md",
+    "docs/RELEASE_NOTES/**",
+    "node_modules/**"
+  ],
+  "config": {
+    "default": true,
+    // Changelog and long command lines are noisy; do not fail CI on wrap.
+    "MD013": false,
+    // README screenshot grid is an HTML table; mermaid is a fenced code block.
+    "MD033": {
+      "allowed_elements": [
+        "table",
+        "thead",
+        "tbody",
+        "tr",
+        "th",
+        "td",
+        "br",
+        "img",
+        "a"
+      ]
+    }
+  }
+}

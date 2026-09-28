@@ -24,7 +24,10 @@ FUSE_T_URL="${FUSE_T_PKG_URL:-https://github.com/macos-fuse-t/fuse-t/releases/do
 FUSE_T_BIN_DIR="/Library/Application Support/fuse-t/bin"
 FUSE_T_LIB_DIR="/Library/Application Support/fuse-t/lib"
 
-die() { echo "error: $*" >&2; exit 1; }
+die() {
+  echo "error: $*" >&2
+  exit 1
+}
 
 # Homebrew：Apple Silicon 是 /opt/homebrew，Intel 旧前缀才是 /usr/local。不要只信 PATH。
 find_brew() {
@@ -47,8 +50,11 @@ export_homebrew_path() {
   brew_bin="$(find_brew)" || return 0
   dir="$(/usr/bin/dirname "$brew_bin")"
   case ":$PATH:" in
-    *":$dir:"*) ;;
-    *) PATH="$dir:$PATH"; export PATH ;;
+  *":$dir:"*) ;;
+  *)
+    PATH="$dir:$PATH"
+    export PATH
+    ;;
   esac
 }
 
@@ -71,8 +77,7 @@ find_ntfs3g_bin() {
     /opt/homebrew/bin/ntfs-3g \
     /opt/homebrew/opt/ntfs-3g/bin/ntfs-3g \
     /usr/local/opt/ntfs-3g/bin/ntfs-3g \
-    /usr/local/bin/ntfs-3g
-  do
+    /usr/local/bin/ntfs-3g; do
     if [[ -x "$p" ]]; then
       printf '%s' "$p"
       return 0
@@ -154,9 +159,9 @@ local_fuse_t_version() {
 }
 
 local_fuse_t_present() {
-  [[ -x "${FUSE_T_BIN_DIR}/go-nfsv4-${FUSE_T_VERSION}" ]] \
-    || [[ -x "${FUSE_T_BIN_DIR}/go-nfsv4" ]] \
-    || [[ -n "$(find_local_fuse_t_dylib || true)" ]]
+  [[ -x "${FUSE_T_BIN_DIR}/go-nfsv4-${FUSE_T_VERSION}" ]] ||
+    [[ -x "${FUSE_T_BIN_DIR}/go-nfsv4" ]] ||
+    [[ -n "$(find_local_fuse_t_dylib || true)" ]]
 }
 
 # FUSE-T 1.2.x 不再提供 libfuse.2.dylib（macFUSE 才装那个）。libfuse 2 ABI 在 libfuse-t-VERSION.dylib。
@@ -166,8 +171,7 @@ find_local_fuse_t_dylib() {
     "${FUSE_T_LIB_DIR}/libfuse-t-${FUSE_T_VERSION}.dylib" \
     "${FUSE_T_LIB_DIR}/libfuse-t.dylib" \
     "/usr/local/lib/libfuse-t-${FUSE_T_VERSION}.dylib" \
-    "/usr/local/lib/libfuse-t.dylib"
-  do
+    "/usr/local/lib/libfuse-t.dylib"; do
     if [[ -f "$f" ]]; then
       printf '%s' "$f"
       return 0
@@ -300,8 +304,8 @@ fetch_url() {
   dir="$(/usr/bin/dirname "$dest")"
   echo "download $url" >&2
   if command -v gh >/dev/null 2>&1 && [[ -n "${GH_TOKEN:-${GITHUB_TOKEN:-}}" ]]; then
-    (cd "$dir" && gh release download "$FUSE_T_VERSION" --repo macos-fuse-t/fuse-t --pattern "$FUSE_T_PKG_NAME" --clobber) \
-      && [[ -f "$dest" ]] && return 0
+    (cd "$dir" && gh release download "$FUSE_T_VERSION" --repo macos-fuse-t/fuse-t --pattern "$FUSE_T_PKG_NAME" --clobber) &&
+      [[ -f "$dest" ]] && return 0
   fi
   /usr/bin/curl --http1.1 -fL --retry 3 --retry-delay 2 --connect-timeout 30 -o "$dest" "$url"
 }
@@ -383,10 +387,10 @@ copy_beside_or() {
   bin="$(find_ntfs3g_bin)" || true
   dir=""
   [[ -n "$bin" ]] && dir="$(/usr/bin/dirname "$bin")"
-  copy_if_exec "$prefix/bin/$name" "$dest" \
-    || copy_if_exec "$prefix/sbin/$name" "$dest" \
-    || { [[ -n "$dir" ]] && copy_if_exec "$dir/$name" "$dest"; } \
-    || return 1
+  copy_if_exec "$prefix/bin/$name" "$dest" ||
+    copy_if_exec "$prefix/sbin/$name" "$dest" ||
+    { [[ -n "$dir" ]] && copy_if_exec "$dir/$name" "$dest"; } ||
+    return 1
 }
 
 obtain_ntfs3g() {
@@ -415,8 +419,8 @@ obtain_ntfs3g() {
   copy_if_exec "$bin" "$WORK/ntfs-3g"
   copy_beside_or "$WORK/mkntfs" mkntfs "$prefix" || die "找不到 mkntfs（Homebrew ntfs-3g 通常自带）"
   copy_beside_or "$WORK/ntfsfix" ntfsfix "$prefix" || die "找不到 ntfsfix（Homebrew ntfs-3g 通常自带）"
-  copy_if_exec "$prefix/lib/libntfs-3g.90.dylib" "$WORK/libntfs-3g.90.dylib" \
-    || die "找不到 libntfs-3g.90.dylib（应在 $(printf '%s' "$prefix")/lib）"
+  copy_if_exec "$prefix/lib/libntfs-3g.90.dylib" "$WORK/libntfs-3g.90.dylib" ||
+    die "找不到 libntfs-3g.90.dylib（应在 $(printf '%s' "$prefix")/lib）"
   assert_arm64 "$WORK/ntfs-3g"
   assert_arm64 "$WORK/mkntfs"
   assert_arm64 "$WORK/ntfsfix"

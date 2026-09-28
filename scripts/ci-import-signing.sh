@@ -32,7 +32,10 @@ ident="${CODESIGN_IDENTITY:-}"
 if [[ -z "$ident" ]]; then
   ident="$(/usr/bin/security find-identity -v -p codesigning "$kc" | /usr/bin/awk -F'"' '/Developer ID Application/{print $2; exit}')"
 fi
-[[ -n "$ident" ]] || { echo "error: p12 里没有 Developer ID Application 证书" >&2; exit 1; }
+[[ -n "$ident" ]] || {
+  echo "error: p12 里没有 Developer ID Application 证书" >&2
+  exit 1
+}
 
 echo "imported $ident"
 if [[ -n "${GITHUB_ENV:-}" ]]; then

@@ -15,7 +15,10 @@ APP_SRC="$ROOT/dist/NTFSMount.app"
 if [[ ! -d "$APP_SRC" && -d /tmp/NTFSMount.app ]]; then
   APP_SRC="/tmp/NTFSMount.app"
 fi
-[[ -d "$APP_SRC" ]] || { echo "error: NTFSMount.app not found" >&2; exit 1; }
+[[ -d "$APP_SRC" ]] || {
+  echo "error: NTFSMount.app not found" >&2
+  exit 1
+}
 
 STAGE="$(/usr/bin/mktemp -d /tmp/ntfsmount-dmg.XXXXXX)"
 RW="$(/usr/bin/mktemp /tmp/ntfsmount-rw.XXXXXX).dmg"
@@ -35,8 +38,8 @@ trap cleanup EXIT
 /bin/cp "$ROOT/NOTICE" "$STAGE/NOTICE"
 /bin/cp "$ROOT/THIRD_PARTY_LICENSES.md" "$STAGE/THIRD_PARTY_LICENSES.md"
 /bin/cp "$ROOT/docs/DISTRIBUTION.md" "$STAGE/DISTRIBUTION.md"
-printf '%s\n' "Source: https://github.com/bio-apple/NTFSMount" > "$STAGE/Source.txt"
-/bin/cat > "$STAGE/Read Me.txt" <<'EOF'
+printf '%s\n' "Source: https://github.com/bio-apple/NTFSMount" >"$STAGE/Source.txt"
+/bin/cat >"$STAGE/Read Me.txt" <<'EOF'
 NTFSMount v1.0.0
 Direct download, not Mac App Store. Personal-use pre-release, not notarized.
 
@@ -65,7 +68,7 @@ Full uninstall: repo ./uninstall.sh (NTFSMount only; does not touch system FUSE-
 EOF
 
 if [[ "${FUSE_T_REDISTRIBUTION_OK:-}" != "1" ]]; then
-  /bin/cat > "$STAGE/Personal Use.txt" <<'EOF'
+  /bin/cat >"$STAGE/Personal Use.txt" <<'EOF'
 This package is for personal use only. Apple Silicon (M-series) and macOS 13.0+ only; Intel Macs (x86_64) are not supported.
 
 Bundled FUSE-T go-nfsv4 is not GPL. Before embedding, redistributing, or selling as a product, get a license from FUSE-T:
@@ -82,7 +85,10 @@ echo "==> Creating disk image (${SIZE_MB} MB)"
 
 ATTACH="$(/usr/bin/hdiutil attach -readwrite -noverify -noautoopen "$RW")"
 MNT="$(printf '%s\n' "$ATTACH" | /usr/bin/awk -F'\t' '/\/Volumes\//{print $NF; exit}')"
-[[ -d "$MNT" ]] || { echo "error: failed to attach temporary DMG" >&2; exit 1; }
+[[ -d "$MNT" ]] || {
+  echo "error: failed to attach temporary DMG" >&2
+  exit 1
+}
 
 /bin/cp -R "$STAGE/NTFSMount.app" "$MNT/NTFSMount.app"
 /bin/ln -s /Applications "$MNT/Applications"
@@ -127,7 +133,10 @@ if [[ -f "$ROOT/Resources/AppIcon.icns" ]]; then
   /bin/cp "$ROOT/Resources/AppIcon.icns" "$MNT/.VolumeIcon.icns"
   /usr/bin/SetFile -c icnC "$MNT/.VolumeIcon.icns"
   /usr/bin/SetFile -a C "$MNT"
-  [[ -f "$MNT/.VolumeIcon.icns" ]] || { echo "error: failed to write .VolumeIcon.icns" >&2; exit 1; }
+  [[ -f "$MNT/.VolumeIcon.icns" ]] || {
+    echo "error: failed to write .VolumeIcon.icns" >&2
+    exit 1
+  }
 fi
 
 sync

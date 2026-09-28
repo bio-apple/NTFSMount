@@ -53,7 +53,10 @@ if [[ -f "$TARGET" ]]; then
 fi
 
 APP="$TARGET"
-[[ -d "$APP" ]] || { echo "error: 找不到 $APP" >&2; exit 1; }
+[[ -d "$APP" ]] || {
+  echo "error: 找不到 $APP" >&2
+  exit 1
+}
 MACOS="$APP/Contents/MacOS"
 HELPERD="$MACOS/ntfsmount-helperd"
 

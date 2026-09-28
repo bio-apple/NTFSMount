@@ -1,0 +1,24 @@
+# Markdown lint：README.md 与 docs/*.md（不含 CHANGELOG / RELEASE_NOTES）。
+# push/PR 独立跑；build.yml 以 workflow_call 调用，打 tag 出 DMG 前必须先过检查。
+name: Markdown lint
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  markdownlint:
+    name: Markdown lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: markdownlint-cli2
+        uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          globs: |
+            README.md
+            docs/*.md

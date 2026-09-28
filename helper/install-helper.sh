@@ -35,9 +35,18 @@ PLIST="/Library/LaunchDaemons/com.bioapple.ntfsmount.helper.plist"
 SUDOERS="/etc/sudoers.d/ntfs-rw"
 LEGACY_HELPER="/usr/local/sbin/ntfs-rw-helper"
 
-[[ -f "$HELPER_SRC" ]] || { echo "找不到助手: $HELPER_SRC" >&2; exit 1; }
-[[ -f "$HELPERD_SRC" ]] || { echo "找不到守护进程: $HELPERD_SRC" >&2; exit 1; }
-[[ -d "$APP" ]] || { echo "找不到应用: $APP" >&2; exit 1; }
+[[ -f "$HELPER_SRC" ]] || {
+  echo "找不到助手: $HELPER_SRC" >&2
+  exit 1
+}
+[[ -f "$HELPERD_SRC" ]] || {
+  echo "找不到守护进程: $HELPERD_SRC" >&2
+  exit 1
+}
+[[ -d "$APP" ]] || {
+  echo "找不到应用: $APP" >&2
+  exit 1
+}
 if [[ "$USER_NAME" == "root" ]]; then
   USER_NAME="$(/usr/bin/stat -f '%Su' /dev/console)"
 fi
@@ -70,7 +79,7 @@ printf '%s %s\n' "$BUNDLE_VER" "$HELPER_SHA" >"$SUPPORT/helper.stamp"
 /usr/sbin/chown root:wheel "$SUPPORT/ntfsmount-helperd"
 /bin/chmod 755 "$SUPPORT/ntfsmount-helperd"
 # launchd 对 ad-hoc 的 Program 二进制常直接拒绝；job 用系统 bash 再 exec helperd。
-/bin/cat > "$SUPPORT/run-helperd.sh" <<'RUN'
+/bin/cat >"$SUPPORT/run-helperd.sh" <<'RUN'
 #!/bin/bash
 echo "run-helperd: exec $(date -u +%Y-%m-%dT%H:%M:%SZ)" >&2
 exec "/Library/Application Support/NTFSMount/ntfsmount-helperd"
@@ -89,7 +98,7 @@ SOCK="/var/run/com.bioapple.ntfsmount.sock"
 "$LAUNCHCTL" unload "$PLIST" >/dev/null 2>&1 || true
 /bin/rm -f "$SOCK"
 /bin/sleep 0.3
-cat > "$PLIST" <<EOF
+cat >"$PLIST" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">

@@ -17,7 +17,7 @@ if [[ -f "$PRIV" ]]; then
     exit 1
   fi
   echo "Using existing keypair (not rotated)."
-  echo "SUPublicEDKey=$(/usr/bin/tr -d '[:space:]' < "$PUB")"
+  echo "SUPublicEDKey=$(/usr/bin/tr -d '[:space:]' <"$PUB")"
   echo "private key path (not contents): $PRIV"
   exit 0
 fi
@@ -31,9 +31,9 @@ SEED_B64="$(/usr/bin/openssl pkey -in "$TMPPEM" -outform DER | /usr/bin/tail -c 
 PUB_B64="$(/usr/bin/openssl pkey -in "$TMPPEM" -pubout -outform DER | /usr/bin/tail -c 32 | /usr/bin/openssl base64 -A)"
 
 umask 077
-printf '%s\n' "$SEED_B64" > "$PRIV"
+printf '%s\n' "$SEED_B64" >"$PRIV"
 chmod 600 "$PRIV"
-printf '%s\n' "$PUB_B64" > "$PUB"
+printf '%s\n' "$PUB_B64" >"$PUB"
 chmod 644 "$PUB"
 
 echo "Generated new Ed25519 keypair (Sparkle seed format, 32 bytes)."

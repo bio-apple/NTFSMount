@@ -10,8 +10,8 @@ NTFS3G_ALLOW_HUMAN="${NTFS3G_ALLOW_HUMAN:-2026.7.7、2026.8.x}"
 
 ntfs3g_parse_version() {
   local text="$1" ver
-  ver="$(printf '%s' "$text" | /usr/bin/grep -oiE 'ntfs-3g[[:space:]]+v?[0-9]{4}\.[0-9]{1,2}\.[0-9]{1,3}' \
-    | /usr/bin/head -1 | /usr/bin/grep -oE '[0-9]{4}\.[0-9]{1,2}\.[0-9]{1,3}' || true)"
+  ver="$(printf '%s' "$text" | /usr/bin/grep -oiE 'ntfs-3g[[:space:]]+v?[0-9]{4}\.[0-9]{1,2}\.[0-9]{1,3}' |
+    /usr/bin/head -1 | /usr/bin/grep -oE '[0-9]{4}\.[0-9]{1,2}\.[0-9]{1,3}' || true)"
   if [[ -z "$ver" ]]; then
     ver="$(printf '%s' "$text" | /usr/bin/grep -oE '[0-9]{4}\.[0-9]{1,2}\.[0-9]{1,3}' | /usr/bin/head -1 || true)"
   fi
@@ -22,8 +22,8 @@ ntfs3g_version_allowed() {
   local ver="$1" y m p
   [[ -n "$ver" ]] || return 1
   case "$ver" in
-    [0-9]*.[0-9]*.[0-9]*) ;;
-    *) return 1 ;;
+  [0-9]*.[0-9]*.[0-9]*) ;;
+  *) return 1 ;;
   esac
   IFS=. read -r y m p <<EOF
 $ver

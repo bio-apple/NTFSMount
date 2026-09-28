@@ -54,8 +54,7 @@ done
 CORE_BUNDLE=""
 for candidate in \
   "$BIN_DIR/NTFSMount_NTFSMountCore.bundle" \
-  "$BIN_DIR/NTFSMountCore_NTFSMountCore.bundle"
-do
+  "$BIN_DIR/NTFSMountCore_NTFSMountCore.bundle"; do
   if [[ -d "$candidate" ]]; then
     CORE_BUNDLE="$candidate"
     break
@@ -76,11 +75,14 @@ cp "$ROOT/scripts/ntfsmount-diagnose.sh" "$APP/Contents/Resources/ntfsmount-diag
 cp "$ROOT/scripts/ntfs3g-version.sh" "$APP/Contents/Resources/ntfs3g-version.sh"
 cp "$ROOT/runtime/versions.txt" "$APP/Contents/Resources/versions.txt"
 cp "$ROOT/helper/com.bioapple.ntfsmount.helper.plist" "$APP/Contents/Library/LaunchDaemons/com.bioapple.ntfsmount.helper.plist"
-/usr/bin/shasum -a 256 "$ROOT/helper/ntfs-rw-helper" | /usr/bin/awk '{print $1}' > "$APP/Contents/Resources/ntfs-rw-helper.sha256"
+/usr/bin/shasum -a 256 "$ROOT/helper/ntfs-rw-helper" | /usr/bin/awk '{print $1}' >"$APP/Contents/Resources/ntfs-rw-helper.sha256"
 chmod 755 "$APP/Contents/Resources/ntfs-rw-helper" "$APP/Contents/Resources/install-helper.sh" "$APP/Contents/Resources/uninstall-helper.sh" "$APP/Contents/Resources/ntfsmount-diagnose.sh" "$BIN" "$HELPERD"
 
 for f in ntfs-3g mkntfs ntfsfix go-nfsv4 libfuse.2.dylib libntfs-3g.90.dylib; do
-  [[ -e "$ROOT/runtime/$f" ]] || { echo "error: missing runtime/$f" >&2; exit 1; }
+  [[ -e "$ROOT/runtime/$f" ]] || {
+    echo "error: missing runtime/$f" >&2
+    exit 1
+  }
   cp "$ROOT/runtime/$f" "$MACOS/$f"
   chmod 755 "$MACOS/$f"
 done

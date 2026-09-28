@@ -63,8 +63,7 @@ else
 fi
 for p in \
   /Library/LaunchDaemons/com.bioapple.ntfsmount.helper.plist \
-  /Library/PrivilegedHelperTools/com.bioapple.ntfsmount.helperd
-do
+  /Library/PrivilegedHelperTools/com.bioapple.ntfsmount.helperd; do
   if [[ -e "$p" ]]; then
     echo "present: $p"
   else

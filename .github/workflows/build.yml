@@ -28,6 +28,14 @@ jobs:
     name: ShellCheck
     uses: ./.github/workflows/shellcheck.yml
 
+  shfmt:
+    name: shfmt
+    uses: ./.github/workflows/shfmt.yml
+
+  markdownlint:
+    name: Markdown lint
+    uses: ./.github/workflows/markdownlint.yml
+
   test:
     name: UnitTest
     runs-on: macos-14
@@ -140,7 +148,7 @@ jobs:
     runs-on: macos-14
     permissions:
       contents: write
-    needs: [lint, test, security, build, shellcheck]
+    needs: [lint, test, security, build, shellcheck, shfmt, markdownlint]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -164,7 +172,7 @@ jobs:
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           CODESIGN_IDENTITY: ${{ secrets.CODESIGN_IDENTITY }}
         run: bash scripts/ci-import-signing.sh
-      - name: Prepare runtime, package DMG, publish
+      - name: Prepare runtime and package DMG
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NOTARY_PROFILE: ${{ secrets.NOTARY_PROFILE }}
@@ -177,6 +185,39 @@ jobs:
           bash scripts/prepare-runtime.sh
           bash scripts/check-runtime-sha256.sh
           bash scripts/package-dmg.sh
+      - name: SHA256 of NTFSMount.dmg
+        id: dmg_sha256
+        run: |
+          set -euo pipefail
+          dmg=dist/NTFSMount.dmg
+          [[ -f "$dmg" ]] || { echo "error: missing $dmg" >&2; exit 1; }
+          # package-dmg.sh already hashed after staple; re-run so the log always has SHA256=.
+          bash scripts/write-dmg-sha256.sh "$dmg"
+          hash="$(/usr/bin/awk '{print $1; exit}' "${dmg}.sha256")"
+          [[ ${#hash} -eq 64 ]] || { echo "error: invalid SHA256: $hash" >&2; exit 1; }
+          echo "SHA256=${hash}"
+          echo "hash=${hash}" >> "$GITHUB_OUTPUT"
+          {
+            echo "## NTFSMount.dmg"
+            echo "SHA256=\`${hash}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          /usr/bin/shasum -a 256 "$dmg"
+      - name: Upload DMG artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: NTFSMount-dmg
+          path: |
+            dist/NTFSMount.dmg
+            dist/NTFSMount.dmg.sha256
+          if-no-files-found: error
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FUSE_T_REDISTRIBUTION_OK: ${{ vars.FUSE_T_REDISTRIBUTION_OK }}
+        run: |
+          set -euo pipefail
+          [[ -f dist/NTFSMount.dmg ]] || { echo "error: missing dist/NTFSMount.dmg" >&2; exit 1; }
+          [[ -f dist/NTFSMount.dmg.sha256 ]] || { echo "error: missing dist/NTFSMount.dmg.sha256" >&2; exit 1; }
           app=""
           [[ -d dist/NTFSMount.app ]] && app=dist/NTFSMount.app
           [[ -z "$app" && -d /tmp/NTFSMount.app ]] && app=/tmp/NTFSMount.app
@@ -201,8 +242,7 @@ jobs:
             echo
             /bin/cat dist/NTFSMount.dmg.release-notes.md
           } > "$notes"
-          assets=(dist/NTFSMount.dmg)
-          [[ -f dist/NTFSMount.dmg.sha256 ]] && assets+=(dist/NTFSMount.dmg.sha256)
+          assets=(dist/NTFSMount.dmg dist/NTFSMount.dmg.sha256)
           official=0
           [[ "$notarized" == "1" && "${FUSE_T_REDISTRIBUTION_OK:-}" == "1" ]] && official=1
           if [[ "$official" == "1" ]]; then
@@ -226,20 +266,23 @@ jobs:
             security delete-keychain "$APP_SIGNING_KEYCHAIN" || true
           fi
 
-  # 人工创建 Release 并附上 DMG 时补 SHA256。tag job 已带 sidecar。
+  # tag 上跟在 DMG (tag) 之后：对已发布 DMG 再算一遍 SHA256 并打日志/Artifact。
+  # 人工创建 Release 并附上 DMG 时同样跑（不依赖 tag job）。
   release-sha256:
-    if: github.event_name == 'release'
+    name: Release SHA256
+    if: always() && !cancelled() && (github.event_name == 'release' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && needs.dmg-on-tag.result == 'success'))
     runs-on: macos-14
     permissions:
       contents: write
+    needs: [dmg-on-tag]
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Attach DMG SHA256 to the GitHub Release
+      - name: Hash published DMG and attach sidecar
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ github.event.release.tag_name }}
+          TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref_name }}
         run: |
           set -euo pipefail
           work="$(/usr/bin/mktemp -d /tmp/ntfsmount-sha256.XXXXXX)"
@@ -250,8 +293,15 @@ jobs:
           dmg="$work/NTFSMount.dmg"
           [[ -f "$dmg" ]] || { echo "error: 未下载到 $dmg" >&2; exit 1; }
           bash scripts/write-dmg-sha256.sh "$dmg"
+          mkdir -p dist
+          /bin/cp "$work/NTFSMount.dmg.sha256" dist/NTFSMount.dmg.sha256
+          hash="$(/usr/bin/awk '{print $1; exit}' dist/NTFSMount.dmg.sha256)"
+          echo "SHA256=${hash}"
+          {
+            echo "## Published NTFSMount.dmg"
+            echo "SHA256=\`${hash}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
           gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" "$work/NTFSMount.dmg.sha256" --clobber
-          hash="$(/usr/bin/awk '{print $1; exit}' "$work/NTFSMount.dmg.sha256")"
           body="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body --jq .body)"
           ver="${TAG#v}"
           changelog="docs/RELEASE_NOTES/${ver}.md"
@@ -283,3 +333,9 @@ jobs:
             } > "$work/release-body.md"
             gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes-file "$work/release-body.md"
           fi
+      - name: Upload SHA256 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NTFSMount-release-sha256
+          path: dist/NTFSMount.dmg.sha256
+          if-no-files-found: error
