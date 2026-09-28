@@ -44,7 +44,7 @@ flowchart TB
 
 1. Open the app → Settings → Remove Helper.
 2. Drag NTFSMount to the Trash.
-3. Optional full cleanup from a clone: `./uninstall.sh` (does not call `sudo`; does not touch system FUSE-T / MacFUSE).
+3. Optional full cleanup from a clone: `./uninstall.sh` (asks for administrator authorization, does not call `sudo`, does not touch system FUSE-T / MacFUSE).
 
 ## Help
 

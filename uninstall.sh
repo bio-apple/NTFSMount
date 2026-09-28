@@ -1,7 +1,7 @@
 #!/bin/bash
-# 完全卸载：应用 + 特权助手 + LaunchDaemon/Agent + 本机配置。不写 sudoers。
-# 仅卸助手见 helper/uninstall-helper.sh。
-# 必须以 root 运行（应用内「卸载助手」走 Authorization Services）。不调用 sudo。SIP 保持开启。
+# 完全卸载：应用 + 特权助手 + LaunchDaemon/Agent + 配置 + 日志 + 本应用的隐私授权。
+# 当前不是 root 时，先弹出管理员授权再继续。不写 sudoers，不调用 sudo。SIP 保持开启。
+# 仅卸助手见 helper/uninstall-helper.sh。不卸载系统级 FUSE-T / MacFUSE。
 set -euo pipefail
 resolve_cmd() {
   local n="$1" p
@@ -42,7 +42,14 @@ clean_user_home() {
 
   /bin/rm -rf \
     "${home}/Library/Application Support/com.bioapple.ntfsmount" \
-    "${home}/Library/Application Support/NTFSMount"
+    "${home}/Library/Application Support/NTFSMount" \
+    "${home}/Library/Caches/com.bioapple.ntfsmount" \
+    "${home}/Library/Saved Application State/com.bioapple.ntfsmount.savedState" \
+    "${home}/Library/HTTPStorages/com.bioapple.ntfsmount" \
+    "${home}/Library/WebKit/com.bioapple.ntfsmount"
+  /bin/rm -f \
+    "${home}/Library/Logs/ntfsmount.log" \
+    "${home}/Library/Logs/ntfsmount.log.old"
 
   if [[ "$(/usr/bin/id -u)" -eq 0 && -n "$uid" && -n "${LAUNCHCTL:-}" ]]; then
     "$LAUNCHCTL" asuser "$uid" /usr/bin/defaults delete com.bioapple.ntfsmount >/dev/null 2>&1 || true
@@ -62,15 +69,43 @@ clean_named_user() {
   clean_user_home "$home" "${uid:-}"
 }
 
-/usr/bin/killall NTFSMount >/dev/null 2>&1 || true
+# Not root: show the administrator dialog, then re-run this script with euid 0.
+# bash -p keeps the privileged euid (a plain bash would drop back to the user).
+request_admin_and_reexec() {
+  local root src bin compiler bash
+  root="$(cd "$(dirname "$0")" && pwd)"
+  src="${root}/scripts/auth-run.c"
+  if [[ ! -f "$src" ]]; then
+    echo "Cannot ask for administrator authorization: missing ${src}" >&2
+    return 1
+  fi
+  compiler="$(resolve_cmd clang || true)"
+  if [[ -z "$compiler" ]]; then
+    compiler="$(/usr/bin/xcrun --find clang 2>/dev/null || true)"
+  fi
+  if [[ -z "$compiler" || ! -x "$compiler" ]]; then
+    echo "Administrator authorization needs clang, which was not found." >&2
+    echo "Run this script again from an already-privileged root shell." >&2
+    return 1
+  fi
+  bash="$(resolve_cmd bash)"
+  bin="/tmp/ntfsmount-uninstall"
+  if ! "$compiler" -Wno-deprecated-declarations -framework Security -o "$bin" "$src"; then
+    /bin/rm -f "$bin"
+    echo "Could not build the administrator authorization helper." >&2
+    return 1
+  fi
+  /bin/chmod 755 "$bin"
+  exec "$bin" "$bash" -p -c 'exec 2>&1; exec "$1"' bash "$0"
+}
 
 if [[ "$(/usr/bin/id -u)" -ne 0 ]]; then
-  echo "Root is required to remove the LaunchDaemon and the mount helper under /Library." >&2
-  echo "In the app, choose Settings → Uninstall Helper (macOS Authorization Services), or run this script again from an already-privileged root shell." >&2
-  echo "SIP stays enabled. This script does not call sudo." >&2
-  clean_user_home "$HOME" "$(/usr/bin/id -u)"
+  request_admin_and_reexec
   exit 1
 fi
+
+/usr/bin/killall NTFSMount >/dev/null 2>&1 || true
+/usr/bin/killall ntfsmount-helperd >/dev/null 2>&1 || true
 
 for label in "${SYSTEM_LABELS[@]}"; do
   if [[ -n "${LAUNCHCTL:-}" ]]; then
@@ -88,6 +123,11 @@ done
   /Library/LaunchDaemons/local.ntfsmount.automount.plist
 
 /bin/rm -rf "/Library/Application Support/NTFSMount" /Applications/NTFSMount.app
+/bin/rm -f /tmp/ntfsmount.log
+
+if [[ -x /usr/bin/tccutil ]]; then
+  /usr/bin/tccutil reset All com.bioapple.ntfsmount >/dev/null 2>&1 || true
+fi
 
 clean_named_user "$(/usr/bin/stat -f '%Su' /dev/console 2>/dev/null || true)"
 
@@ -103,10 +143,9 @@ if [[ -e /var/run/com.bioapple.ntfsmount.sock ]]; then
   leftover=1
 fi
 
-echo "Uninstalled NTFSMount (app, mount helper, LaunchDaemon/Agent, and settings)."
+echo "Uninstalled NTFSMount (app, mount helper, LaunchDaemon/Agent, settings, logs, and privacy grants)."
 echo "This script removes only NTFSMount and its own components. System FUSE-T / MacFUSE is left untouched."
 echo "If you no longer need any NTFS read/write support, manually check and remove global libraries such as /usr/local/lib/libfuse.2.dylib."
-echo "Logs were kept: ~/Library/Logs/ntfsmount.log (delete them yourself if you want)."
 echo "SMAppService: if System Settings → General → Login Items & Extensions still lists NTFS read/write, turn it off."
 echo "SIP stays enabled. This project does not use kernel extensions."
 
