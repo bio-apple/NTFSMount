@@ -89,17 +89,25 @@ request_admin_and_reexec() {
     return 1
   fi
   bash="$(resolve_cmd bash)"
-  bin="/tmp/ntfsmount-uninstall"
+  bin="$(/usr/bin/mktemp /tmp/ntfsmount-uninstall.XXXXXX)"
   if ! "$compiler" -Wno-deprecated-declarations -framework Security -o "$bin" "$src"; then
     /bin/rm -f "$bin"
     echo "Could not build the administrator authorization helper." >&2
     return 1
   fi
   /bin/chmod 755 "$bin"
-  exec "$bin" "$bash" -p -c 'exec 2>&1; exec "$1"' bash "$0"
+  # Run this file with bash -p. Executing the script path uses its shebang, and that
+  # bash drops the privileged euid back to the logged-in user after the password dialog.
+  exec "$bin" "$bash" -p -c \
+    'exec 2>&1; export NTFSMOUNT_UNINSTALL_PRIV=1; exec "$1" -p "$2"' \
+    bash "$bash" "$0"
 }
 
 if [[ "$(/usr/bin/id -u)" -ne 0 ]]; then
+  if [[ "${NTFSMOUNT_UNINSTALL_PRIV:-}" == 1 ]]; then
+    echo "Administrator authorization did not stay root. Uninstall stopped." >&2
+    exit 1
+  fi
   request_admin_and_reexec
   exit 1
 fi
