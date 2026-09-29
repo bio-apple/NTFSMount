@@ -20,8 +20,8 @@ fi
 }
 
 VER="$(/usr/bin/plutil -extract CFBundleShortVersionString raw "$APP_SRC/Contents/Info.plist" 2>/dev/null || true)"
-VER="$(printf '%s' "${VER:-1.0.0}" | /usr/bin/tr -d '[:space:]')"
-[[ -n "$VER" ]] || VER="1.0.0"
+VER="$(printf '%s' "${VER:-1.0}" | /usr/bin/tr -d '[:space:]')"
+[[ -n "$VER" ]] || VER="1.0"
 
 STAGE="$(/usr/bin/mktemp -d /tmp/ntfsmount-pkg.XXXXXX)"
 cleanup() {

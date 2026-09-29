@@ -37,9 +37,9 @@ final class GitHubReleaseUpdateTests: XCTestCase {
 
   func testTagNameFromLatestReleaseJSON() throws {
     let json = """
-    {"tag_name":"v1.0.0","name":"1.0.0","draft":false,"prerelease":false}
+    {"tag_name":"v1.0","name":"1.0","draft":false,"prerelease":false}
     """.data(using: .utf8)!
-    XCTAssertEqual(GitHubReleaseUpdate.tagName(fromLatestReleaseJSON: json), "1.0.0")
+    XCTAssertEqual(GitHubReleaseUpdate.tagName(fromLatestReleaseJSON: json), "1.0")
 
     let bad = Data("{}".utf8)
     XCTAssertNil(GitHubReleaseUpdate.tagName(fromLatestReleaseJSON: bad))

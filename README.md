@@ -4,7 +4,7 @@ Menu-bar app for **read/write external NTFS** on Apple Silicon (macOS 13+). User
 
 > ⚠️ **Personal use only · not notarized.** Writing or formatting an NTFS volume can destroy data — back up first. Gatekeeper blocks first launch; you must allow the app manually. Bundled FUSE-T `go-nfsv4` is not GPL — do not redistribute or sell.
 
-**[Download PKG](https://github.com/bio-apple/NTFSMount/releases/latest/download/NTFSMount.pkg)** · [Releases / SHA256](https://github.com/bio-apple/NTFSMount/releases/latest) · Current: **1.0.0**
+**[Download PKG](https://github.com/bio-apple/NTFSMount/releases/latest/download/NTFSMount.pkg)** · [Releases / SHA256](https://github.com/bio-apple/NTFSMount/releases/latest) · Current: **1.0**
 
 Download updates from GitHub Releases. The in-app Sparkle updater is hidden on this unnotarized build and is not the download path.
 

@@ -153,7 +153,7 @@ CI 在 `release: published` 时若 Release 已有 `NTFSMount.pkg` 但没有 side
 
 维护者：自动更新用 Sparkle EdDSA 签安装包 / appcast，**不是**用 GitHub Releases Atom，也**不要**把 feed 指到 GitHub Latest（FUSE-T 仍为个人使用预发布时）。
 
-`SUFeedURL` 仍钉在 **v1.2.0 资产 URL**。发 1.2.1 及以后版本时：把新安装包传到对应 tag，再生成 appcast，用 `--clobber` **覆盖 v1.2.0 上的 `appcast.xml`**。
+`SUFeedURL` 钉在 **v1.0** 的资产 URL。以后发新版本时：把新安装包传到对应 tag，再生成 appcast，用 `--clobber` 上传到该 tag。未公证时不要把 feed 指到 GitHub Latest。
 
-- Feed：`https://github.com/bio-apple/NTFSMount/releases/download/v1.2.0/appcast.xml`
+- Feed：`https://github.com/bio-apple/NTFSMount/releases/download/v1.0/appcast.xml`
 - 密钥与 `generate_appcast` 步骤：[docs/SPARKLE.md](./SPARKLE.md)

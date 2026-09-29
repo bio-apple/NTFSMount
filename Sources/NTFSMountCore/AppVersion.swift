@@ -1,6 +1,6 @@
 import Foundation
 
-/// Marketing version from Info.plist (`CFBundleShortVersionString`). Never hardcode 1.0.0 in UI copy.
+/// Marketing version from Info.plist (`CFBundleShortVersionString`). Never hardcode 1.0 in UI copy.
 public enum AppVersion {
   public static func shortString(bundle: Bundle = .main) -> String {
     let raw = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String

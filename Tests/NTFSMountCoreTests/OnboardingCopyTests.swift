@@ -14,7 +14,7 @@ final class OnboardingCopyTests: XCTestCase {
     XCTAssertTrue(body.contains("安装"))
     XCTAssertEqual(OnboardingCopy.copyVersion, 6)
     XCTAssertFalse(UpdateCopy.feedURL.lowercased().contains("latest"))
-    XCTAssertTrue(UpdateCopy.feedURL.contains("v1.2.0/appcast.xml"))
+    XCTAssertTrue(UpdateCopy.feedURL.contains("v1.0/appcast.xml"))
     XCTAssertFalse(OnboardingCopy.body(notarized: false, locale: zh).contains("检查更新"))
     XCTAssertFalse(OnboardingCopy.body(notarized: false, locale: zh).contains("v1.2.0"))
     XCTAssertTrue(OnboardingCopy.body(notarized: false, locale: zh).contains("GitHub Releases"))

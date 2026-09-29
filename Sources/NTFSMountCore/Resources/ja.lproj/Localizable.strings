@@ -325,7 +325,7 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "alert.appUpdateTitle" = "アップデートがあります";
 
-"alert.appUpdateBody" = "GitHub Releases に NTFSMount %@ があります。ブラウザで DMG のダウンロードを開きますか？";
+"alert.appUpdateBody" = "GitHub Releases に NTFSMount %@ があります。ブラウザでインストーラのダウンロードを開きますか？";
 
 "alert.update" = "更新";
 

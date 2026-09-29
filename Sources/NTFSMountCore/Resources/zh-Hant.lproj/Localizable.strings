@@ -325,7 +325,7 @@ Return 即同意。不同意請點「結束」。";
 
 "alert.appUpdateTitle" = "發現新版本";
 
-"alert.appUpdateBody" = "GitHub Releases 上有 NTFSMount %@。是否在瀏覽器中開啟 DMG 下載連結？";
+"alert.appUpdateBody" = "GitHub Releases 上有 NTFSMount %@。是否在瀏覽器中開啟安裝套件下載連結？";
 
 "alert.update" = "更新";
 

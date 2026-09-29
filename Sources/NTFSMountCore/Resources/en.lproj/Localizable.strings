@@ -325,7 +325,7 @@ Return means you agree. Click “Quit” if you do not.";
 
 "alert.appUpdateTitle" = "Update Available";
 
-"alert.appUpdateBody" = "NTFSMount %@ is available on GitHub Releases. Open the DMG download in your browser?";
+"alert.appUpdateBody" = "NTFSMount %@ is available on GitHub Releases. Open the package download in your browser?";
 
 "alert.update" = "Update";
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Build structured Release notes from git log since the previous v* tag.
 # Usage:
-#   generate-release-notes.sh <v1.2.2|1.2.2> [-o PATH] [--since v1.2.0]
+#   generate-release-notes.sh <v1.0|1.0> [-o PATH] [--since v1.0]
 # Writes markdown to stdout, or to PATH with -o. Does not invent What’s new:
 # bullets are commit subjects. Helper reinstall / config sections are always
 # present; Yes is inferred from HELPER_VERSION / helperd / IPC / CDHash /

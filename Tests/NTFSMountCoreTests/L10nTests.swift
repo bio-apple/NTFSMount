@@ -196,21 +196,21 @@ final class L10nTests: XCTestCase {
     XCTAssertFalse(ForceUnmountCopy.body(volumeName: "X", locale: en).contains("强制"))
     XCTAssertFalse(L10n.t("repairEnv.title", locale: en).contains("修复"))
     XCTAssertFalse(L10n.t("diskStatus.encryptionHint", locale: en).contains("加密"))
-    XCTAssertEqual(L10n.format("about.version", "1.0.0", locale: en), "Version 1.0.0")
-    XCTAssertEqual(L10n.format("about.version", "1.0.0", locale: zh), "版本 1.0.0")
+    XCTAssertEqual(L10n.format("about.version", "1.0", locale: en), "Version 1.0")
+    XCTAssertEqual(L10n.format("about.version", "1.0", locale: zh), "版本 1.0")
     XCTAssertEqual(
-      L10n.format("about.version", "1.0.0", locale: Locale(identifier: "zh-Hant")),
-      "版本 1.0.0"
+      L10n.format("about.version", "1.0", locale: Locale(identifier: "zh-Hant")),
+      "版本 1.0"
     )
     XCTAssertEqual(
-      L10n.format("about.version", "1.0.0", locale: Locale(identifier: "ja")),
-      "バージョン 1.0.0"
+      L10n.format("about.version", "1.0", locale: Locale(identifier: "ja")),
+      "バージョン 1.0"
     )
-    XCTAssertEqual(AppVersion.line(version: "1.0.0", locale: en), "Version 1.0.0")
-    XCTAssertEqual(AppVersion.menuTitle(version: "1.0.0", locale: en), "About 1.0.0")
-    XCTAssertEqual(AppVersion.menuTitle(version: "1.0.0", locale: zh), "关于 1.0.0")
-    XCTAssertFalse(AppVersion.line(version: "1.0.0", locale: en).contains("版本"))
-    XCTAssertFalse(AppVersion.menuTitle(version: "1.0.0", locale: en).contains("关于"))
+    XCTAssertEqual(AppVersion.line(version: "1.0", locale: en), "Version 1.0")
+    XCTAssertEqual(AppVersion.menuTitle(version: "1.0", locale: en), "About 1.0")
+    XCTAssertEqual(AppVersion.menuTitle(version: "1.0", locale: zh), "关于 1.0")
+    XCTAssertFalse(AppVersion.line(version: "1.0", locale: en).contains("版本"))
+    XCTAssertFalse(AppVersion.menuTitle(version: "1.0", locale: en).contains("关于"))
     XCTAssertEqual(L10n.t("__missing.l10n.key__", locale: en), "__missing.l10n.key__")
   }
 

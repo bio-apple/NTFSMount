@@ -1,11 +1,11 @@
 #!/bin/bash
 # Build Sparkle appcast.xml from dist/NTFSMount.pkg using generate_appcast.
-# Enclosure URL points at a GitHub Release asset (default pre-release v1.2.0), not Latest.
+# Enclosure URL points at the v1.0 GitHub Release asset, not Latest.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SPARKLE_VERSION="${SPARKLE_VERSION:-2.10.0}"
-TAG="${SPARKLE_RELEASE_TAG:-v1.2.0}"
+TAG="${SPARKLE_RELEASE_TAG:-v1.0}"
 PREFIX="${SPARKLE_DOWNLOAD_PREFIX:-https://github.com/bio-apple/NTFSMount/releases/download/${TAG}/}"
 KEYFILE="${SPARKLE_ED_KEY_FILE:-$HOME/Library/Application Support/NTFSMount-sparkle/eddsa-private.key}"
 PKG="${1:-$ROOT/dist/NTFSMount.pkg}"

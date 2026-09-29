@@ -3,7 +3,7 @@
 # Generated notes from generate-release-notes.sh are the source of truth on
 # a v* tag; a filled docs/RELEASE_NOTES/<version>.md is an optional override.
 # Usage:
-#   check-release-notes.sh <v1.2.1|1.2.1>
+#   check-release-notes.sh <v1.0|1.0>
 #   check-release-notes.sh --file PATH
 # Missing docs/RELEASE_NOTES/<version>.md is not a hard fail: notes are
 # generated from git log and then validated.

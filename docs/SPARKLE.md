@@ -16,7 +16,7 @@
 
 Feed（不是 GitHub Latest）：
 
-`https://github.com/bio-apple/NTFSMount/releases/download/v1.2.0/appcast.xml`
+`https://github.com/bio-apple/NTFSMount/releases/download/v1.0/appcast.xml`
 
 GitHub Releases 的 Atom 不能当 Sparkle feed 用。
 
@@ -37,18 +37,18 @@ GitHub Releases 的 Atom 不能当 Sparkle feed 用。
 ## 生成并发布 appcast
 
 1. `./scripts/package-pkg.sh` 得到 `dist/NTFSMount.pkg`
-2. `./scripts/sparkle-generate-appcast.sh`（可选 `SPARKLE_RELEASE_TAG=v1.2.0`）
-3. 把 `dist/appcast.xml` 上传到 **同一个** GitHub Release（默认 `v1.2.0`，且该 Release 必须是 pre-release，**不要**标成 Latest）：
+2. `./scripts/sparkle-generate-appcast.sh`（可选 `SPARKLE_RELEASE_TAG=v1.0`）
+3. 把 `dist/appcast.xml` 上传到 **v1.0** Release。未公证时 **不要** 把 feed 改成 Latest：
 
 ```bash
-gh release upload v1.2.0 --clobber dist/appcast.xml
+gh release upload v1.0 --clobber dist/appcast.xml
 ```
 
 `generate_appcast` 会给安装包写 `sparkle:edSignature`。enclosure URL 形如：
 
-`https://github.com/bio-apple/NTFSMount/releases/download/v1.2.0/NTFSMount.pkg`
+`https://github.com/bio-apple/NTFSMount/releases/download/v1.0/NTFSMount.pkg`
 
-已装 1.2.0 起的应用会一直读这个 feed URL。发 **1.2.1** 或更新版本时：把新安装包传到对应 tag，再生成一份列出新版本的 `appcast.xml`，用 `--clobber` **覆盖 v1.2.0 上的 appcast.xml**。不要改用 `/releases/latest/download/appcast.xml`，除非 FUSE-T 再分发与公证都已完成。
+当前应用读的就是这个 feed URL。以后发新版本时，把新安装包传到对应 tag，再生成 appcast。不要改用 `/releases/latest/download/appcast.xml`，除非 FUSE-T 再分发与公证都已完成。
 
 需要 Sparkle CLI 时，脚本会从 GitHub 拉取钉死的 Sparkle 2.10.0 工具包（或使用 `SPARKLE_BIN` / SPM artifacts 里的 `generate_appcast`）。
 
