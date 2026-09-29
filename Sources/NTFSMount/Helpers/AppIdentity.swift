@@ -15,6 +15,8 @@ enum AppIdentity {
   static let appPathFile = "/Library/Application Support/NTFSMount/app.path"
   static let legacyHelperPath = "/usr/local/sbin/ntfs-rw-helper"
   static let legacySudoers = "/etc/sudoers.d/ntfs-rw"
+  /// Legacy paths. Auto-mount is app-side now (DiskWatch), so install/uninstall remove these;
+  /// nothing in the app reads them.
   static let daemonPlist = "/Library/LaunchDaemons/com.bioapple.ntfsmount.automount.plist"
   static let helperDaemonPlist = "/Library/LaunchDaemons/com.bioapple.ntfsmount.helper.plist"
   static let legacyDaemonPlist = "/Library/LaunchDaemons/local.ntfsmount.automount.plist"

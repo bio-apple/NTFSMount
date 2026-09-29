@@ -37,6 +37,10 @@ public enum UserFacingError {
     if lower.contains("operation not permitted") && t.contains("/dev/") {
       return .rawDeviceDenied
     }
+    // The daemon pins the app by CDHash; a replaced app gets this on every socket request.
+    if lower.contains("failed the signature check") {
+      return .helperNeedsUpdate
+    }
     if lower.contains("password") && lower.contains("sudo") {
       return .helperNeedsUpdate
     }

@@ -30,4 +30,4 @@ Signed/notarized builds register the daemon with `SMAppService`. Ad-hoc builds f
 
 `exec-root` calls `setgid(0)`/`setuid(0)` before exec, so the child is real root like `sudo`. Authorization Services only raises the effective uid, and ntfs-3g refuses to mount when `getuid() != geteuid()` with an external FUSE library.
 
-**Privilege path (auto-mount):** Unix socket v2 → `ntfsmount-helperd` (root, CDHash pin) → sealed `ntfs-rw-helper automount`. Hung-up clients are not executed.
+**Auto-mount:** app-side. `DiskWatch` (DiskArbitration) wakes a scan, and eligible external NTFS volumes are queued through the same mount path the menu uses — so auto-mount inherits the app's Full Disk Access and no root daemon is involved. A leftover LaunchDaemon from older builds is removed by `install-helper.sh`.

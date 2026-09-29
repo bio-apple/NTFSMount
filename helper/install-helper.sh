@@ -148,6 +148,14 @@ done
 # 只清理旧版 sudoers / 符号链接，绝不写入 /etc/sudoers.d
 /bin/rm -f "$SUDOERS" "$LEGACY_HELPER"
 
+# 自动挂载已改为 app 侧（DiskWatch + 同一个挂载路径），不再需要 root 守护进程。
+# 这里顺手卸掉旧版 LaunchDaemon：它是 root 进程，需要自己那份「完全磁盘访问」，
+# 而且失败时每 ~50 秒重试一轮，会干扰 app 刚挂好的卷。
+"$LAUNCHCTL" bootout system/com.bioapple.ntfsmount.automount >/dev/null 2>&1 || true
+"$LAUNCHCTL" bootout system/local.ntfsmount.automount >/dev/null 2>&1 || true
+/bin/rm -f /Library/LaunchDaemons/com.bioapple.ntfsmount.automount.plist \
+  /Library/LaunchDaemons/local.ntfsmount.automount.plist
+
 if [[ ! -S "$SOCK" && ! -e "$SOCK" ]]; then
   echo "error: helper files were copied, but the socket did not appear ($SOCK)." >&2
   echo "Allow NTFSMount to run in the background under System Settings → General → Login Items & Extensions, then try again." >&2

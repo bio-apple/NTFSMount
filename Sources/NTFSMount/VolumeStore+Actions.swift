@@ -400,24 +400,10 @@ extension VolumeStore {
   }
 
   func enableAutoMountDefault() {
-    autoMount = Privileged.autoMountEnabled
-    if Privileged.autoMountEnabled {
-      mountDefaultWritableIfNeeded()
-      return
-    }
-    guard AutoMountPolicy.shouldAutoEnable(
-      helperInstalled: helperInstalled,
-      legalAccepted: LegalGate.hasAcceptedLegal,
-      userOptedOff: UserDefaults.standard.bool(forKey: AppIdentity.Defaults.autoMountUserOff)
-    ) else { return }
-    AppIdentity.markWritableAccepted()
-    busyId = "automount"
-    Task {
-      let result = await Privileged.run("enable-automount")
-      self.busyId = nil
-      self.autoMount = Privileged.autoMountEnabled
-      if !result.ok { self.setMessage(self.display(result.text)) } else { self.mountDefaultWritableIfNeeded() }
-    }
+    // Nothing privileged to switch on any more: auto-mount is this app watching DiskArbitration
+    // and running the normal mount path. Readiness is still gated in mountDefaultWritableIfNeeded.
+    autoMount = autoMountPreference
+    if autoMount { mountDefaultWritableIfNeeded() }
   }
 
   func mountDefaultWritableIfNeeded() {
@@ -468,19 +454,11 @@ extension VolumeStore {
       if !LegalGate.confirmWritable() { return }
       if !confirmDriverIfNeeded() { return }
     }
-    let cmd = turningOff ? "disable-automount" : "enable-automount"
-    busyId = "automount"
-    setMessage("")
-    defer { busyId = nil }
-    let result = await Privileged.run(cmd)
-    autoMount = Privileged.autoMountEnabled
-    if result.ok {
-      UserDefaults.standard.set(turningOff, forKey: AppIdentity.Defaults.autoMountUserOff)
-      setMessage(autoMount ? L10n.t("automount.enabled") : L10n.t("automount.disabled"))
-      if autoMount { mountDefaultWritableIfNeeded() }
-    } else {
-      setMessage(display(result.text))
-    }
+    // App-side switch only (no LaunchDaemon), so this needs no administrator prompt.
+    UserDefaults.standard.set(turningOff, forKey: AppIdentity.Defaults.autoMountUserOff)
+    autoMount = !turningOff
+    setMessage(autoMount ? L10n.t("automount.enabled") : L10n.t("automount.disabled"))
+    if autoMount { mountDefaultWritableIfNeeded() }
   }
 
   private func run(

@@ -3,6 +3,30 @@ import NTFSMountCore
 import XCTest
 
 final class VolumeHealthTests: XCTestCase {
+  func testDeniedDeviceOpenIsNotDirtyOrCorrupt() {
+    // What ntfsfix prints when TCC blocks the raw device instead of a real verdict.
+    let denied = """
+    Mounting volume... Error opening '/dev/disk4s2': Operation not permitted
+    FAILED
+    Volume is corrupt. You should run chkdsk.
+    """
+    XCTAssertTrue(VolumeHealth.looksDenied(denied))
+    XCTAssertFalse(VolumeHealth.looksCorrupted(denied))
+    XCTAssertFalse(VolumeHealth.looksDirty(denied))
+    XCTAssertEqual(VolumeHealth.probeKind(from: denied), .unknown)
+    XCTAssertNil(VolumeHealth.preMountDialog(for: VolumeHealth.probeKind(from: denied)))
+    // ntfs-3g's own hint on the same denial must not read as a dirty volume either.
+    let mountDenied = """
+    Failed to mount '/dev/disk4s2': Operation not permitted
+    The NTFS partition is in an unsafe state.
+    """
+    XCTAssertFalse(VolumeHealth.looksDirty(mountDenied))
+    XCTAssertEqual(VolumeHealth.probeKind(from: mountDenied), .unknown)
+    // A real verdict still classifies.
+    XCTAssertTrue(VolumeHealth.looksCorrupted("NTFS volume may be corrupted"))
+    XCTAssertTrue(VolumeHealth.looksDirty("Volume is dirty. Please run chkdsk."))
+  }
+
   func testDirtyAndHibernationAreReadOnly() {
     XCTAssertTrue(VolumeHealth.looksDirtyOrHibernated("Volume is dirty. Please run chkdsk."))
     XCTAssertTrue(VolumeHealth.looksDirtyOrHibernated("Windows is hibernated, refused to mount."))
@@ -157,3 +181,27 @@ final class VolumeHealthTests: XCTestCase {
     XCTAssertFalse(fallback == "Yes" || fallback == "No")
   }
 }
+  func testReadOnlyFuseMountReadsAsReadOnlyNotSystem() {
+    let en = Locale(identifier: "en")
+    XCTAssertEqual(
+      VolumeHealth.shortStatus(
+        busy: false, isWritableFuse: false, isReadOnlyMounted: true,
+        isReadOnlyFuse: true, lastAdvice: nil, locale: en
+      ),
+      "Read-only · NTFSMount"
+    )
+    XCTAssertTrue(
+      VolumeHealth.detailStatus(
+        isWritableFuse: false, isReadOnlyMounted: true,
+        isReadOnlyFuse: true, lastAdvice: nil, locale: en
+      ).contains("read-only by this app")
+    )
+    // The cause still wins when we know it, so a dirty volume is named as dirty.
+    XCTAssertEqual(
+      VolumeHealth.shortStatus(
+        busy: false, isWritableFuse: false, isReadOnlyMounted: true,
+        isReadOnlyFuse: true, lastAdvice: .readOnlyDirty, locale: en
+      ),
+      "Read-only · hibernate / unclean shutdown"
+    )
+  }

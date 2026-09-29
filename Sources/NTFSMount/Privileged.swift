@@ -22,11 +22,6 @@ enum Privileged {
       || SMAppService.daemon(plistName: "com.bioapple.ntfsmount.helper.plist").status == .enabled
   }
 
-  static var autoMountEnabled: Bool {
-    FileManager.default.fileExists(atPath: AppIdentity.daemonPlist)
-      || FileManager.default.fileExists(atPath: AppIdentity.legacyDaemonPlist)
-  }
-
   static var hasLegacySudoers: Bool {
     FileManager.default.fileExists(atPath: AppIdentity.legacySudoers)
   }
@@ -34,6 +29,13 @@ enum Privileged {
   static var helperNeedsUpdate: Bool {
     if hasLegacySudoers { return true }
     guard systemHelperInstalled else { return false }
+    // Auto-mount moved into the app. A leftover LaunchDaemon would keep retrying without Full
+    // Disk Access and its failed attempts unmount / kill what the app just mounted, so ask for the
+    // helper update that removes it.
+    if FileManager.default.fileExists(atPath: AppIdentity.daemonPlist)
+      || FileManager.default.fileExists(atPath: AppIdentity.legacyDaemonPlist) {
+      return true
+    }
     guard let bundled = Bundle.main.path(forResource: "ntfs-rw-helper", ofType: nil),
           let sha = AppIdentity.sha256File(bundled)
     else { return true }
@@ -310,13 +312,7 @@ enum Privileged {
     }
     if let via = transactViaAppChild(args) {
       logHelperCall(cmd: cmd, disk: disk, via: via)
-      // ntfs-3g refuses to run when it sees a setuid mount. The launcher sets real uid 0 to avoid
-      // that, so this means the child never got real root; retry once through the daemon, which is
-      // real root. Only mount/unmount are idempotent (they unmount first) — never retry format.
-      if via.ok || cmd != "mount" || !via.text.contains("insecure with the external FUSE library") {
-        return via
-      }
-      AppLog.helper.error("app-child mount refused as setuid; retrying via daemon")
+      return via
     }
     if let via = transactViaDaemon(args) {
       logHelperCall(cmd: cmd, disk: disk, via: via)
@@ -338,28 +334,29 @@ enum Privileged {
   /// applicable so the caller can fall back to the daemon socket.
   private static func transactViaAppChild(_ args: [String]) -> Outcome? {
     guard let cmd = args.first, appChildCommands.contains(cmd) else { return nil }
-    let sealed = AppIdentity.helperSupportPath
-    let daemon = AppIdentity.helperDaemonPath
-    guard let bundledHelper = Bundle.main.path(forResource: "ntfs-rw-helper", ofType: nil),
-          let bundledDaemon = Bundle.main.path(forResource: "ntfsmount-helperd", ofType: nil),
-          AppIdentity.sha256File(sealed) == AppIdentity.sha256File(bundledHelper),
-          // The one-shot `exec-root` mode is what makes this child real root. An older sealed
-          // helperd without it would daemonize here and never return, so require an exact match.
-          AppIdentity.sha256File(daemon) == AppIdentity.sha256File(bundledDaemon)
+    // The launcher must be the copy *inside the app bundle*: TCC resolves an app-bundle binary to
+    // the app's own identity, so the app's Full Disk Access covers what it runs. The sealed copies
+    // under /Library are their own TCC subjects and get "Operation not permitted" on the raw
+    // device — which is what made this look like flaky mounting.
+    let launcher = Bundle.main.bundlePath + "/Contents/MacOS/ntfsmount-helperd"
+    let sealedHelper = AppIdentity.helperSupportPath
+    guard FileManager.default.isExecutableFile(atPath: launcher),
+          let bundledHelper = Bundle.main.path(forResource: "ntfs-rw-helper", ofType: nil),
+          let sealedSHA = AppIdentity.sha256File(sealedHelper),
+          AppIdentity.sha256File(bundledHelper) == sealedSHA
     else {
-      return nil
+      return Outcome(ok: false, text: L10n.t("privileged.helperMissing"))
     }
-    let launch = AdminAuthorization.runTool(parts: [daemon, "exec-root", sealed] + args)
+    // exec-root only ever runs the sealed helper, so the tool chain stays sealed even though the
+    // launcher is the bundle copy.
+    let launch = AdminAuthorization.runTool(parts: [launcher, "exec-root", sealedHelper] + args)
     if launch.launched {
       return Outcome(ok: launch.ok, text: launch.text)
     }
-    // The administrator prompt was canceled: honor it instead of silently running the same
-    // operation through the daemon.
-    if UserFacingError.kind(from: launch.text) == .canceled {
-      AppLog.helper.error("canceled \(cmd, privacy: .public)")
-      return Outcome(ok: false, text: launch.text)
-    }
-    return nil
+    // No daemon fallback: a LaunchDaemon never inherits the app's grant, so retrying there only
+    // hides the real reason (usually a dismissed administrator prompt) behind a device denial.
+    AppLog.helper.error("app-child launch failed \(cmd, privacy: .public)")
+    return Outcome(ok: false, text: launch.text)
   }
 
   private static func transactViaDaemon(_ args: [String]) -> Outcome? {

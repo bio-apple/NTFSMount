@@ -29,7 +29,12 @@ final class VolumeStore: ObservableObject {
   @Published var helperInstallBusy = false
   @Published var formatDisks: [FormatDisk] = []
   @Published var encryptedDisks: [PossibleEncryptedDisk] = []
-  @Published var autoMount: Bool = Privileged.autoMountEnabled
+  /// Auto-mount is app-side: DiskArbitration changes wake `refresh()`, which pumps eligible
+  /// volumes through the same path the menu uses. No LaunchDaemon, so the helper never needs its
+  /// own Full Disk Access. On unless the user turned it off.
+  @Published var autoMount: Bool = !UserDefaults.standard.bool(
+    forKey: AppIdentity.Defaults.autoMountUserOff
+  )
   @Published var launchAtLogin: Bool = SMAppService.mainApp.status == .enabled
   @Published var showDock: Bool = AppIdentity.bool(forKey: AppIdentity.Defaults.showDock, default: true)
   @Published var cleanMacJunkBeforeEject: Bool = AppIdentity.bool(
@@ -248,6 +253,7 @@ final class VolumeStore: ObservableObject {
       busy: busyId == vol.id,
       isWritableFuse: vol.isWritableFuse,
       isReadOnlyMounted: vol.isReadOnlyMounted,
+      isReadOnlyFuse: vol.isReadOnlyFuse,
       lastAdvice: lastAdvice[vol.id]
     )
   }
@@ -256,6 +262,7 @@ final class VolumeStore: ObservableObject {
     VolumeHealth.detailStatus(
       isWritableFuse: vol.isWritableFuse,
       isReadOnlyMounted: vol.isReadOnlyMounted,
+      isReadOnlyFuse: vol.isReadOnlyFuse,
       lastAdvice: lastAdvice[vol.id]
     )
   }
@@ -286,6 +293,16 @@ final class VolumeStore: ObservableObject {
   /// Formatting goes through the same helper as mount/unmount; a missing or stale helper
   /// rejects it. Gate the menu so the user sees why instead of a silent no-op.
   var canFormat: Bool { helperInstalled && !Privileged.helperNeedsUpdate }
+
+  /// Effective app-side auto-mount: on by default once the helper is installed and the legal copy
+  /// is accepted, off when the user opted out. Only the opt-out is stored.
+  var autoMountPreference: Bool {
+    AutoMountPolicy.shouldAutoEnable(
+      helperInstalled: helperInstalled,
+      legalAccepted: LegalGate.hasAcceptedLegal,
+      userOptedOff: UserDefaults.standard.bool(forKey: AppIdentity.Defaults.autoMountUserOff)
+    )
+  }
 
   var formatHelp: String {
     if !helperInstalled { return L10n.t("mount.needHelper") }
@@ -353,7 +370,6 @@ final class VolumeStore: ObservableObject {
   private func finishInstallHelper(_ result: Privileged.Outcome) async -> Privileged.Outcome {
     helperInstalled = Privileged.systemHelperInstalled
     if result.ok {
-      UserDefaults.standard.set(false, forKey: AppIdentity.Defaults.autoMountUserOff)
       setMessage(display(result.text))
       if Privileged.daemonReady {
         markHelperSHAMatched()
@@ -410,7 +426,7 @@ final class VolumeStore: ObservableObject {
     defer { helperInstallBusy = false }
     let result = await Privileged.uninstallHelper()
     helperInstalled = Privileged.systemHelperInstalled
-    autoMount = Privileged.autoMountEnabled
+    autoMount = autoMountPreference
     setMessage(display(result.text))
   }
 
@@ -555,8 +571,8 @@ final class VolumeStore: ObservableObject {
     self.volumes = volumes
     self.formatDisks = formatDisks
     encryptedDisks = encrypted
-    autoMount = Privileged.autoMountEnabled
     helperInstalled = Privileged.systemHelperInstalled
+    autoMount = autoMountPreference
     let ids = Set(volumes.map(\.id))
     skippedUnmount.formIntersection(ids)
     autoMountAttempted.formIntersection(ids)

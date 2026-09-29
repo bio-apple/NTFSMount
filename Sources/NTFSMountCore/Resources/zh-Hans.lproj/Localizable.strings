@@ -177,6 +177,10 @@
 
 "status.detailRoSystem" = "已挂载（只读）：系统 NTFS 驱动，可在下方改成可写（卷须干净）";
 
+"status.roFuse" = "只读 · NTFSMount";
+
+"status.detailRoFuse" = "已由本应用以只读方式挂载（可写尝试未成功）。可点「以可写方式挂载」重试";
+
 "volume.stateWritable" = "可写";
 
 "volume.stateRoSystem" = "系统只读";
@@ -237,7 +241,7 @@
 
 "settings.autoMount" = "插入时自动挂载外置 NTFS";
 
-"settings.autoMountNote" = "默认打开。插入健康的外置 NTFS 会自动以可写方式挂载。脏盘或 Windows 休眠保持只读（不会自动修复或清除休眠文件）。内置盘不自动可写。可随时在此关闭。";
+"settings.autoMountNote" = "默认打开。插入健康的外置 NTFS 会自动以可写方式挂载。脏盘或 Windows 休眠保持只读（不会自动修复或清除休眠文件）。内置盘不自动可写。自动挂载在 App 运行期间生效，每次会话的首次挂载可能询问管理员密码。可随时在此关闭。";
 
 "settings.autoMountNeedHelper" = "请先安装或更新挂载助手，然后才能打开自动挂载。";
 

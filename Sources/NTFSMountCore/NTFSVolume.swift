@@ -7,6 +7,8 @@ public struct NTFSVolume: Identifiable, Equatable, Sendable {
   public let mountPoint: String
   public let isWritableFuse: Bool
   public let isReadOnlyMounted: Bool
+  /// Our FUSE mount, but mounted read-only (dirty volume, or the writable attempt failed).
+  public let isReadOnlyFuse: Bool
   public let isInternal: Bool
   public let mediaName: String
   public let usedBytes: Int64
@@ -21,6 +23,7 @@ public struct NTFSVolume: Identifiable, Equatable, Sendable {
     mountPoint: String,
     isWritableFuse: Bool,
     isReadOnlyMounted: Bool,
+    isReadOnlyFuse: Bool = false,
     isInternal: Bool,
     mediaName: String,
     usedBytes: Int64,
@@ -33,6 +36,7 @@ public struct NTFSVolume: Identifiable, Equatable, Sendable {
     self.mountPoint = mountPoint
     self.isWritableFuse = isWritableFuse
     self.isReadOnlyMounted = isReadOnlyMounted
+    self.isReadOnlyFuse = isReadOnlyFuse
     self.isInternal = isInternal
     self.mediaName = mediaName
     self.usedBytes = usedBytes
@@ -93,6 +97,7 @@ public struct NTFSVolume: Identifiable, Equatable, Sendable {
     }
 
     let fusePoints = catalog.fuseMountPoints()
+    let readOnlyFusePoints = catalog.readOnlyFuseMountPoints()
 
     var out: [NTFSVolume] = []
     for ident in ids {
@@ -107,7 +112,9 @@ public struct NTFSVolume: Identifiable, Equatable, Sendable {
       let fuseMp = fusePoints.contains(diskutilMp) ? diskutilMp
         : (fusePoints.contains(expected) ? expected : "")
       let mp = fuseMp.isEmpty ? diskutilMp : fuseMp
-      let fuse = !fuseMp.isEmpty
+      // Ours and read-only is not the same as ours and writable.
+      let fuseReadOnly = !fuseMp.isEmpty && readOnlyFusePoints.contains(mp)
+      let fuse = !fuseMp.isEmpty && !fuseReadOnly
       let media = volumeMediaName(info: info, volumeName: volumeName)
       let diskutilFree = (info["VolumeFreeSpace"] as? NSNumber)?.int64Value
         ?? (info["FreeSpace"] as? NSNumber)?.int64Value
@@ -135,6 +142,7 @@ public struct NTFSVolume: Identifiable, Equatable, Sendable {
           mountPoint: mp,
           isWritableFuse: fuse,
           isReadOnlyMounted: !mp.isEmpty && !fuse,
+          isReadOnlyFuse: fuseReadOnly,
           isInternal: isInternalDisk,
           mediaName: media,
           usedBytes: used,

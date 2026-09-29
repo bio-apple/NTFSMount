@@ -63,6 +63,16 @@ final class UserFacingErrorTests: XCTestCase {
       UserFacingError.kind(from: "Could not open /dev/disk4s2: Resource busy"),
       .diskBusy
     )
+    // The daemon pins the app by CDHash; a replaced app gets this on every socket request and the
+    // fix is the same "update the helper" flow.
+    XCTAssertEqual(
+      UserFacingError.kind(from: "Caller failed the signature check."),
+      .helperNeedsUpdate
+    )
+    XCTAssertEqual(
+      UserFacingError.message(from: "Caller failed the signature check.", locale: zh),
+      L10n.t("error.helperNeedsUpdate", locale: zh)
+    )
   }
 
   func testMapsBusyEject() {

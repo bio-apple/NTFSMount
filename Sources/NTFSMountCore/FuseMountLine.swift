@@ -16,6 +16,23 @@ public enum FuseMountLine {
       || lower.contains("smbfs")
   }
 
+  /// `mount(8)` prints `read-only` in the option list for a read-only mount. Being *our* FUSE
+  /// mount says nothing about writability: a dirty volume mounts read-only through ntfs-3g too.
+  public static func isReadOnly(_ line: String) -> Bool {
+    line.lowercased().contains("read-only")
+  }
+
+  /// Mount point → whether it is mounted read-only.
+  public static func fuseMountStates(fromMountOutput text: String) -> [String: Bool] {
+    var out: [String: Bool] = [:]
+    for raw in text.split(separator: "\n") {
+      let line = String(raw)
+      guard isOurFuseMount(line), let mp = mountPoint(from: line) else { continue }
+      out[mp] = isReadOnly(line)
+    }
+    return out
+  }
+
   public static func mountPoint(from line: String) -> String? {
     guard let on = line.range(of: " on "),
           let end = line.range(of: " (")
@@ -26,12 +43,6 @@ public enum FuseMountLine {
   }
 
   public static func fuseMountPoints(fromMountOutput text: String) -> Set<String> {
-    var fuse = Set<String>()
-    for raw in text.split(separator: "\n") {
-      let line = String(raw)
-      guard isOurFuseMount(line), let mp = mountPoint(from: line) else { continue }
-      fuse.insert(mp)
-    }
-    return fuse
+    Set(fuseMountStates(fromMountOutput: text).keys)
   }
 }

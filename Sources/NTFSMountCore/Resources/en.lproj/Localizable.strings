@@ -177,6 +177,10 @@ Return means you agree. Click “Quit” if you do not.";
 
 "status.detailRoSystem" = "Mounted (read-only): system NTFS driver. You can switch to writable below if the volume is clean";
 
+"status.roFuse" = "Read-only · NTFSMount";
+
+"status.detailRoFuse" = "Mounted read-only by this app (the read/write attempt failed). Choose Mount Writable to try again";
+
 "volume.stateWritable" = "Writable";
 
 "volume.stateRoSystem" = "System read-only";
@@ -237,7 +241,7 @@ Return means you agree. Click “Quit” if you do not.";
 
 "settings.autoMount" = "Auto-mount external NTFS when inserted";
 
-"settings.autoMountNote" = "On by default. Inserting a healthy external NTFS disk mounts it writable. Dirty or hibernated volumes stay read-only (no auto-repair, no hiberfile clear). Internal disks are skipped. You can turn this off here.";
+"settings.autoMountNote" = "On by default. Inserting a healthy external NTFS disk mounts it writable. Dirty or hibernated volumes stay read-only (no auto-repair, no hiberfile clear). Internal disks are skipped. Auto-mount runs while the app is running, and the first mount of a session may ask for the administrator password. You can turn this off here.";
 
 "settings.autoMountNeedHelper" = "Install or update the mount helper before turning on auto-mount.";
 

@@ -295,15 +295,25 @@ looks_like_kext_or_fskit_block() {
   echo "$1" | /usr/bin/grep -qiE 'fskit|kext|kernel extension|module .* is disabled|System Extension|内核扩展'
 }
 
+# TCC can deny opening the raw device (no Full Disk Access). ntfsfix / ntfs-3g then print
+# "Operation not permitted" *and* their generic "Volume is corrupt" / "unsafe state" hints, which
+# must never be read as a real corruption / dirty verdict — that silently downgraded mounts to
+# read-only and blamed the disk.
+looks_like_open_denied() {
+  echo "$1" | /usr/bin/grep -qiE 'operation not permitted|permission denied'
+}
+
 looks_like_hiber() {
   echo "$1" | /usr/bin/grep -qiE 'hibernat|hiberfile|hiberfil'
 }
 
 looks_like_dirty() {
+  if looks_like_open_denied "$1"; then return 1; fi
   echo "$1" | /usr/bin/grep -qiE 'unclean|not cleanly|unsafe state|windows cache|fast restart|volume is dirty'
 }
 
 looks_like_corrupt() {
+  if looks_like_open_denied "$1"; then return 1; fi
   echo "$1" | /usr/bin/grep -qiE 'may be corrupt|volume is corrupt|ntfs volume is corrupt|failed to load \$mft'
 }
 
@@ -965,7 +975,8 @@ try_mount() {
   "$NTFS3G" "/dev/$ident" "$mp" -o "$opts" >>"$log" 2>&1 &
   pid=$!
   disown "$pid" 2>/dev/null || true
-  for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+  # 首次经 FUSE-T/SMB 挂载可能比旧窗口（8 秒）慢，短窗口会把已经挂上的卷报成失败。
+  for i in {1..30}; do
     if [[ "$mode" == "ro" ]]; then
       if [[ -n "$(mount_line "$mp")" ]]; then
         if [[ "$VERBOSE" -eq 1 ]]; then
@@ -1001,8 +1012,14 @@ try_mount() {
         fi
       fi
     fi
-    sleep 0.4
+    sleep 0.5
   done
+  # 最后一次确认：挂载刚完成时不能再报失败。
+  if [[ "$mode" == "ro" ]]; then
+    [[ -n "$(mount_line "$mp")" ]] && return 0
+  elif is_writable_mount "$mp" && can_write "$mp"; then
+    return 0
+  fi
   if [[ "$VERBOSE" -eq 1 ]]; then
     log_event "$ident" "$NTFS3G" "1" "$(($(now_ms) - start))"
   fi
@@ -1068,6 +1085,10 @@ do_mount() {
         notify "NTFS volume mounted read/write."
         return 0
       fi
+      # 打不开设备（多半是没有完全磁盘访问）不是脏卷，也不该悄悄降级成只读。
+      if looks_like_open_denied "$err"; then
+        die "Mount failed: cannot open /dev/$ident: Operation not permitted. Grant Full Disk Access to NTFSMount.app in System Settings, then retry."
+      fi
       if looks_like_dirty_or_hiber "$err"; then
         dirty=1
         break
@@ -1111,6 +1132,9 @@ do_mount() {
         notify "$ro_msg"
         return 0
       fi
+      if looks_like_open_denied "$err"; then
+        die "Mount failed: cannot open /dev/$ident: Operation not permitted. Grant Full Disk Access to NTFSMount.app in System Settings, then retry."
+      fi
     done
     echo "$classify_line"
     notify "Mount failed: the volume was not shut down cleanly or Windows is hibernated."
@@ -1118,6 +1142,10 @@ do_mount() {
   fi
 
   unmount_any "$ident"
+  # ntfs-3g can start, print nothing and never mount; an empty detail tells the user nothing.
+  if [[ -z "$err" ]]; then
+    err="ntfs-3g never mounted and printed nothing (device not openable, or FUSE-T unavailable)"
+  fi
   local ver
   ver="$(macos_major)"
   if [[ -n "$ver" && "$ver" -lt 13 ]]; then
@@ -1955,6 +1983,10 @@ do_selftest() {
   [[ "$(volume_state_from_text 'NTFS volume may be corrupted')" == corrupt ]] || die "selftest: corrupt classification"
   [[ "$(volume_state_from_text 'NTFS partition /dev/disk4s1 was processed successfully.')" == clean ]] || die "selftest: clean classification"
   [[ "$(volume_state_from_text 'Volume is dirty. Windows is hibernated.')" == hiber ]] || die "selftest: hiber takes priority over dirty"
+  denied_text="Error opening '/dev/disk4s2': Operation not permitted"$'\n'"Volume is corrupt. You should run chkdsk."
+  looks_like_open_denied "$denied_text" || die "selftest: a TCC denial must be recognized"
+  [[ "$(volume_state_from_text "$denied_text")" == unknown ]] || die "selftest: a denied device open must not classify as corrupt"
+  [[ "$(volume_state_from_text "Failed to mount '/dev/disk4s2': Operation not permitted"$'\n'"The NTFS partition is in an unsafe state.")" == unknown ]] || die "selftest: a denied open must not classify as dirty"
   [[ "$(classify_line_for_state dirty)" == "classify: volume is dirty" ]] || die "selftest: dirty classify line"
   [[ "$(classify_line_for_state corrupt)" == "classify: volume may be corrupted" ]] || die "selftest: corrupt classify line"
   [[ "$(whole_disk_id disk4s2)" == "disk4" ]] || die "selftest: disk4s2 whole disk"

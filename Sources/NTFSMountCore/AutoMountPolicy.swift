@@ -42,7 +42,8 @@ public enum AutoMountPolicy {
     }
   }
 
-  /// App-side pump: never mount before legal consent, even if the automount plist already exists.
+  /// App-side pump: auto-mount is on by default, but never mount before the helper is ready and
+  /// the legal copy is accepted.
   public static func mayAttempt(
     autoMountEnabled: Bool,
     helperReady: Bool,

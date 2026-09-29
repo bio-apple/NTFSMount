@@ -4,6 +4,8 @@ public protocol DiskCatalog {
   func listPlist() -> [String: Any]?
   func infoPlist(_ identifier: String) -> [String: Any]?
   func fuseMountPoints() -> Set<String>
+  /// Subset of `fuseMountPoints()` that is mounted read-only (`mount(8)` `read-only` flag).
+  func readOnlyFuseMountPoints() -> Set<String>
   func fileSystemUsage(at path: String) -> (total: Int64, free: Int64)?
 }
 
@@ -84,6 +86,15 @@ public struct LiveDiskCatalog: DiskCatalog {
   public func fuseMountPoints() -> Set<String> {
     guard let text = client.mountOutput() else { return [] }
     return FuseMountLine.fuseMountPoints(fromMountOutput: text)
+  }
+
+  public func readOnlyFuseMountPoints() -> Set<String> {
+    guard let text = client.mountOutput() else { return [] }
+    return Set(
+      FuseMountLine.fuseMountStates(fromMountOutput: text)
+        .filter { $0.value }
+        .keys
+    )
   }
 
   public func fileSystemUsage(at path: String) -> (total: Int64, free: Int64)? {

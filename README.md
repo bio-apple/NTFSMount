@@ -51,7 +51,7 @@ flowchart TB
 - In the app: Diagnose Environment → Export Diagnostic Report and attach the zip to an [Issue](.github/ISSUE_TEMPLATE/bug_report.md).
 - After an upgrade: install the package again. It updates the mount helper. If you only replaced the app, use **Update mount helper**.
 - If Diagnose reports missing bundled ntfs-3g: reinstall from GitHub Latest (do not use Homebrew).
-- On Sequoia or later, grant **Full Disk Access** to `NTFSMount.app`. Mounting and formatting run as a child of the app, so that one grant covers them. Auto-mount goes through a LaunchDaemon, which does not inherit it; if auto-mount fails, add `ntfsmount-helperd` in the same list.
+- On Sequoia or later, grant **Full Disk Access** to `NTFSMount.app`. Mounting, formatting and auto-mount all run as a child of the app, so that one grant covers them. No separate helper entry is needed.
 
 ## License
 

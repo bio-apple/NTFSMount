@@ -27,7 +27,16 @@ public enum VolumeHealth {
       || t.contains("hiberfil")
   }
 
+  /// TCC can deny opening the raw device (no Full Disk Access). ntfsfix / ntfs-3g then also print
+  /// their generic "Volume is corrupt" / "unsafe state" hints, which must never be read as a real
+  /// verdict — that silently downgraded mounts to read-only and blamed the disk.
+  public static func looksDenied(_ text: String) -> Bool {
+    let t = text.lowercased()
+    return t.contains("operation not permitted") || t.contains("permission denied")
+  }
+
   public static func looksDirty(_ text: String) -> Bool {
+    if looksDenied(text) { return false }
     let t = text.lowercased()
     return t.contains("unclean")
       || t.contains("not cleanly")
@@ -38,6 +47,7 @@ public enum VolumeHealth {
   }
 
   public static func looksCorrupted(_ text: String) -> Bool {
+    if looksDenied(text) { return false }
     let t = text.lowercased()
     return t.contains("may be corrupt")
       || t.contains("volume is corrupt")
@@ -121,6 +131,7 @@ public enum VolumeHealth {
     busy: Bool,
     isWritableFuse: Bool,
     isReadOnlyMounted: Bool,
+    isReadOnlyFuse: Bool = false,
     lastAdvice: MountAdvice?,
     locale: Locale? = nil
   ) -> String {
@@ -128,6 +139,7 @@ public enum VolumeHealth {
     if isWritableFuse { return L10n.t("status.writable", locale: locale) }
     if isReadOnlyMounted {
       if lastAdvice == .readOnlyDirty { return L10n.t("status.roDirty", locale: locale) }
+      if isReadOnlyFuse { return L10n.t("status.roFuse", locale: locale) }
       return L10n.t("status.roSystem", locale: locale)
     }
     return L10n.t("status.unmounted", locale: locale)
@@ -136,12 +148,14 @@ public enum VolumeHealth {
   public static func detailStatus(
     isWritableFuse: Bool,
     isReadOnlyMounted: Bool,
+    isReadOnlyFuse: Bool = false,
     lastAdvice: MountAdvice?,
     locale: Locale? = nil
   ) -> String {
     if isWritableFuse { return L10n.t("status.detailWritable", locale: locale) }
     if isReadOnlyMounted {
       if lastAdvice == .readOnlyDirty { return L10n.t("status.detailDirty", locale: locale) }
+      if isReadOnlyFuse { return L10n.t("status.detailRoFuse", locale: locale) }
       return L10n.t("status.detailRoSystem", locale: locale)
     }
     if lastAdvice == .readOnlyDirty {

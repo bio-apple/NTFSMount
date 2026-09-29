@@ -100,6 +100,10 @@ enum AdminAuthorization {
       }
     }
     if status != errAuthorizationSuccess {
+      // A denied or canceled request can leave the ref in a state that never prompts again; drop
+      // it so the next attempt asks the user afresh.
+      sharedRef = nil
+      AuthorizationFree(authRef, [.destroyRights])
       return (nil, authorizationFailure(status))
     }
     return (authRef, nil)

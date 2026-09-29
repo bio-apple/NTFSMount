@@ -6,11 +6,13 @@ final class MockCatalog: DiskCatalog {
   var list: [String: Any] = [:]
   var info: [String: [String: Any]] = [:]
   var fuse: Set<String> = []
+  var readOnlyFuse: Set<String> = []
   var usage: [String: (Int64, Int64)] = [:]
 
   func listPlist() -> [String: Any]? { list }
   func infoPlist(_ identifier: String) -> [String: Any]? { info[identifier] }
   func fuseMountPoints() -> Set<String> { fuse }
+  func readOnlyFuseMountPoints() -> Set<String> { readOnlyFuse }
   func fileSystemUsage(at path: String) -> (total: Int64, free: Int64)? { usage[path] }
 }
 
@@ -22,6 +24,39 @@ final class FuseMountLineTests: XCTestCase {
     XCTAssertTrue(FuseMountLine.isOurFuseMount(mount))
     XCTAssertEqual(FuseMountLine.mountPoint(from: mount), "/Volumes/WIN_DATA")
     XCTAssertEqual(FuseMountLine.fuseMountPoints(fromMountOutput: mount), ["/Volumes/WIN_DATA"])
+  }
+
+  func testReadOnlyFuseMountIsDetectedFromMountOptions() {
+    let mount = """
+    //Guest:@fuse-t._smb._tcp.local/USB%20DISK on /Volumes/USB DISK (smbfs, read-only, noowners)
+    localhost:/ on /Volumes/WIN_DATA (nfs, nodev, nosuid, mounted by alice)
+    """
+    XCTAssertEqual(
+      FuseMountLine.fuseMountStates(fromMountOutput: mount),
+      ["/Volumes/USB DISK": true, "/Volumes/WIN_DATA": false]
+    )
+  }
+
+  func testReadOnlyFuseMountIsNotReportedWritable() {
+    let catalog = MockCatalog()
+    catalog.list = [
+      "AllDisksAndPartitions": [
+        ["DeviceIdentifier": "disk4", "Partitions": [["DeviceIdentifier": "disk4s1"]]],
+      ],
+    ]
+    catalog.info["disk4s1"] = [
+      "FilesystemName": "NTFS",
+      "VolumeName": "USB DISK",
+      "TotalSize": NSNumber(value: 62_000_000_000),
+      "MountPoint": "/Volumes/USB DISK",
+    ]
+    catalog.fuse = ["/Volumes/USB DISK"]
+    catalog.readOnlyFuse = ["/Volumes/USB DISK"]
+
+    let vol = NTFSVolume.scan(using: catalog).first
+    XCTAssertEqual(vol?.isWritableFuse, false, "our own read-only mount is not writable")
+    XCTAssertEqual(vol?.isReadOnlyMounted, true)
+    XCTAssertEqual(vol?.isReadOnlyFuse, true)
   }
 
   func testFuseMountPointsRecognizesClassicFuseBackends() {
