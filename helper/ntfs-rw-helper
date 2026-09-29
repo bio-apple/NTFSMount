@@ -617,7 +617,8 @@ OCCUPIERS_STATUS="ok"
 
 skip_occupier_cmd() {
   case "${1##*/}" in
-  lsof | fuser | ps | ntfs-rw-helper | ntfsmount-helperd | ntfs-3g | go-nfsv4 | nfsd | nfsiod | kernel_task)
+  lsof | fuser | ps | ntfs-rw-helper | ntfsmount-helperd | ntfs-3g | go-nfsv4 | nfsd | nfsiod | kernel_task | \
+    mds | mds_stores | mdworker | mdworker_shared | corespotlightd | fseventsd)
     return 0
     ;;
   esac
@@ -1950,6 +1951,12 @@ do_selftest() {
   fi
   is_localhost_nfs_line "127.0.0.1:/abc on /Volumes/Foo (nfs, nodev, nosuid)" || die "selftest: a FUSE-T NFS line should be recognized"
   [[ "${ALLOW_FORCE}" -eq 0 ]] || die "selftest: ALLOW_FORCE must still be 0 after the repair path"
+  skip_occupier_cmd mds || die "selftest: Spotlight mds must not block unmount"
+  skip_occupier_cmd mds_stores || die "selftest: Spotlight mds_stores must not block unmount"
+  skip_occupier_cmd fseventsd || die "selftest: fseventsd must not block unmount"
+  if skip_occupier_cmd Finder; then
+    die "selftest: Finder must still count as an occupier"
+  fi
 
   local st_dir st_pid st_names
   st_dir="$(/usr/bin/mktemp -d /tmp/ntfsmount-lsof.XXXXXX)"

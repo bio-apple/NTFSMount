@@ -328,6 +328,10 @@ if ! /usr/bin/grep -q 'guard_unmount_busy' "$HELPER"; then
   echo "helper must probe occupiers before unmount" >&2
   exit 1
 fi
+if ! /usr/bin/grep -q 'mds | mds_stores | mdworker | mdworker_shared | corespotlightd | fseventsd' "$HELPER"; then
+  echo "helper must ignore Spotlight and fseventsd when deciding a volume is busy" >&2
+  exit 1
+fi
 if ! /usr/bin/awk '
   $0 ~ /^unmount_any\(\)/ { inh=1 }
   inh && $0 ~ /^[a-z_]+\(\)/ && $0 !~ /^unmount_any\(\)/ { inh=0 }
