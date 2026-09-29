@@ -193,7 +193,13 @@ resolve_nfs_srv() {
 }
 
 die() {
-  echo "error: $*" >&2
+  local msg="error: $*"
+  echo "$msg" >&2
+  # 失败原因必须落盘：app 只显示一行，诊断需要原文。
+  if [[ -n "${LOG_FILE:-}" ]]; then
+    { printf '%s\n' "$(log_ts 2>/dev/null || true) ${CURRENT_IDENT:--} ${CURRENT_CMD:--} ${msg}" >>"$LOG_FILE"; } 2>/dev/null || true
+  fi
+  { printf '%s\n' "$(log_ts 2>/dev/null || true) die ${CURRENT_IDENT:--} ${CURRENT_CMD:--} ${msg}" >>/Library/Logs/ntfsmount-helperd.log; } 2>/dev/null || true
   exit 1
 }
 
@@ -1341,6 +1347,32 @@ sanitize_label() {
   printf '%s' "$label"
 }
 
+# 整盘（或任一分区）仍在 mount(1) 中。格式化前后用它确认真的卸干净了。
+whole_disk_has_mounts() {
+  local ident="${1:-}"
+  [[ -n "$ident" ]] || return 1
+  "$MOUNT" | /usr/bin/grep -qE "^/dev/${ident}(s[0-9]+)? on "
+}
+
+# 把整盘所有卷卸干净。diskutil 优雅卸载可能被 Spotlight(mdsync) 否决，失败就 force；
+# 每轮都用 mount(1) 校验，因为 eraseDisk 后新建的卷会被系统重新挂上。
+# 返回非 0 表示仍有卷挂着，调用方不得继续 mkntfs（否则会「Resource busy」）。
+unmount_disk_for_format() {
+  local ident="$1" attempt
+  for attempt in 1 2 3; do
+    if ! "$DISKUTIL" unmountDisk "$ident" >/dev/null 2>&1; then
+      log_force_warning "$ident" "format unmountDisk disk=${ident} attempt=${attempt}"
+      vlog "$DISKUTIL" unmountDisk force "$ident"
+      "$DISKUTIL" unmountDisk force "$ident" >/dev/null 2>&1 || true
+    fi
+    if ! whole_disk_has_mounts "$ident"; then
+      return 0
+    fi
+    /bin/sleep 0.5
+  done
+  ! whole_disk_has_mounts "$ident"
+}
+
 do_format() {
   local ident="$1"
   local label
@@ -1354,12 +1386,8 @@ do_format() {
 
   export PATH="${NTFS3G_DIR}:/usr/bin:/bin:/usr/sbin:/sbin"
   kill_ntfs3g_whole "$ident"
-  vlog "$DISKUTIL" unmountDisk "$ident"
-  if ! "$DISKUTIL" unmountDisk "$ident" >/dev/null 2>&1; then
-    log_force_warning "$ident" "format unmountDisk after user confirm"
-    vlog "$DISKUTIL" unmountDisk force "$ident"
-    "$DISKUTIL" unmountDisk force "$ident" >/dev/null 2>&1 || true
-  fi
+  # 抹盘前尽量卸干净；失败不致命，eraseDisk 自己会再卸一次。
+  unmount_disk_for_format "$ident" || true
 
   local out rc part dev
   set +e
@@ -1369,22 +1397,27 @@ do_format() {
   set -e
   [[ $rc -eq 0 ]] || die "partition failed: $out"
 
-  vlog "$DISKUTIL" unmountDisk "$ident"
-  if ! "$DISKUTIL" unmountDisk "$ident" >/dev/null 2>&1; then
-    log_force_warning "$ident" "format unmountDisk before mkntfs"
-    vlog "$DISKUTIL" unmountDisk force "$ident"
-    "$DISKUTIL" unmountDisk force "$ident" >/dev/null 2>&1 || true
-  fi
   part="$(data_partition "$ident")"
   valid_id "$part" || die "data partition not found: $ident"
   # macOS /dev/rdisk* is a character device; mkntfs needs a block device.
   dev="/dev/$part"
   [[ -b "$dev" ]] || die "not a block device: $dev"
+  # eraseDisk 会挂上新建的 ExFAT 卷，Spotlight 常否决优雅卸载；没卸干净就 mkntfs 会
+  # 「device busy」。这里必须确认卸干净再写，否则直接报错而不是留半成品。
+  if ! unmount_disk_for_format "$ident"; then
+    die "could not unmount ${ident} before writing NTFS (new volume still mounted, usually held by Spotlight). Eject the disk, replug it, and retry."
+  fi
 
   set +e
   vlog "$MKNTFS" -F -Q -L "$label" "$dev"
   out="$("$MKNTFS" -F -Q -L "$label" "$dev" 2>&1)"
   rc=$?
+  if [[ $rc -ne 0 ]] && unmount_disk_for_format "$ident"; then
+    # 写盘失败最常见的原因是卷又被系统挂上（Resource busy）；卸干净再试一次。
+    /bin/sync
+    out="$("$MKNTFS" -F -Q -L "$label" "$dev" 2>&1)"
+    rc=$?
+  fi
   set -e
   [[ $rc -eq 0 ]] || die "mkntfs failed: $out"
   /bin/sync
@@ -1934,6 +1967,12 @@ do_selftest() {
   fi
   if same_disk_tree disk4s2 disk0s2; then
     die "selftest: disk4s2 must not match another physical store"
+  fi
+  if whole_disk_has_mounts disk999; then
+    die "selftest: a disk with no mount must not report mounts"
+  fi
+  if whole_disk_has_mounts ""; then
+    die "selftest: an empty disk id must not report mounts"
   fi
   is_ntfsmount_runtime_path "/Applications/NTFSMount.app/Contents/MacOS/ntfs-3g" || die "selftest: bundled ntfs-3g should count as this app"
   is_ntfsmount_runtime_path "/Applications/NTFSMount.app/Contents/MacOS/go-nfsv4" || die "selftest: bundled go-nfsv4 should count as this app"

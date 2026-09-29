@@ -25,7 +25,7 @@ struct MenuRoot: View {
       Text(L10n.t("menu.noNTFS"))
       Text(store.formatDisks.isEmpty
         ? L10n.t("menu.insertHint")
-        : L10n.t("menu.formatOtherHint"))
+        : (store.canFormat ? L10n.t("menu.formatOtherHint") : store.formatHelp))
         .foregroundStyle(.secondary)
       ForEach(store.encryptedDisks) { disk in
         Text(L10n.format("menu.encryptedLine", disk.name))
@@ -94,11 +94,11 @@ struct MenuRoot: View {
           Button(L10n.format("menu.formatItem", disk.name, disk.fsHint, disk.sizeLabel), role: .destructive) {
             store.confirmFormat(disk)
           }
-          .disabled(store.busyId != nil || store.firstLaunchSetupBusy)
-          .help(disk.encryptionWarning ?? L10n.t("menu.eraseWholeDisk"))
+          .disabled(store.busyId != nil || store.firstLaunchSetupBusy || !store.canFormat)
+          .help(store.canFormat ? (disk.encryptionWarning ?? L10n.t("menu.eraseWholeDisk")) : store.formatHelp)
         }
       }
-      .disabled(store.firstLaunchSetupBusy)
+      .disabled(store.firstLaunchSetupBusy || !store.canFormat)
     }
     Divider()
     Button(L10n.t("menu.refresh")) { store.refresh() }

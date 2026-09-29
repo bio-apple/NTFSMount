@@ -333,6 +333,8 @@
 
 "alert.mountFailed" = "挂载失败";
 
+"alert.formatFailed" = "格式化失败";
+
 "alert.kextBody" = "FSKit/内核扩展不可用是 macOS 13+ 的预期情况，可忽略。本应用不使用内核扩展，助手已优先使用 NFS/用户态 FUSE。请勿安装 kext。\n\n%@";
 
 "alert.uninstallTitle" = "卸载挂载助手？";

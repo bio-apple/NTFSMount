@@ -4,6 +4,10 @@ public enum FormatPolicy {
   public static var cancelTitle: String { L10n.t("format.cancel") }
   public static var formatTitle: String { L10n.t("format.action") }
 
+  /// The helper's intermediate ExFAT volume name while erasing (`diskutil eraseDisk … _NTFSFMT`).
+  /// It is an implementation detail, never the user's disk name and never the new label.
+  public static let placeholderVolumeName = "_NTFSFMT"
+
   public static func cancelTitle(locale: Locale?) -> String {
     L10n.t("format.cancel", locale: locale)
   }

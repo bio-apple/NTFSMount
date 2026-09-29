@@ -315,7 +315,8 @@ private struct EmptyVolumeView: View {
               Button(L10n.format("window.formatNamed", disk.name, disk.fsHint, disk.sizeLabel)) {
                 store.confirmFormat(disk)
               }
-              .disabled(store.busyId != nil)
+              .disabled(store.busyId != nil || !store.canFormat)
+              .help(store.canFormat ? (disk.encryptionWarning ?? L10n.t("menu.eraseWholeDisk")) : store.formatHelp)
             }
           }
         }
@@ -527,7 +528,8 @@ private struct VolumeDetailView: View {
             store.confirmFormat(disk)
           }
           .buttonStyle(.bordered)
-          .help(disk.encryptionWarning ?? L10n.t("menu.eraseWholeDisk"))
+          .disabled(!store.canFormat)
+          .help(store.canFormat ? (disk.encryptionWarning ?? L10n.t("menu.eraseWholeDisk")) : store.formatHelp)
         }
       }
       .controlSize(.regular)

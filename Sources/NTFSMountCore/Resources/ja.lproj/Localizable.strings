@@ -333,6 +333,8 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "alert.mountFailed" = "マウントに失敗";
 
+"alert.formatFailed" = "フォーマットに失敗";
+
 "alert.kextBody" = "macOS 13 以降で FSKit／カーネル拡張が使えないのは想定どおりで、無視して構いません。このアプリはカーネル拡張を使いません。ヘルパーは NFS／ユーザ空間 FUSE を優先します。kext を入れないでください。\n\n%@";
 
 "alert.uninstallTitle" = "マウントヘルパーをアンインストールしますか？";

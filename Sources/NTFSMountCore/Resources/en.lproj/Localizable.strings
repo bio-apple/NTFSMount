@@ -333,6 +333,8 @@ Return means you agree. Click “Quit” if you do not.";
 
 "alert.mountFailed" = "Mount Failed";
 
+"alert.formatFailed" = "Format Failed";
+
 "alert.kextBody" = "FSKit/kernel extensions being unavailable is expected on macOS 13+. You can ignore it. This app does not use kernel extensions; the helper prefers NFS/userspace FUSE. Do not install a kext.\n\n%@";
 
 "alert.uninstallTitle" = "Uninstall the mount helper?";

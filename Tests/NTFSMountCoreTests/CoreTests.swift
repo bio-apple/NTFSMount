@@ -273,6 +273,32 @@ final class NTFSVolumeScanTests: XCTestCase {
     XCTAssertEqual(disks[0].mediaName, "SanDisk")
   }
 
+  func testFormatScanIgnoresHelperScratchVolumeName() {
+    let catalog = MockCatalog()
+    catalog.list = [
+      "AllDisksAndPartitions": [
+        ["DeviceIdentifier": "disk4", "Partitions": [["DeviceIdentifier": "disk4s1"]]],
+      ],
+    ]
+    catalog.info["disk4"] = [
+      "Internal": false,
+      "TotalSize": NSNumber(value: 62_000_000_000),
+      "BusProtocol": "USB",
+      "MediaName": "USB DISK",
+    ]
+    catalog.info["disk4s1"] = [
+      "FilesystemName": "ExFAT",
+      "VolumeName": FormatPolicy.placeholderVolumeName,
+    ]
+
+    let disks = FormatDisk.scan(using: catalog)
+    XCTAssertEqual(disks.map(\.id), ["disk4"])
+    XCTAssertEqual(disks[0].name, "USB DISK", "the scratch name must not become the disk name")
+    XCTAssertEqual(disks[0].suggestedLabel, "USB DISK")
+    XCTAssertNotEqual(disks[0].suggestedLabel, FormatPolicy.placeholderVolumeName)
+    XCTAssertEqual(disks[0].fsHint, "ExFAT")
+  }
+
   func testFormatScanProtectsAPFSPhysicalStoreEvenIfNotInternal() {
     let catalog = MockCatalog()
     catalog.list = [
@@ -369,4 +395,3 @@ final class NTFSVolumeScanTests: XCTestCase {
     XCTAssertEqual(FormatDisk(id: "disk4", name: "  ", size: 1, fsHint: "").suggestedLabel, "NTFS")
   }
 }
-

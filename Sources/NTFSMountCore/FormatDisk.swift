@@ -76,8 +76,10 @@ public struct FormatDisk: Identifiable, Equatable, Sendable {
         break
       }
       let name: String
-      if !volName.isEmpty {
-        name = volName
+      // `_NTFSFMT` is the helper's scratch name from a failed erase, not the user's disk name.
+      let realVolumeName = volName == FormatPolicy.placeholderVolumeName ? "" : volName
+      if !realVolumeName.isEmpty {
+        name = realVolumeName
       } else if !media.isEmpty {
         name = media
       } else {

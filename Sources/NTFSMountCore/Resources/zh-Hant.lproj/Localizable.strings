@@ -333,6 +333,8 @@ Return 即同意。不同意請點「結束」。";
 
 "alert.mountFailed" = "掛載失敗";
 
+"alert.formatFailed" = "格式化失敗";
+
 "alert.kextBody" = "FSKit／核心延伸模組不可用是 macOS 13+ 的預期情況，可忽略。本 App 不使用核心延伸模組，助手已優先使用 NFS／使用者態 FUSE。請勿安裝 kext。\n\n%@";
 
 "alert.uninstallTitle" = "解除安裝掛載助手？";

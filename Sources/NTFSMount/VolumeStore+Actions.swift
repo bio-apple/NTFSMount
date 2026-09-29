@@ -342,11 +342,25 @@ extension VolumeStore {
     setMessage("")
     let result = await Privileged.run("format", disk.id, extra: [label])
     busyId = nil
-    setMessage(display(result.text))
+    let shown = display(result.text)
+    // 失败原文必须留痕：菜单底部那一行很容易被忽略，诊断要能拿到原文。
+    AppLog.append("format \(disk.id) ok=\(result.ok) label=\(label): \(result.text)")
+    setMessage(shown)
+    if !result.ok { alertFormatFailed(shown) }
     refresh()
     if result.ok, let vol = volumes.first(where: { wholeDiskId($0.id) == disk.id }) {
       await mount(vol)
     }
+  }
+
+  private func alertFormatFailed(_ detail: String) {
+    NSApp.activate(ignoringOtherApps: true)
+    let alert = NSAlert()
+    alert.alertStyle = .warning
+    alert.messageText = L10n.t("alert.formatFailed")
+    alert.informativeText = detail
+    alert.addButton(withTitle: L10n.t("ok.gotIt"))
+    alert.runModal()
   }
 
   func toggleLogin() {

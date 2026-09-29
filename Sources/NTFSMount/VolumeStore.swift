@@ -283,6 +283,16 @@ final class VolumeStore: ObservableObject {
     helperInstalled && !isHibernated(vol) && !Privileged.helperNeedsUpdate
   }
 
+  /// Formatting goes through the same helper as mount/unmount; a missing or stale helper
+  /// rejects it. Gate the menu so the user sees why instead of a silent no-op.
+  var canFormat: Bool { helperInstalled && !Privileged.helperNeedsUpdate }
+
+  var formatHelp: String {
+    if !helperInstalled { return L10n.t("mount.needHelper") }
+    if Privileged.helperNeedsUpdate { return L10n.t("mount.needUpdate") }
+    return L10n.t("menu.eraseWholeDisk")
+  }
+
   func writableMountHelp(_ vol: NTFSVolume) -> String {
     if !helperInstalled { return L10n.t("mount.needHelper") }
     if Privileged.helperNeedsUpdate { return L10n.t("mount.needUpdate") }
@@ -603,4 +613,3 @@ final class VolumeStore: ObservableObject {
     return UserFacingError.message(from: raw, logPath: AppLog.url.path)
   }
 }
-
