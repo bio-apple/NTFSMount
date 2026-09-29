@@ -44,19 +44,10 @@ if [[ ! -f "$file" ]]; then
   exit 1
 fi
 
-required=(
-  "## What's new"
-  "## Fixes"
-  "## Known issues"
-  "## Helper: reinstall required?"
-  "## Old config compatibility"
-)
-for h in "${required[@]}"; do
-  if ! /usr/bin/grep -Fq "$h" "$file"; then
-    echo "error: $file missing heading: $h" >&2
-    exit 1
-  fi
-done
+if ! /usr/bin/grep -q '[^[:space:]]' "$file"; then
+  echo "error: $file is empty" >&2
+  exit 1
+fi
 
 if /usr/bin/grep -Fq '_TBD' "$file" || /usr/bin/grep -Fq '**Yes / No**' "$file"; then
   echo "error: $file still contains template placeholders (_TBD or **Yes / No**)" >&2

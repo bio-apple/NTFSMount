@@ -303,33 +303,13 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" "$work/NTFSMount.pkg.sha256" --clobber
           body="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body --jq .body)"
-          ver="${TAG#v}"
-          changelog="docs/RELEASE_NOTES/${ver}.md"
-          notes_src=""
-          if [[ -f "$changelog" ]] && bash scripts/check-release-notes.sh "$ver"; then
-            notes_src="$changelog"
-          fi
-          if ! printf '%s\n' "$body" | /usr/bin/grep -Fq "Helper: reinstall required?"; then
-            if [[ -z "$notes_src" ]]; then
-              notes_src="$work/generated-notes.md"
-              bash scripts/generate-release-notes.sh "$TAG" -o "$notes_src"
-              bash scripts/check-release-notes.sh --file "$notes_src"
-            fi
-          fi
-          if printf '%s\n' "$body" | /usr/bin/grep -q "$hash" && printf '%s\n' "$body" | /usr/bin/grep -Fq "Helper: reinstall required?"; then
-            echo "Release body already contains changelog and SHA256"
+          if printf '%s\n' "$body" | /usr/bin/grep -q "$hash"; then
+            echo "Release body already contains SHA256"
           else
             {
               printf '%s\n' "$body"
-              if ! printf '%s\n' "$body" | /usr/bin/grep -Fq "Helper: reinstall required?"; then
-                [[ -n "$notes_src" && -f "$notes_src" ]] || { echo "error: no release notes for $TAG" >&2; exit 1; }
-                echo
-                /bin/cat "$notes_src"
-              fi
-              if ! printf '%s\n' "$body" | /usr/bin/grep -q "$hash"; then
-                echo
-                /bin/cat "$work/NTFSMount.pkg.release-notes.md"
-              fi
+              echo
+              /bin/cat "$work/NTFSMount.pkg.release-notes.md"
             } > "$work/release-body.md"
             gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes-file "$work/release-body.md"
           fi

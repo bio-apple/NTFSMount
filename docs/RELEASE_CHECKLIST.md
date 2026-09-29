@@ -38,7 +38,7 @@
 
 - [ ] 推 tag 前可预览：`bash scripts/generate-release-notes.sh <version>`
 - [ ] 可选：从 [RELEASE_NOTES_TEMPLATE.md](./RELEASE_NOTES_TEMPLATE.md) 复制为 `docs/RELEASE_NOTES/<version>.md` 并填好；含 `_TBD` / `**Yes / No**` 时 CI 忽略该文件、改用生成稿
-- [ ] 正文含：**What's new**、**Fixes**、**Known issues**（未公证、个人使用、FUSE-T 非 GPL）、**Breaking Changes**、**Changes**
+- [ ] 正文写明个人使用、未公证，以及安装包会装好应用和挂载助手。没有手写稿时，生成稿仍含 What's new / Fixes / Known issues
 - [ ] **Helper: reinstall required? yes/no**（生成稿按 HELPER_VERSION / helperd / IPC / CDHash / install-helper 推断；No 时仍写 verify）
 - [ ] **Old config compatibility**：UserDefaults、自动挂载、helper stamp、残留 sudoers（生成稿不省略这些小节）
 - [ ] 文首保留个人使用、未公证的法律一句；GitHub Release 贴同一份（CI 会再附安装包 SHA256）
