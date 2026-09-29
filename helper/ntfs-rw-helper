@@ -264,6 +264,24 @@ vlog() {
   fi
 }
 
+# 每个后端的挂载尝试都要留痕。以前只保留最后一次 err，backend=nfs 的失败原因会被后一次
+# 覆盖，结果只知道「挂载失败」而不知道哪个后端为什么失败。
+MOUNT_ATTEMPT_NOTES=""
+note_mount_attempt() {
+  local label="$1" rc="$2" text="$3" one
+  one="$(printf '%s' "$text" | /usr/bin/tr '\n' ' ' | /usr/bin/cut -c1-300)"
+  [[ -n "$one" ]] || one="(no output)"
+  MOUNT_ATTEMPT_NOTES="${MOUNT_ATTEMPT_NOTES}${label} rc=${rc}: ${one}"$'\n'
+  if [[ -n "$LOG_FILE" ]]; then
+    { printf '%s\n' "$(log_ts) ${CURRENT_IDENT:--} mount-attempt ${label} rc=${rc} ${one}" >>"$LOG_FILE"; } 2>/dev/null || true
+  fi
+}
+
+mount_attempt_report() {
+  [[ -n "$MOUNT_ATTEMPT_NOTES" ]] || return 0
+  printf 'Backend attempts:\n%s' "$MOUNT_ATTEMPT_NOTES"
+}
+
 # 强制卸载必须写进 ntfsmount.log 与 helperd 日志，不得静默。
 log_force_warning() {
   local target="$1"
@@ -1059,9 +1077,11 @@ do_mount() {
     "ro,backend=smb"
   )
   local err="" opts rc=1 errfile extra dirty=0 pre_state=""
+  MOUNT_ATTEMPT_NOTES=""
 
   ensure_unmounted "$ident"
   /bin/mkdir -p "$mp"
+  note_mount_attempt "env" 0 "macos=$(macos_major) ntfs-3g=$NTFS3G fuse-srv=$(resolve_nfs_srv || echo missing)"
 
   # 可写前只读探测（ntfsfix -n）。脏/休眠/损坏跳过 RW，避免加重损坏。
   pre_state="$(probe_volume_state "$ident" "")"
@@ -1080,6 +1100,7 @@ do_mount() {
       set -e
       err="$(/bin/cat "$errfile" 2>/dev/null || true)"
       /bin/rm -f "$errfile"
+      note_mount_attempt "rw ${extra}" "$rc" "$err"
       if [[ $rc -eq 0 ]]; then
         echo "ok rw $ident -> $mp (${extra})"
         notify "NTFS volume mounted read/write."
@@ -1087,7 +1108,7 @@ do_mount() {
       fi
       # 打不开设备（多半是没有完全磁盘访问）不是脏卷，也不该悄悄降级成只读。
       if looks_like_open_denied "$err"; then
-        die "Mount failed: cannot open /dev/$ident: Operation not permitted. Grant Full Disk Access to NTFSMount.app in System Settings, then retry."
+        die "Mount failed: cannot open /dev/$ident: Operation not permitted. Grant Full Disk Access to NTFSMount.app in System Settings, then retry."$'\n'"$(mount_attempt_report)"
       fi
       if looks_like_dirty_or_hiber "$err"; then
         dirty=1
@@ -1125,6 +1146,7 @@ do_mount() {
       set -e
       err="$(/bin/cat "$errfile" 2>/dev/null || true)"
       /bin/rm -f "$errfile"
+      note_mount_attempt "ro ${extra}" "$rc" "$err"
       if [[ $rc -eq 0 ]]; then
         echo "ok ro $ident -> $mp (${state}, hiberfile not cleared)"
         echo "$classify_line"
@@ -1133,12 +1155,12 @@ do_mount() {
         return 0
       fi
       if looks_like_open_denied "$err"; then
-        die "Mount failed: cannot open /dev/$ident: Operation not permitted. Grant Full Disk Access to NTFSMount.app in System Settings, then retry."
+        die "Mount failed: cannot open /dev/$ident: Operation not permitted. Grant Full Disk Access to NTFSMount.app in System Settings, then retry."$'\n'"$(mount_attempt_report)"
       fi
     done
     echo "$classify_line"
     notify "Mount failed: the volume was not shut down cleanly or Windows is hibernated."
-    die "Mount failed: the volume is dirty or Windows is hibernated, and read-only mount also failed. Shut Windows down fully, then try again. Detail: $err"
+    die "Mount failed: the volume is dirty or Windows is hibernated, and read-only mount also failed. Shut Windows down fully, then try again. Detail: $err"$'\n'"$(mount_attempt_report)"
   fi
 
   unmount_any "$ident"
@@ -1150,14 +1172,14 @@ do_mount() {
   ver="$(macos_major)"
   if [[ -n "$ver" && "$ver" -lt 13 ]]; then
     notify "Mount failed: this system is older than macOS 13 (untested)."
-    die "Mount failed: this system is older than macOS 13 (untested; 13.0 is the minimum). Detail: $err"
+    die "Mount failed: this system is older than macOS 13 (untested; 13.0 is the minimum). Detail: $err"$'\n'"$(mount_attempt_report)"
   fi
   if looks_like_kext_or_fskit_block "$err"; then
     notify "Mount failed: FSKit/kext unavailable can be ignored. This app does not use kernel extensions."
-    die "Mount failed: FSKit or a kernel extension being unavailable is expected and can be ignored. macOS ${ver:-?} restricts kexts. This helper does not use kernel extensions and already tried NFS / userspace FUSE. Do not install a kext. Detail: $err"
+    die "Mount failed: FSKit or a kernel extension being unavailable is expected and can be ignored. macOS ${ver:-?} restricts kexts. This helper does not use kernel extensions and already tried NFS / userspace FUSE. Do not install a kext. Detail: $err"$'\n'"$(mount_attempt_report)"
   fi
   notify "NTFS volume mount failed."
-  die "Mount failed: $err"
+  die "Mount failed: $err"$'\n'"$(mount_attempt_report)"
 }
 
 do_unmount() {
@@ -1987,6 +2009,16 @@ do_selftest() {
   looks_like_open_denied "$denied_text" || die "selftest: a TCC denial must be recognized"
   [[ "$(volume_state_from_text "$denied_text")" == unknown ]] || die "selftest: a denied device open must not classify as corrupt"
   [[ "$(volume_state_from_text "Failed to mount '/dev/disk4s2': Operation not permitted"$'\n'"The NTFS partition is in an unsafe state.")" == unknown ]] || die "selftest: a denied open must not classify as dirty"
+  local saved_log="$LOG_FILE"
+  LOG_FILE=""
+  MOUNT_ATTEMPT_NOTES=""
+  note_mount_attempt "rw backend=nfs" 1 "first failure"
+  note_mount_attempt "rw backend=smb" 1 "second failure"
+  [[ "$MOUNT_ATTEMPT_NOTES" == *"backend=nfs"*"first failure"* ]] || die "selftest: the nfs attempt and its text must be kept"
+  [[ "$MOUNT_ATTEMPT_NOTES" == *"backend=smb"*"second failure"* ]] || die "selftest: the smb attempt must not overwrite the nfs one"
+  [[ "$(mount_attempt_report)" == "Backend attempts:"* ]] || die "selftest: the attempt report must be labeled"
+  MOUNT_ATTEMPT_NOTES=""
+  LOG_FILE="$saved_log"
   [[ "$(classify_line_for_state dirty)" == "classify: volume is dirty" ]] || die "selftest: dirty classify line"
   [[ "$(classify_line_for_state corrupt)" == "classify: volume may be corrupted" ]] || die "selftest: corrupt classify line"
   [[ "$(whole_disk_id disk4s2)" == "disk4" ]] || die "selftest: disk4s2 whole disk"
