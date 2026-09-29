@@ -332,6 +332,10 @@ if ! /usr/bin/grep -q 'mds | mds_stores | mdworker | mdworker_shared | corespotl
   echo "helper must ignore Spotlight and fseventsd when deciding a volume is busy" >&2
   exit 1
 fi
+if /usr/bin/grep -n '%%s\*' "$HELPER"; then
+  echo "helper must not strip disk ids with %%s* (that matches the s in disk)" >&2
+  exit 1
+fi
 if ! /usr/bin/awk '
   $0 ~ /^unmount_any\(\)/ { inh=1 }
   inh && $0 ~ /^[a-z_]+\(\)/ && $0 !~ /^unmount_any\(\)/ { inh=0 }
@@ -848,11 +852,15 @@ store="$(printf '%s' "$root_plist" | /usr/bin/plutil -extract APFSPhysicalStores
 refuse_ids=()
 if [[ -n "$sys" && "$sys" != "null" ]]; then
   refuse_ids+=("$sys")
-  refuse_ids+=("${sys%%s*}")
+  if [[ "$sys" =~ ^(disk[0-9]+)s[0-9]+$ ]]; then
+    refuse_ids+=("${BASH_REMATCH[1]}")
+  fi
 fi
 if [[ -n "$store" && "$store" != "null" ]]; then
   refuse_ids+=("$store")
-  refuse_ids+=("${store%%s*}")
+  if [[ "$store" =~ ^(disk[0-9]+)s[0-9]+$ ]]; then
+    refuse_ids+=("${BASH_REMATCH[1]}")
+  fi
 fi
 [[ ${#refuse_ids[@]} -gt 0 ]] || {
   echo "cannot identify system disk for format-refusal test" >&2

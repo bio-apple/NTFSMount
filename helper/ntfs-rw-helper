@@ -407,6 +407,24 @@ valid_whole() {
   [[ "$s" =~ ^disk[0-9]+$ ]]
 }
 
+# disk4s2 -> disk4. A suffix pattern of "s" plus anything also matches the s in "disk", so every id would become "di".
+whole_disk_id() {
+  local id="${1:-}"
+  if [[ "$id" =~ ^(disk[0-9]+)s[0-9]+$ ]]; then
+    printf '%s' "${BASH_REMATCH[1]}"
+    return 0
+  fi
+  printf '%s' "$id"
+}
+
+same_disk_tree() {
+  local a="${1:-}" b="${2:-}" aw bw
+  [[ -n "$a" && -n "$b" && "$a" != "null" && "$b" != "null" ]] || return 1
+  aw="$(whole_disk_id "$a")"
+  bw="$(whole_disk_id "$b")"
+  [[ "$a" == "$b" || "$aw" == "$b" || "$a" == "$bw" || "$aw" == "$bw" ]]
+}
+
 # 自动挂载只针对外置可移动盘，避免改到 Boot Camp / 内置 NTFS。
 is_auto_safe_target() {
   local ident="$1" plist internal proto
@@ -1180,7 +1198,7 @@ do_eject() {
     die "$(busy_eject_message "$occupiers")"
   fi
 
-  whole="${ident%%s*}"
+  whole="$(whole_disk_id "$ident")"
   valid_whole "$whole" || whole=""
   if [[ -z "$whole" ]]; then
     whole="$ident"
@@ -1231,14 +1249,14 @@ refuse_format_target() {
   vlog "$DISKUTIL" info -plist /
   root_plist="$("$DISKUTIL" info -plist / 2>/dev/null || true)"
   sys="$(printf '%s' "$root_plist" | /usr/bin/plutil -extract ParentWholeDisk raw - 2>/dev/null || true)"
-  if [[ -n "$sys" && ("$ident" == "$sys" || "$ident" == "${sys%%s*}") ]]; then
+  if same_disk_tree "$ident" "$sys"; then
     die "refused to format system disk: $ident"
   fi
   i=0
   while [[ $i -le 8 ]]; do
     store="$(printf '%s' "$root_plist" | /usr/bin/plutil -extract "APFSPhysicalStores.$i.APFSPhysicalStore" raw - 2>/dev/null || true)"
     [[ -n "$store" && "$store" != "null" ]] || break
-    if [[ "$ident" == "$store" || "$ident" == "${store%%s*}" ]]; then
+    if same_disk_tree "$ident" "$store"; then
       die "refused to format system disk: $ident"
     fi
     i=$((i + 1))
@@ -1247,7 +1265,6 @@ refuse_format_target() {
 
 refuse_fix_target() {
   local ident="$1"
-  local whole="${ident%%s*}"
   local plist internal sys proto store i root_plist
   vlog "$DISKUTIL" info -plist "$ident"
   plist="$("$DISKUTIL" info -plist "$ident" 2>/dev/null || true)"
@@ -1263,14 +1280,14 @@ refuse_fix_target() {
   vlog "$DISKUTIL" info -plist /
   root_plist="$("$DISKUTIL" info -plist / 2>/dev/null || true)"
   sys="$(printf '%s' "$root_plist" | /usr/bin/plutil -extract ParentWholeDisk raw - 2>/dev/null || true)"
-  if [[ -n "$sys" && ("$ident" == "$sys" || "$whole" == "$sys" || "$ident" == "${sys%%s*}") ]]; then
+  if same_disk_tree "$ident" "$sys"; then
     die "refused to repair system disk: $ident"
   fi
   i=0
   while [[ $i -le 8 ]]; do
     store="$(printf '%s' "$root_plist" | /usr/bin/plutil -extract "APFSPhysicalStores.$i.APFSPhysicalStore" raw - 2>/dev/null || true)"
     [[ -n "$store" && "$store" != "null" ]] || break
-    if [[ "$ident" == "$store" || "$whole" == "$store" || "$ident" == "${store%%s*}" || "$whole" == "${store%%s*}" ]]; then
+    if same_disk_tree "$ident" "$store"; then
       die "refused to repair system disk: $ident"
     fi
     i=$((i + 1))
@@ -1279,8 +1296,8 @@ refuse_fix_target() {
 
 refuse_eject_target() {
   local ident="$1"
-  local whole="${ident%%s*}"
-  local plist wplist internal winternal sys store i root_plist
+  local whole plist wplist internal winternal sys store i root_plist
+  whole="$(whole_disk_id "$ident")"
   vlog "$DISKUTIL" info -plist "$ident"
   plist="$("$DISKUTIL" info -plist "$ident" 2>/dev/null || true)"
   [[ -n "$plist" ]] || die "cannot read disk info: $ident"
@@ -1298,14 +1315,14 @@ refuse_eject_target() {
   vlog "$DISKUTIL" info -plist /
   root_plist="$("$DISKUTIL" info -plist / 2>/dev/null || true)"
   sys="$(printf '%s' "$root_plist" | /usr/bin/plutil -extract ParentWholeDisk raw - 2>/dev/null || true)"
-  if [[ -n "$sys" && ("$ident" == "$sys" || "$whole" == "$sys" || "$ident" == "${sys%%s*}") ]]; then
+  if same_disk_tree "$ident" "$sys"; then
     die "refused to eject system disk: $ident"
   fi
   i=0
   while [[ $i -le 8 ]]; do
     store="$(printf '%s' "$root_plist" | /usr/bin/plutil -extract "APFSPhysicalStores.$i.APFSPhysicalStore" raw - 2>/dev/null || true)"
     [[ -n "$store" && "$store" != "null" ]] || break
-    if [[ "$ident" == "$store" || "$whole" == "$store" || "$ident" == "${store%%s*}" || "$whole" == "${store%%s*}" ]]; then
+    if same_disk_tree "$ident" "$store"; then
       die "refused to eject system disk: $ident"
     fi
     i=$((i + 1))
@@ -1907,6 +1924,17 @@ do_selftest() {
   [[ "$(volume_state_from_text 'Volume is dirty. Windows is hibernated.')" == hiber ]] || die "selftest: hiber takes priority over dirty"
   [[ "$(classify_line_for_state dirty)" == "classify: volume is dirty" ]] || die "selftest: dirty classify line"
   [[ "$(classify_line_for_state corrupt)" == "classify: volume may be corrupted" ]] || die "selftest: corrupt classify line"
+  [[ "$(whole_disk_id disk4s2)" == "disk4" ]] || die "selftest: disk4s2 whole disk"
+  [[ "$(whole_disk_id disk10s1)" == "disk10" ]] || die "selftest: disk10s1 whole disk"
+  [[ "$(whole_disk_id disk3)" == "disk3" ]] || die "selftest: disk3 stays a whole disk"
+  same_disk_tree disk4s2 disk4 || die "selftest: a slice must match its whole disk"
+  same_disk_tree disk3s1 disk3 || die "selftest: system slice must match its whole disk"
+  if same_disk_tree disk4s2 disk3s1; then
+    die "selftest: disk4s2 must not be treated as the system disk disk3s1"
+  fi
+  if same_disk_tree disk4s2 disk0s2; then
+    die "selftest: disk4s2 must not match another physical store"
+  fi
   is_ntfsmount_runtime_path "/Applications/NTFSMount.app/Contents/MacOS/ntfs-3g" || die "selftest: bundled ntfs-3g should count as this app"
   is_ntfsmount_runtime_path "/Applications/NTFSMount.app/Contents/MacOS/go-nfsv4" || die "selftest: bundled go-nfsv4 should count as this app"
   is_ntfsmount_runtime_path "/Library/Application Support/NTFSMount/ntfs-rw-helper" || die "selftest: the sealed helper path should count as this app"

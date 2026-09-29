@@ -173,6 +173,8 @@ Return means you agree. Click “Quit” if you do not.";
 
 "status.detailDirty" = "Mounted (read-only): Windows hibernation or a dirty volume. Shut down Windows fully first";
 
+"status.detailDirtyUnmounted" = "Not mounted: Windows hibernation or a dirty volume. Shut down Windows fully first";
+
 "status.detailRoSystem" = "Mounted (read-only): system NTFS driver. You can switch to writable below if the volume is clean";
 
 "volume.stateWritable" = "Writable";
@@ -356,6 +358,8 @@ Return means you agree. Click “Quit” if you do not.";
 "dirty.fix" = "Try Repair";
 
 "eject.refuseInternal" = "Refusing to eject an internal disk.";
+
+"eject.refuseSystem" = "Refusing to eject the disk that holds this Mac.";
 
 "internal.title" = "Mount the internal disk writable?";
 

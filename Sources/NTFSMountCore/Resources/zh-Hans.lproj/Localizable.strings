@@ -173,6 +173,8 @@
 
 "status.detailDirty" = "已挂载（只读）：Windows 休眠或卷不干净，请先在 Windows 彻底关机";
 
+"status.detailDirtyUnmounted" = "未挂载：Windows 休眠或卷不干净，请先在 Windows 彻底关机";
+
 "status.detailRoSystem" = "已挂载（只读）：系统 NTFS 驱动，可在下方改成可写（卷须干净）";
 
 "volume.stateWritable" = "可写";
@@ -356,6 +358,8 @@
 "dirty.fix" = "尝试修复";
 
 "eject.refuseInternal" = "拒绝推出内置磁盘。";
+
+"eject.refuseSystem" = "不能推出正在运行系统的磁盘。";
 
 "internal.title" = "以可写方式挂载内置磁盘？";
 

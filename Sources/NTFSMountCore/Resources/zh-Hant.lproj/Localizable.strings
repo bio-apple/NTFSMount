@@ -173,6 +173,8 @@ Return 即同意。不同意請點「結束」。";
 
 "status.detailDirty" = "已掛載（唯讀）：Windows 休眠或卷不乾淨，請先在 Windows 徹底關機";
 
+"status.detailDirtyUnmounted" = "未掛載：Windows 休眠或卷不乾淨，請先在 Windows 徹底關機";
+
 "status.detailRoSystem" = "已掛載（唯讀）：系統 NTFS 驅動程式，可在下方改成可寫（卷須乾淨）";
 
 "volume.stateWritable" = "可寫";
@@ -356,6 +358,8 @@ Return 即同意。不同意請點「結束」。";
 "dirty.fix" = "嘗試修復";
 
 "eject.refuseInternal" = "拒絕推出內建磁碟。";
+
+"eject.refuseSystem" = "不能推出正在執行系統的磁碟。";
 
 "internal.title" = "以可寫方式掛載內建磁碟？";
 

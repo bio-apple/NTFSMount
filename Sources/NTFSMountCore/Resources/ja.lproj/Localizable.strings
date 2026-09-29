@@ -173,6 +173,8 @@ Return で同意します。同意しない場合は「終了」を押してく�
 
 "status.detailDirty" = "マウント済み（読み取り専用）：Windows の休止またはダーティボリュームです。先に Windows を完全にシャットダウンしてください";
 
+"status.detailDirtyUnmounted" = "未マウント：Windows の休止またはダーティボリュームです。先に Windows を完全にシャットダウンしてください";
+
 "status.detailRoSystem" = "マウント済み（読み取り専用）：システム NTFS ドライバです。ボリュームがクリーンなら下で書き込み可能に切り替えられます";
 
 "volume.stateWritable" = "書き込み可";
@@ -356,6 +358,8 @@ Return で同意します。同意しない場合は「終了」を押してく�
 "dirty.fix" = "修復を試す";
 
 "eject.refuseInternal" = "内蔵ディスクは取り出せません。";
+
+"eject.refuseSystem" = "この Mac のシステムが入ったディスクは取り出せません。";
 
 "internal.title" = "内蔵ディスクを書き込み可能でマウントしますか？";
 

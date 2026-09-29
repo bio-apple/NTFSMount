@@ -100,6 +100,17 @@ final class VolumeHealthTests: XCTestCase {
       )
       .contains("彻底关机")
     )
+    XCTAssertEqual(
+      VolumeHealth.detailStatus(
+        isWritableFuse: false, isReadOnlyMounted: false, lastAdvice: .readOnlyDirty, locale: zh
+      ),
+      "未挂载：Windows 休眠或卷不干净，请先在 Windows 彻底关机"
+    )
+    XCTAssertFalse(
+      VolumeHealth.detailStatus(
+        isWritableFuse: false, isReadOnlyMounted: false, lastAdvice: .readOnlyDirty, locale: zh
+      ).contains("已挂载")
+    )
   }
 
   func testJournalLabelStaysUnknownUntilProbeAndNeverYesNo() {

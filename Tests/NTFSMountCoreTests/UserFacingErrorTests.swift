@@ -170,4 +170,15 @@ final class UserFacingErrorTests: XCTestCase {
       L10n.format("error.diskBusyNamed", "Finder, TextEdit", locale: en)
     )
   }
+
+  func testSystemDiskEjectIsNotRawEnglish() {
+    let zh = Locale(identifier: "zh-Hans")
+    let message = UserFacingError.message(from: "refused to eject system disk: disk4s2", locale: zh)
+    XCTAssertEqual(message, L10n.t("eject.refuseSystem", locale: zh))
+    XCTAssertFalse(message.contains("refused to eject"))
+    XCTAssertEqual(
+      UserFacingError.message(from: "refused to eject internal disk: disk0s2", locale: zh),
+      L10n.t("eject.refuseSystem", locale: zh)
+    )
+  }
 }

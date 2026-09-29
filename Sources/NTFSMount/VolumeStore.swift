@@ -289,7 +289,7 @@ final class VolumeStore: ObservableObject {
     if isHibernated(vol) {
       return VolumeHealth.detailStatus(
         isWritableFuse: false,
-        isReadOnlyMounted: true,
+        isReadOnlyMounted: vol.isReadOnlyMounted,
         lastAdvice: .readOnlyDirty
       )
     }

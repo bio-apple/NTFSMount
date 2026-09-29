@@ -140,11 +140,12 @@ public enum VolumeHealth {
     locale: Locale? = nil
   ) -> String {
     if isWritableFuse { return L10n.t("status.detailWritable", locale: locale) }
-    if lastAdvice == .readOnlyDirty {
-      return L10n.t("status.detailDirty", locale: locale)
-    }
     if isReadOnlyMounted {
+      if lastAdvice == .readOnlyDirty { return L10n.t("status.detailDirty", locale: locale) }
       return L10n.t("status.detailRoSystem", locale: locale)
+    }
+    if lastAdvice == .readOnlyDirty {
+      return L10n.t("status.detailDirtyUnmounted", locale: locale)
     }
     return L10n.t("status.unmounted", locale: locale)
   }

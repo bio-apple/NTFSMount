@@ -94,7 +94,9 @@ public enum UserFacingError {
         mapped = L10n.t("error.diskBusy", locale: locale)
       }
     case .other:
-      if t.hasPrefix("error:") {
+      if t.lowercased().contains("refused to eject") {
+        mapped = L10n.t("eject.refuseSystem", locale: locale)
+      } else if t.hasPrefix("error:") {
         mapped = String(t.dropFirst(6)).trimmingCharacters(in: .whitespaces)
       } else if t.count > 180 {
         if let logPath {
