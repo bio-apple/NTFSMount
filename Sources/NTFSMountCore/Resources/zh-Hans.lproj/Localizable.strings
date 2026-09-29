@@ -14,6 +14,8 @@
 
 "installing" = "正在安装…";
 
+"helper.installProgress" = "正在安装挂载助手";
+
 "app.productName" = "NTFS 读写";
 
 "onboarding.title" = "使用前请确认";

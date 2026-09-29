@@ -70,6 +70,22 @@ enum SigningStatus {
   }
 }
 
+enum AppCodeIdentity {
+  /// Changes when this ad-hoc build is replaced, so a previous privacy grant no longer applies.
+  static func cdhash() -> String {
+    var staticCode: SecStaticCode?
+    let created = SecStaticCodeCreateWithPath(Bundle.main.bundleURL as CFURL, [], &staticCode)
+    guard created == errSecSuccess, let staticCode else { return "" }
+    var info: CFDictionary?
+    let flags = SecCSFlags(rawValue: kSecCSSigningInformation)
+    guard SecCodeCopySigningInformation(staticCode, flags, &info) == errSecSuccess,
+          let dict = info as NSDictionary?,
+          let data = dict[kSecCodeInfoUnique] as? Data
+    else { return "" }
+    return data.map { String(format: "%02x", $0) }.joined()
+  }
+}
+
 enum AppLog {
   static let app = Logger(subsystem: AppIdentity.bundleId, category: "app")
   static let helper = Logger(subsystem: AppIdentity.bundleId, category: "helper")

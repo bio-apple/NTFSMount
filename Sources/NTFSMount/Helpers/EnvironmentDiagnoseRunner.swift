@@ -10,8 +10,12 @@ enum EnvironmentDiagnoseRunner {
 
   static func snapshot() -> DiagnoseSnapshot {
     var snap = runBundledScript() ?? liveSnapshot()
-    // Probe in this process (the app). A spawned bash script's `-r` tests bash, not NTFSMount.app.
+    // Probe in this process (the app). A spawned bash/python is not NTFSMount.app, so the
+    // helper rejects it; that used to look like a dead socket.
     snap.fullDiskAccess = FullDiskAccess.probe()
+    if snap.helperSocketExists {
+      snap.helperPing = pingHelper()
+    }
     return snap
   }
 

@@ -106,6 +106,11 @@ struct MainWindowView: View {
       }
     }
     .frame(minWidth: 680, minHeight: 400)
+    .overlay {
+      if store.showHelperInstallProgress {
+        HelperInstallProgressOverlay()
+      }
+    }
     .onAppear {
       if store.openSettings {
         selectedId = "__settings__"
@@ -194,6 +199,25 @@ private struct VolumeSidebarRow: View {
 
   private var caption: String {
     store.statusLabel(vol)
+  }
+}
+
+private struct HelperInstallProgressOverlay: View {
+  var body: some View {
+    ZStack {
+      Color.black.opacity(0.28)
+      VStack(alignment: .leading, spacing: 14) {
+        Text(L10n.t("helper.installProgress"))
+          .font(.title3.weight(.semibold))
+        ProgressView()
+          .progressViewStyle(.linear)
+          .frame(width: 300)
+      }
+      .padding(28)
+      .frame(width: 360)
+      .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+    .ignoresSafeArea()
   }
 }
 

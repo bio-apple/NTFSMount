@@ -28,6 +28,8 @@ enum AppIdentity {
     static let didFinishFirstLaunchSetup = "com.bioapple.ntfsmount.didFinishFirstLaunchSetup"
     /// Set after the Full Disk Access alert has been shown once.
     static let didPromptFullDiskAccess = "com.bioapple.ntfsmount.didPromptFullDiskAccess"
+    /// CDHash of the app build that last showed the Full Disk Access alert.
+    static let didPromptFullDiskAccessHash = "com.bioapple.ntfsmount.didPromptFullDiskAccessHash"
     static let didShowCompat = "com.bioapple.ntfsmount.didShowCompatNotice"
     static let didMigrate = "com.bioapple.ntfsmount.didMigrateDefaults"
     static let didAcceptLegal = "com.bioapple.ntfsmount.didAcceptLegal"

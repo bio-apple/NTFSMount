@@ -39,6 +39,8 @@ final class VolumeStore: ObservableObject {
   @Published var openSettings = false
   /// First open: diagnose then repair. Other menu actions stay disabled until the result alert closes.
   @Published var firstLaunchSetupBusy = false
+  /// Indeterminate bar while the first open installs the mount helper.
+  @Published var showHelperInstallProgress = false
   @Published var driverVersionLine: String = Ntfs3gVersion.settingsChecking
   @Published var driverVersionUntested = false
 
@@ -132,10 +134,17 @@ final class VolumeStore: ObservableObject {
 
   /// Missing Full Disk Access is a warning, not a mount failure. Ask once, then open Settings.
   func promptFullDiskAccessIfNeeded() {
-    let prompted = UserDefaults.standard.bool(forKey: AppIdentity.Defaults.didPromptFullDiskAccess)
     let status = FullDiskAccess.probe()
+    let hash = AppCodeIdentity.cdhash()
+    let promptedHash = UserDefaults.standard.string(forKey: AppIdentity.Defaults.didPromptFullDiskAccessHash) ?? ""
+    let prompted = UserDefaults.standard.bool(forKey: AppIdentity.Defaults.didPromptFullDiskAccess)
+      && !hash.isEmpty
+      && promptedHash == hash
     guard FullDiskAccess.shouldPrompt(status: status, alreadyPrompted: prompted) else { return }
     UserDefaults.standard.set(true, forKey: AppIdentity.Defaults.didPromptFullDiskAccess)
+    if !hash.isEmpty {
+      UserDefaults.standard.set(hash, forKey: AppIdentity.Defaults.didPromptFullDiskAccessHash)
+    }
     NSApp.activate(ignoringOtherApps: true)
     let alert = NSAlert()
     alert.alertStyle = .warning
@@ -154,7 +163,7 @@ final class VolumeStore: ObservableObject {
     setMessage(L10n.t("diagnose.checking"))
     await EnvironmentDiagnosePresenter.presentAndWait(store: self)
     if AutoMountPolicy.shouldAutoInstallHelper(daemonReady: Privileged.daemonReady) {
-      _ = await installHelper()
+      _ = await installHelperOnOpen()
     }
     guard helperInstalled else {
       let text = L10n.t("error.helperMissing")
@@ -191,7 +200,16 @@ final class VolumeStore: ObservableObject {
   func installHelperOnFirstLaunch() {
     guard LegalGate.hasAcceptedLegal else { return }
     guard AutoMountPolicy.shouldAutoInstallHelper(daemonReady: Privileged.daemonReady) else { return }
-    Task { _ = await installHelper() }
+    Task { _ = await installHelperOnOpen() }
+  }
+
+  /// First open: bring the app window forward and keep a progress bar up until install returns.
+  func installHelperOnOpen() async -> Privileged.Outcome {
+    showMainWindow()
+    showHelperInstallProgress = true
+    let outcome = await installHelper()
+    showHelperInstallProgress = false
+    return outcome
   }
 
   /// Online: compare CFBundleShortVersionString to GitHub Latest. Offline / failure: stay quiet.

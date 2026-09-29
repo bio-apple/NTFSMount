@@ -488,16 +488,20 @@ static int wait_helper(int client, int pr, pid_t pid, int sec, int *st, char *bo
   return -2;
 }
 
-static void handle(int fd, const char *app) {
+/* Between fork and exec, only async-signal-safe calls. os_log aborts the child
+   on macOS 26+ ("crashed on child side of fork pre-exec"), which the client
+   sees as a socket that accepts and then returns nothing. */
+static void child_log(const char *msg) {
+  size_t n = 0;
+  if (!msg) return;
+  while (msg[n]) n++;
+  if (n) write(STDERR_FILENO, msg, n);
+  write(STDERR_FILENO, "\n", 1);
+}
+
+static void handle(int fd) {
   struct timeval tv = {.tv_sec = 30, .tv_usec = 0};
   setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-
-  if (!peer_ok(fd, app)) {
-    os_log_error(helperd_log(), "peer rejected app=%{private}s", app);
-    const char *m = "ERR\nCaller failed the signature check.\n";
-    write_all(fd, m, strlen(m));
-    return;
-  }
   char line[64];
   int argc = 0;
   int ver = 0;
@@ -543,9 +547,6 @@ static void handle(int fd, const char *app) {
     argv[i + 1] = args[i];
   }
   argv[argc + 1] = NULL;
-  os_log(helperd_log(),
-         "cmd=%{public}s disk=%{public}s extra=%{private}s app=%{private}s helper=%{private}s",
-         args[0], argc > 1 ? args[1] : "-", argc > 2 ? args[2] : "-", app, helper);
   if (access(helper, X_OK) != 0) {
     const char *m = "ERR\nPinned mount helper not found. Reinstall the helper.\n";
     write_all(fd, m, strlen(m));
@@ -567,8 +568,7 @@ static void handle(int fd, const char *app) {
     dup2(pipefd[1], STDERR_FILENO);
     close(pipefd[1]);
     execv(helper, argv);
-    os_log_error(helperd_log(), "exec %{private}s errno=%d", helper, errno);
-    perror("exec");
+    child_log("exec mount helper failed");
     _exit(127);
   }
   close(pipefd[1]);
@@ -579,19 +579,17 @@ static void handle(int fd, const char *app) {
   body[n] = 0;
   close(pipefd[0]);
   if (wr == -3) {
-    os_log(helperd_log(), "cmd=%{public}s client hung up", args[0]);
+    child_log("client hung up");
     return;
   }
-  int ok = wr == 0 && WIFEXITED(st) && WEXITSTATUS(st) == 0;
   if (wr == -2) {
-    os_log_error(helperd_log(), "cmd=%{public}s timeout", args[0]);
+    child_log("mount helper timed out");
     const char *m = "ERR\nMount helper timed out.\n";
     write_all(fd, m, strlen(m));
     write_all(fd, body, n);
     return;
   }
-  os_log(helperd_log(), "cmd=%{public}s ok=%{public}s status=%d", args[0],
-         ok ? "yes" : "no", WIFEXITED(st) ? WEXITSTATUS(st) : -1);
+  int ok = wr == 0 && WIFEXITED(st) && WEXITSTATUS(st) == 0;
   const char *head = ok ? "OK\n" : "ERR\n";
   write_all(fd, head, strlen(head));
   write_all(fd, body, n);
@@ -630,13 +628,26 @@ int main(void) {
       if (errno == EINTR) continue;
       break;
     }
+    /* Authenticate in the parent. Security.framework and os_log are not safe
+       in the forked child before exec. */
+    if (!peer_ok(c, app)) {
+      os_log_error(helperd_log(), "peer rejected app=%{private}s", app);
+      const char *m = "ERR\nCaller failed the signature check.\n";
+      write_all(c, m, strlen(m));
+      close(c);
+      continue;
+    }
     pid_t w = fork();
     if (w == 0) {
       close(s);
       signal(SIGCHLD, SIG_DFL);
-      handle(c, app);
+      handle(c);
       close(c);
       _exit(0);
+    }
+    if (w < 0) {
+      const char *m = "ERR\nMount helper could not start.\n";
+      write_all(c, m, strlen(m));
     }
     close(c);
     /* Parent returns to accept. SIGCHLD reaps workers; do not waitpid here. */
