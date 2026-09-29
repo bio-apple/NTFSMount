@@ -199,6 +199,14 @@ if ! /usr/bin/grep -q 'socket did not appear' "$ROOT/helper/install-helper.sh"; 
   echo "install-helper must fail when the helper socket never appears" >&2
   exit 1
 fi
+if ! /usr/bin/grep -q 'pkg-postinstall.sh' "$ROOT/scripts/package-pkg.sh" || ! /usr/bin/grep -q -- '--scripts' "$ROOT/scripts/package-pkg.sh"; then
+  echo "package-pkg must run the helper postinstall" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'install-helper.sh' "$ROOT/scripts/pkg-postinstall.sh"; then
+  echo "package postinstall must install the mount helper" >&2
+  exit 1
+fi
 if /usr/bin/grep -nF 'ntfs-3g /dev/${ident}"' "$HELPER"; then
   echo "do_format must not pkill a diskN prefix that matches disk40" >&2
   exit 1

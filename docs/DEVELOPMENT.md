@@ -7,7 +7,7 @@ Build, test, and architecture notes. Not a contributing guide.
 ```bash
 ./scripts/check-fuse-deps.sh
 swift test && ./scripts/test-helper.sh
-./scripts/build.sh && ./scripts/package-dmg.sh
+./scripts/build.sh && ./scripts/package-pkg.sh
 ```
 
 `check-fuse-deps.sh` checks the FUSE-T / ntfs-3g toolchain on an Apple Silicon dev machine. It may `brew install ntfs-3g`; it does not install macFUSE. **SIP stays enabled**; this app does not use a kernel extension.

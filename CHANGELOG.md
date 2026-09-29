@@ -6,7 +6,7 @@ All notable **released** changes are listed here, newest first. Current GitHub t
 
 ## [Unreleased]
 
-None.
+- Download is an installer package (`NTFSMount.pkg`) that places the app in `/Applications` and installs the mount helper before the installer finishes. Disk images are no longer built.
 
 ## [1.0.0] - 2026-09-28
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build Sparkle appcast.xml from dist/NTFSMount.dmg using generate_appcast.
+# Build Sparkle appcast.xml from dist/NTFSMount.pkg using generate_appcast.
 # Enclosure URL points at a GitHub Release asset (default pre-release v1.2.0), not Latest.
 set -euo pipefail
 
@@ -8,12 +8,12 @@ SPARKLE_VERSION="${SPARKLE_VERSION:-2.10.0}"
 TAG="${SPARKLE_RELEASE_TAG:-v1.2.0}"
 PREFIX="${SPARKLE_DOWNLOAD_PREFIX:-https://github.com/bio-apple/NTFSMount/releases/download/${TAG}/}"
 KEYFILE="${SPARKLE_ED_KEY_FILE:-$HOME/Library/Application Support/NTFSMount-sparkle/eddsa-private.key}"
-DMG="${1:-$ROOT/dist/NTFSMount.dmg}"
+PKG="${1:-$ROOT/dist/NTFSMount.pkg}"
 OUT="${SPARKLE_APPCAST_OUT:-$ROOT/dist/appcast.xml}"
 CACHE="$ROOT/.build/sparkle-tools/$SPARKLE_VERSION"
 
-if [[ ! -f "$DMG" ]]; then
-  echo "error: missing $DMG — run ./scripts/package-dmg.sh first" >&2
+if [[ ! -f "$PKG" ]]; then
+  echo "error: missing $PKG — run ./scripts/package-pkg.sh first" >&2
   exit 1
 fi
 if [[ ! -f "$KEYFILE" ]]; then
@@ -74,7 +74,7 @@ STAGE="$(/usr/bin/mktemp -d /tmp/ntfsmount-appcast.XXXXXX)"
 cleanup() { /bin/rm -rf "$STAGE"; }
 trap cleanup EXIT
 
-/bin/cp "$DMG" "$STAGE/NTFSMount.dmg"
+/bin/cp "$PKG" "$STAGE/NTFSMount.pkg"
 
 echo "==> generate_appcast (EdDSA; enclosure prefix $PREFIX)"
 # --ed-key-file: 32-byte seed, base64 (openssl / sparkle-generate-keys.sh).

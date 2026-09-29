@@ -20,11 +20,11 @@
 
 NOTICE quotes FUSE-T: *“Free for non-commercial use”* and *“For commercial use or/and bundling with commercial software the software vendor has to obtain a commercial license from the FUSE-T authors.”* `go-nfsv4` is excluded from the repo’s GPL grant.
 
-Shipping a prebuilt `.app` / DMG that mixes GPL ntfs-3g, LGPL libfuse, MIT Sparkle, and non-GPL `go-nfsv4` is **not confirmed compliant**. **需律师确认.**
+Shipping a prebuilt `.app` / installer package that mixes GPL ntfs-3g, LGPL libfuse, MIT Sparkle, and non-GPL `go-nfsv4` is **not confirmed compliant**. **需律师确认.**
 
-## Self-compile vs prebuilt DMG · 自行编译与预编译 DMG
+## Self-compile vs prebuilt package · 自行编译与预编译安装包
 
-Compiling from this Git tree and downloading a GitHub DMG are different distribution acts. The repo LICENSE covers this project’s Swift/helper sources (GPL-2.0-or-later) and does **not** make the bundled `go-nfsv4` binary GPL. A prebuilt DMG that already contains `go-nfsv4` is a binary redistribution of FUSE-T’s NFS server; GitHub Releases marked pre-release are **not** a commercial distribution grant (NOTICE). Do not tell users the DMG is “the same license as the repo.” **需律师确认.**
+Compiling from this Git tree and downloading a GitHub package are different distribution acts. The repo LICENSE covers this project’s Swift/helper sources (GPL-2.0-or-later) and does **not** make the bundled `go-nfsv4` binary GPL. A prebuilt package that already contains `go-nfsv4` is a binary redistribution of FUSE-T’s NFS server; GitHub Releases marked pre-release are **not** a commercial distribution grant (NOTICE). Do not tell users the package is “the same license as the repo.” **需律师确认.**
 
 ## Commercialization · 商业化
 
@@ -34,12 +34,13 @@ Contact: [fuse-t.org](https://www.fuse-t.org/)
 
 ## 1. Apple 公证 · Notarization
 
-需要付费 Apple Developer Program 的 **Developer ID Application** 证书，以及 `notarytool` 凭据。本仓库打的是 `.app` + DMG，**不用 Developer ID Installer**（没有安装 pkg）。
+需要付费 Apple Developer Program 的 **Developer ID Application** 证书，以及 `notarytool` 凭据。下载物是安装包（`NTFSMount.pkg`），把 `.app` 装到 `/Applications`。给安装包本身签名并公证还要 **Developer ID Installer**（`INSTALLER_IDENTITY`）。只有 Application 证书时，包内应用可以签名，安装包保持未签名。
 
 ```bash
 CODESIGN_IDENTITY='Developer ID Application: Name (TEAM)' \
+INSTALLER_IDENTITY='Developer ID Installer: Name (TEAM)' \
 NOTARY_PROFILE='notarytool-profile' \
-./scripts/package-dmg.sh
+./scripts/package-pkg.sh
 ```
 
 `scripts/notarize.sh` 会对应用与内嵌二进制做 Hardened Runtime 签名、提交公证并 staple。未设置证书时构建为 ad-hoc：Gatekeeper 会拦截。
@@ -81,7 +82,7 @@ NOTARY_PROFILE='notarytool-profile' \
 
 ### CI（GitHub Actions）
 
-`.github/workflows/build.yml`：push 到 `main` 与 PR 会跑 SwiftLint / ShellCheck / shfmt / Markdown lint / UnitTest / Security Scan / Build（`swift build`，不 `brew install ntfs-3g`）；`main` 上另打 `.app` 工件。推送 `v*` tag 时打 DMG，在日志打印 `SHA256=`，并把 `NTFSMount.dmg` + `NTFSMount.dmg.sha256` 作为 Artifact 上传，再创建 GitHub Release。随后 **Release SHA256** 对已发布 DMG 再算一遍哈希。**不要在真盘 workflow 里公证**；`.github/workflows/manual-disk-test.yml` 不读这些 secrets。
+`.github/workflows/build.yml`：push 到 `main` 与 PR 会跑 SwiftLint / ShellCheck / shfmt / Markdown lint / UnitTest / Security Scan / Build（`swift build`，不 `brew install ntfs-3g`）；`main` 上另打 `.app` 工件。推送 `v*` tag 时打安装包，在日志打印 `SHA256=`，并把 `NTFSMount.pkg` + `NTFSMount.pkg.sha256` 作为 Artifact 上传，再创建 GitHub Release。随后 **Release SHA256** 对已发布安装包再算一遍哈希。**不要在真盘 workflow 里公证**；`.github/workflows/manual-disk-test.yml` 不读这些 secrets。
 
 公证在 Actions 上不能用本机钥匙串 `NOTARY_PROFILE`。请在仓库 **Settings → Secrets and variables → Actions** 配置。`scripts/ci-import-signing.sh` 导入 .p12；`scripts/notarize.sh` 用 API Key 提交：
 
@@ -96,7 +97,7 @@ NOTARY_PROFILE='notarytool-profile' \
 | `NOTARY_PROFILE` | 可选。Actions 上通常无效（没有你的钥匙串 profile）；本机打包才用 |
 | `FUSE_T_REDISTRIBUTION_OK` | **仓库变量**（`vars.`，不是 secret）。仅在已公证 **且** 已有 FUSE-T 书面许可时设为 `1`，才可当产品再分发 |
 
-本机仍可用 `NOTARY_PROFILE`。证书与 API Key 齐了才会 `notarytool submit`；缺一则仍是未公证个人使用包。未取得 FUSE-T 书面许可不要设 `FUSE_T_REDISTRIBUTION_OK`。GitHub Latest 可以指向这份个人使用 DMG；当作产品再分发仍须公证 **并且** FUSE-T 许可证允许。
+本机仍可用 `NOTARY_PROFILE`。证书与 API Key 齐了才会 `notarytool submit`；缺一则仍是未公证个人使用包。未取得 FUSE-T 书面许可不要设 `FUSE_T_REDISTRIBUTION_OK`。GitHub Latest 可以指向这份个人使用安装包；当作产品再分发仍须公证 **并且** FUSE-T 许可证允许。
 
 ```bash
 git tag v0.1.0
@@ -108,14 +109,16 @@ git push origin v0.1.0
 捆绑的 `go-nfsv4` **不是 GPL**。FUSE-T 写明个人使用免费；作为产品嵌入或分发可能需要商业许可。钉死 **FUSE-T 1.2.7**（`scripts/prepare-runtime.sh` 的 `FUSE_T_VERSION` 与 [runtime/versions.txt](../runtime/versions.txt)）；Package.swift 无法钉 macOS pkg。
 
 - 联系：[fuse-t.org](https://www.fuse-t.org/)
-- 取得书面授权后：`FUSE_T_REDISTRIBUTION_OK=1 ./scripts/package-dmg.sh`，并把本文件此节改为「已授权」。
-- 未设置该变量时，DMG 带 `Personal Use.txt`。GitHub Latest 可以指向这份个人使用包（README 的 `/releases/latest/download/NTFSMount.dmg`），**不要**把它当成可再分发或可销售的产品，也禁止第三方镜像。
+- 取得书面授权后：`FUSE_T_REDISTRIBUTION_OK=1 ./scripts/package-pkg.sh`，并把本文件此节改为「已授权」。
+- 未设置该变量时，安装程序欢迎页写明仅个人使用。GitHub Latest 可以指向这份个人使用包（README 的 `/releases/latest/download/NTFSMount.pkg`），**不要**把它当成可再分发或可销售的产品，也禁止第三方镜像。
 - **当作产品对外再分发**仅当已公证并且 FUSE-T 许可证允许再分发（仓库变量 `vars.FUSE_T_REDISTRIBUTION_OK=1`）。缺一不可。
 - 正式对外下载页必须同时完成 Developer ID 公证与 FUSE-T 书面授权。许可证拆分见仓库根目录 [NOTICE](../NOTICE)。
 
 macFUSE / osxfuse 依赖内核扩展，与 **SIP 保持开启** 不兼容。本项目用 FUSE-T（用户态 NFS/WebDAV），不改用 kext。开发机检查：`./scripts/check-fuse-deps.sh`（不要 `brew install macfuse`）。在取得可再分发的用户态后端或 FUSE-T 授权之前，**不把本应用当作可商用产品对外销售**。
 
 ## 3. 特权模型
+
+安装包的 `postinstall` 在文件拷贝完成后、安装程序结束前，以安装程序已经取得的 root 身份运行捆绑的 `install-helper.sh`（不另弹密码，不调用 `sudo`，不用 `osascript`）。只拷贝 `.app`、没有走安装包时，仍由应用内安装助手。
 
 优先用 macOS 13+ 的 `SMAppService.daemon` 注册 `Contents/Library/LaunchDaemons/com.bioapple.ntfsmount.helper.plist`（**已公证且 Developer ID 签名**时才稳定）。**ad-hoc / 未公证包上 `SMAppService` 通常失败**，回退为管理员密码安装同一 LaunchDaemon。守护进程经 Unix socket 只执行 `/Library/Application Support/NTFSMount/ntfs-rw-helper`（root:wheel 755 副本），并用 `SecCodeCheckValidity` / `SecStaticCodeCheckValidity` 加上**安装时写入的** `allowed.cdhash` 钉扎调用方，不只对照现场 `.app` 的 CDHash。
 
@@ -131,26 +134,26 @@ IPC：**v2** 长度前缀（单参最长 1024、最多 32 个参数），旧守�
 
 ## 4. GitHub Release 的 SHA256
 
-`./scripts/package-dmg.sh` 在 DMG 定稿（含 staple）后会写出：
+`./scripts/package-pkg.sh` 在安装包定稿（已签名时含 staple）后会写出：
 
-- `dist/NTFSMount.dmg.sha256`（`HASH  NTFSMount.dmg`）
-- `dist/NTFSMount.dmg.release-notes.md`（可贴进 Release 正文）
+- `dist/NTFSMount.pkg.sha256`（`HASH  NTFSMount.pkg`）
+- `dist/NTFSMount.pkg.release-notes.md`（可贴进 Release 正文）
 
-创建 GitHub Release 时附上 DMG 与 sidecar，并把 SHA256 片段贴进正文。推 `v*` tag 时 CI 用 `scripts/generate-release-notes.sh` 从 git log 生成 What’s new / Fixes / Breaking / Helper reinstall / Old config（手写 [RELEASE_NOTES_TEMPLATE.md](./RELEASE_NOTES_TEMPLATE.md) 为可选覆盖）。用户校验：
+创建 GitHub Release 时附上安装包与 sidecar，并把 SHA256 片段贴进正文。推 `v*` tag 时 CI 用 `scripts/generate-release-notes.sh` 从 git log 生成 What’s new / Fixes / Breaking / Helper reinstall / Old config（手写 [RELEASE_NOTES_TEMPLATE.md](./RELEASE_NOTES_TEMPLATE.md) 为可选覆盖）。用户校验：
 
 ```bash
-shasum -a 256 NTFSMount.dmg
+shasum -a 256 NTFSMount.pkg
 ```
 
-CI 在 `release: published` 时若 Release 已有 `NTFSMount.dmg` 但没有 sidecar，会补传 `.sha256` 并把哈希写入正文。打 `v*` tag 的 job 会自己附上 DMG 与 sidecar。
+CI 在 `release: published` 时若 Release 已有 `NTFSMount.pkg` 但没有 sidecar，会补传 `.sha256` 并把哈希写入正文。打 `v*` tag 的 job 会自己附上安装包与 sidecar。
 
 ## 5. Sparkle 更新
 
-未公证个人使用构建：**不要**把应用内更新当产品功能。用户到 GitHub Releases 手动下载 DMG。菜单不展示「检查更新…」；设置无自动检查开关。`SUEnableAutomaticChecks` / `SUAutomaticallyUpdate` 为 false；进程不 start Sparkle。
+未公证个人使用构建：**不要**把应用内更新当产品功能。用户到 GitHub Releases 手动下载安装包。菜单不展示「检查更新…」；设置无自动检查开关。`SUEnableAutomaticChecks` / `SUAutomaticallyUpdate` 为 false；进程不 start Sparkle。
 
-维护者：自动更新用 Sparkle EdDSA 签 DMG / appcast，**不是**用 GitHub Releases Atom，也**不要**把 feed 指到 GitHub Latest（FUSE-T 仍为个人使用预发布时）。
+维护者：自动更新用 Sparkle EdDSA 签安装包 / appcast，**不是**用 GitHub Releases Atom，也**不要**把 feed 指到 GitHub Latest（FUSE-T 仍为个人使用预发布时）。
 
-`SUFeedURL` 仍钉在 **v1.2.0 资产 URL**。发 1.2.1 及以后版本时：把新 DMG 传到对应 tag，再生成 appcast，用 `--clobber` **覆盖 v1.2.0 上的 `appcast.xml`**。
+`SUFeedURL` 仍钉在 **v1.2.0 资产 URL**。发 1.2.1 及以后版本时：把新安装包传到对应 tag，再生成 appcast，用 `--clobber` **覆盖 v1.2.0 上的 `appcast.xml`**。
 
 - Feed：`https://github.com/bio-apple/NTFSMount/releases/download/v1.2.0/appcast.xml`
 - 密钥与 `generate_appcast` 步骤：[docs/SPARKLE.md](./SPARKLE.md)

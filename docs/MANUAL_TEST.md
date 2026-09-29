@@ -17,11 +17,12 @@
 
 ## 安装与 Gatekeeper
 
-- [ ] 未公证 DMG：双击被拦截 → Control-click 打开，或「系统设置 → 隐私与安全性 → 仍要打开」；仍隔离则 `xattr -d com.apple.quarantine /Applications/NTFSMount.app`
+- [ ] 未公证安装包：双击被拦截 → Control-click 打开，或「系统设置 → 隐私与安全性 → 仍要打开」；装完后应用仍隔离则 `xattr -d com.apple.quarantine /Applications/NTFSMount.app`
 - [ ] 首次启动只有**一个**确认框（条款 + 未公证说明 + 助手安装提示）；回车是「同意并继续」，Esc 是「退出」
 - [ ] 同意后出现主窗口；空状态写明关窗后菜单栏图标仍在。兼容性/诊断在「设置 → 高级」或「诊断环境…」
 - [ ] **助手缺失横幅**：设置里「卸载挂载助手」后（或从未安装），主窗口顶部仍显示同一横幅；菜单挂载项灰掉
-- [ ] 未公证：安装助手走 Authorization Services 系统管理员对话框；安装后没有 `/etc/sudoers.d/ntfs-rw`；SIP 保持开启
+- [ ] 安装包结束时挂载助手已装好（socket 存在），安装过程中不再另要一次密码；安装后没有 `/etc/sudoers.d/ntfs-rw`；SIP 保持开启
+- [ ] 未公证且只拷贝了 `.app`、助手缺失：才走 Authorization Services 系统管理员对话框
 - [ ] 已公证（若有）：优先系统服务授权，失败才要密码
 - [ ] **菜单栏悬停**：不打开窗口，悬停 **NTFS** 图标能看到卷名 / `NTFS • …` / `diskNsM` / 用量；无盘时为「没有检测到 NTFS」一类文案
 - [ ] **关窗 ≠ 退出**：关掉主窗口后菜单栏图标仍在；从程序坞退出后图标消失
@@ -74,4 +75,4 @@
 - [ ] 旧版 sudoers 机器打开新包 → 「更新挂载助手」→ 更新后 `check-helper-gone.sh` 里 sudoers 项消失，可写挂载成功
 - [ ] 设置无自动检查开关；文案为到 GitHub Releases 手动下载；启动后抓包不应出现 GitHub appcast 请求
 - [ ] 菜单无「检查更新…」
-- [ ] 当前构建未公证；更新请到 GitHub Releases 手动下载 DMG
+- [ ] 当前构建未公证；更新请到 GitHub Releases 手动下载安装包

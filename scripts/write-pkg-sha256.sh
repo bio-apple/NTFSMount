@@ -1,19 +1,18 @@
 #!/bin/bash
-# 为 DMG 写 SHA256 sidecar（`HASH  filename`）和 GitHub Release 的校验附录。
+# 为安装包写 SHA256 sidecar（`HASH  filename`）和 GitHub Release 的校验附录。
 # 这不是完整 Release notes。GitHub Release 正文由 scripts/generate-release-notes.sh
 # 在 v* tag 上生成；docs/RELEASE_NOTES/<version>.md 只是可选覆盖。
-# 用法: write-dmg-sha256.sh <path-to-dmg>
+# 用法: write-pkg-sha256.sh <path-to-pkg>
 set -euo pipefail
-DMG="${1:?usage: write-dmg-sha256.sh <dmg>}"
-[[ -f "$DMG" ]] || {
-  echo "error: not found: $DMG" >&2
+PKG="${1:?usage: write-pkg-sha256.sh <pkg>}"
+[[ -f "$PKG" ]] || {
+  echo "error: not found: $PKG" >&2
   exit 1
 }
 
-DIR="$(cd "$(/usr/bin/dirname "$DMG")" && pwd)"
-BASE="$(/usr/bin/basename "$DMG")"
+DIR="$(cd "$(/usr/bin/dirname "$PKG")" && pwd)"
+BASE="$(/usr/bin/basename "$PKG")"
 SIDECAR="$DIR/$BASE.sha256"
-NOTES="$DIR/$BASE.release-notes.md"
 
 if [[ -x /usr/bin/shasum ]]; then
   (cd "$DIR" && /usr/bin/shasum -a 256 "$BASE" >"$BASE.sha256")
@@ -30,8 +29,9 @@ HASH="$(/usr/bin/awk '{print $1; exit}' "$SIDECAR")"
   exit 1
 }
 
+NOTES="$DIR/$BASE.release-notes.md"
 /bin/cat >"$NOTES" <<EOF
-## Verify the DMG
+## Verify the package
 
 $BASE
 SHA256:

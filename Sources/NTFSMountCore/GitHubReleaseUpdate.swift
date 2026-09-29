@@ -5,8 +5,8 @@ public enum GitHubReleaseUpdate {
   public static let latestReleaseAPIURL = URL(
     string: "https://api.github.com/repos/bio-apple/NTFSMount/releases/latest"
   )!
-  public static let latestDMGURL = URL(
-    string: "https://github.com/bio-apple/NTFSMount/releases/latest/download/NTFSMount.dmg"
+  public static let latestPackageURL = URL(
+    string: "https://github.com/bio-apple/NTFSMount/releases/latest/download/NTFSMount.pkg"
   )!
 
   /// Strip a leading `v`/`V` and surrounding whitespace.

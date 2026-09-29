@@ -1,5 +1,5 @@
 # shfmt：仓库内 bash（含 helper/ntfs-rw-helper、scripts/ntfsmount）。
-# push/PR 独立跑；build.yml 以 workflow_call 调用，打 tag 出 DMG 前必须先过检查。
+# push/PR 独立跑；build.yml 以 workflow_call 调用，打 tag 出安装包前必须先过检查。
 name: shfmt
 on:
   push:

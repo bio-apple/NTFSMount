@@ -8,7 +8,7 @@ on:
     types: [published]
   workflow_dispatch:
 
-# 只取消进行中的 PR；tag 上的 DMG/公证不能被同 ref 的新 run 杀掉。
+# 只取消进行中的 PR；tag 上的安装包/公证不能被同 ref 的新 run 杀掉。
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -142,8 +142,8 @@ jobs:
             security delete-keychain "$APP_SIGNING_KEYCHAIN" || true
           fi
 
-  dmg-on-tag:
-    name: DMG (tag)
+  pkg-on-tag:
+    name: PKG (tag)
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: macos-14
     permissions:
@@ -172,7 +172,7 @@ jobs:
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           CODESIGN_IDENTITY: ${{ secrets.CODESIGN_IDENTITY }}
         run: bash scripts/ci-import-signing.sh
-      - name: Prepare runtime and package DMG
+      - name: Prepare runtime and package PKG
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NOTARY_PROFILE: ${{ secrets.NOTARY_PROFILE }}
@@ -184,31 +184,31 @@ jobs:
           set -euo pipefail
           bash scripts/prepare-runtime.sh
           bash scripts/check-runtime-sha256.sh
-          bash scripts/package-dmg.sh
-      - name: SHA256 of NTFSMount.dmg
-        id: dmg_sha256
+          bash scripts/package-pkg.sh
+      - name: SHA256 of NTFSMount.pkg
+        id: pkg_sha256
         run: |
           set -euo pipefail
-          dmg=dist/NTFSMount.dmg
-          [[ -f "$dmg" ]] || { echo "error: missing $dmg" >&2; exit 1; }
-          # package-dmg.sh already hashed after staple; re-run so the log always has SHA256=.
-          bash scripts/write-dmg-sha256.sh "$dmg"
-          hash="$(/usr/bin/awk '{print $1; exit}' "${dmg}.sha256")"
+          pkg=dist/NTFSMount.pkg
+          [[ -f "$pkg" ]] || { echo "error: missing $pkg" >&2; exit 1; }
+          # package-pkg.sh already hashed after staple; re-run so the log always has SHA256=.
+          bash scripts/write-pkg-sha256.sh "$pkg"
+          hash="$(/usr/bin/awk '{print $1; exit}' "${pkg}.sha256")"
           [[ ${#hash} -eq 64 ]] || { echo "error: invalid SHA256: $hash" >&2; exit 1; }
           echo "SHA256=${hash}"
           echo "hash=${hash}" >> "$GITHUB_OUTPUT"
           {
-            echo "## NTFSMount.dmg"
+            echo "## NTFSMount.pkg"
             echo "SHA256=\`${hash}\`"
           } >> "$GITHUB_STEP_SUMMARY"
-          /usr/bin/shasum -a 256 "$dmg"
-      - name: Upload DMG artifacts
+          /usr/bin/shasum -a 256 "$pkg"
+      - name: Upload PKG artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: NTFSMount-dmg
+          name: NTFSMount-pkg
           path: |
-            dist/NTFSMount.dmg
-            dist/NTFSMount.dmg.sha256
+            dist/NTFSMount.pkg
+            dist/NTFSMount.pkg.sha256
           if-no-files-found: error
       - name: Publish GitHub Release
         env:
@@ -216,15 +216,15 @@ jobs:
           FUSE_T_REDISTRIBUTION_OK: ${{ vars.FUSE_T_REDISTRIBUTION_OK }}
         run: |
           set -euo pipefail
-          [[ -f dist/NTFSMount.dmg ]] || { echo "error: missing dist/NTFSMount.dmg" >&2; exit 1; }
-          [[ -f dist/NTFSMount.dmg.sha256 ]] || { echo "error: missing dist/NTFSMount.dmg.sha256" >&2; exit 1; }
+          [[ -f dist/NTFSMount.pkg ]] || { echo "error: missing dist/NTFSMount.pkg" >&2; exit 1; }
+          [[ -f dist/NTFSMount.pkg.sha256 ]] || { echo "error: missing dist/NTFSMount.pkg.sha256" >&2; exit 1; }
           app=""
           [[ -d dist/NTFSMount.app ]] && app=dist/NTFSMount.app
           [[ -z "$app" && -d /tmp/NTFSMount.app ]] && app=/tmp/NTFSMount.app
           notarized=0
           if [[ -n "$app" ]] && xcrun stapler validate "$app" >/dev/null 2>&1; then
             notarized=1
-          elif xcrun stapler validate dist/NTFSMount.dmg >/dev/null 2>&1; then
+          elif xcrun stapler validate dist/NTFSMount.pkg >/dev/null 2>&1; then
             notarized=1
           fi
           notes="$(/usr/bin/mktemp)"
@@ -240,9 +240,9 @@ jobs:
             echo
             /bin/cat /tmp/ntfsmount-RELEASE_NOTES.md
             echo
-            /bin/cat dist/NTFSMount.dmg.release-notes.md
+            /bin/cat dist/NTFSMount.pkg.release-notes.md
           } > "$notes"
-          assets=(dist/NTFSMount.dmg dist/NTFSMount.dmg.sha256)
+          assets=(dist/NTFSMount.pkg dist/NTFSMount.pkg.sha256)
           official=0
           [[ "$notarized" == "1" && "${FUSE_T_REDISTRIBUTION_OK:-}" == "1" ]] && official=1
           if [[ "$official" == "1" ]]; then
@@ -266,42 +266,42 @@ jobs:
             security delete-keychain "$APP_SIGNING_KEYCHAIN" || true
           fi
 
-  # tag 上跟在 DMG (tag) 之后：对已发布 DMG 再算一遍 SHA256 并打日志/Artifact。
-  # 人工创建 Release 并附上 DMG 时同样跑（不依赖 tag job）。
+  # tag 上跟在 PKG (tag) 之后：对已发布安装包再算一遍 SHA256 并打日志/Artifact。
+  # 人工创建 Release 并附上安装包时同样跑（不依赖 tag job）。
   release-sha256:
     name: Release SHA256
-    if: always() && !cancelled() && (github.event_name == 'release' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && needs.dmg-on-tag.result == 'success'))
+    if: always() && !cancelled() && (github.event_name == 'release' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && needs.pkg-on-tag.result == 'success'))
     runs-on: macos-14
     permissions:
       contents: write
-    needs: [dmg-on-tag]
+    needs: [pkg-on-tag]
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Hash published DMG and attach sidecar
+      - name: Hash published package and attach sidecar
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref_name }}
         run: |
           set -euo pipefail
           work="$(/usr/bin/mktemp -d /tmp/ntfsmount-sha256.XXXXXX)"
-          if ! gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir "$work" --pattern 'NTFSMount.dmg'; then
-            echo "error: Release $TAG 没有 NTFSMount.dmg。先用 ./scripts/package-dmg.sh 打包并附上 DMG。" >&2
+          if ! gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir "$work" --pattern 'NTFSMount.pkg'; then
+            echo "error: Release $TAG 没有 NTFSMount.pkg。先用 ./scripts/package-pkg.sh 打包并附上安装包。" >&2
             exit 1
           fi
-          dmg="$work/NTFSMount.dmg"
-          [[ -f "$dmg" ]] || { echo "error: 未下载到 $dmg" >&2; exit 1; }
-          bash scripts/write-dmg-sha256.sh "$dmg"
+          pkg="$work/NTFSMount.pkg"
+          [[ -f "$pkg" ]] || { echo "error: 未下载到 $pkg" >&2; exit 1; }
+          bash scripts/write-pkg-sha256.sh "$pkg"
           mkdir -p dist
-          /bin/cp "$work/NTFSMount.dmg.sha256" dist/NTFSMount.dmg.sha256
-          hash="$(/usr/bin/awk '{print $1; exit}' dist/NTFSMount.dmg.sha256)"
+          /bin/cp "$work/NTFSMount.pkg.sha256" dist/NTFSMount.pkg.sha256
+          hash="$(/usr/bin/awk '{print $1; exit}' dist/NTFSMount.pkg.sha256)"
           echo "SHA256=${hash}"
           {
-            echo "## Published NTFSMount.dmg"
+            echo "## Published NTFSMount.pkg"
             echo "SHA256=\`${hash}\`"
           } >> "$GITHUB_STEP_SUMMARY"
-          gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" "$work/NTFSMount.dmg.sha256" --clobber
+          gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" "$work/NTFSMount.pkg.sha256" --clobber
           body="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body --jq .body)"
           ver="${TAG#v}"
           changelog="docs/RELEASE_NOTES/${ver}.md"
@@ -328,7 +328,7 @@ jobs:
               fi
               if ! printf '%s\n' "$body" | /usr/bin/grep -q "$hash"; then
                 echo
-                /bin/cat "$work/NTFSMount.dmg.release-notes.md"
+                /bin/cat "$work/NTFSMount.pkg.release-notes.md"
               fi
             } > "$work/release-body.md"
             gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes-file "$work/release-body.md"
@@ -337,5 +337,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: NTFSMount-release-sha256
-          path: dist/NTFSMount.dmg.sha256
+          path: dist/NTFSMount.pkg.sha256
           if-no-files-found: error

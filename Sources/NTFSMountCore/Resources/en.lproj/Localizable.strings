@@ -29,7 +29,7 @@
 3. By default this app does not use the network or collect accounts. This build is not notarized. Download updates from GitHub Releases. Disk contents are not uploaded. Logs stay on this Mac. After you uninstall the app, log files remain in your user folder.
 4. The mount helper runs as a root daemon and can mount, unmount, and format external disks. The administrator password entered at install time is not saved.
 
-After you agree, the mount helper installs automatically. Un-notarized builds ask for an administrator password; notarized builds prefer system service authorization.
+The installer package installs the mount helper before it finishes. If you only copied the app and the helper is missing, it installs after you agree. An in-app install on an un-notarized build asks for an administrator password; notarized builds prefer system service authorization.
 
 Return means you agree. Click “Quit” if you do not.";
 

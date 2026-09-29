@@ -1,7 +1,7 @@
 import Sparkle
 
 /// Unnotarized personal-use builds do not start Sparkle.
-/// Users download a DMG from GitHub Releases. The framework stays linked for later notarized builds.
+/// Users download an installer package from GitHub Releases. The framework stays linked for later notarized builds.
 @MainActor
 final class SparkleUpdater: ObservableObject {
   static let shared = SparkleUpdater()

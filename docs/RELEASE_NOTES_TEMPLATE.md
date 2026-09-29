@@ -41,6 +41,6 @@ Optional override: copy this file to `docs/RELEASE_NOTES/<version>.md` (no `v` p
 - **Helper stamp:** _TBD — must `helper.stamp` / `allowed.cdhash` be rewritten?_
 - **Leftover sudoers:** `/etc/sudoers.d/ntfs-rw` — still deleted on install/update/uninstall? Any leftover NOPASSWD?
 
-## Verify the DMG
+## Verify the package
 
 CI appends SHA256 after packaging. Do not invent a hash here.

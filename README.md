@@ -4,7 +4,7 @@ Menu-bar app for **read/write external NTFS** on Apple Silicon (macOS 13+). User
 
 > ⚠️ **Personal use only · not notarized.** Writing or formatting an NTFS volume can destroy data — back up first. Gatekeeper blocks first launch; you must allow the app manually. Bundled FUSE-T `go-nfsv4` is not GPL — do not redistribute or sell.
 
-**[Download DMG](https://github.com/bio-apple/NTFSMount/releases/latest/download/NTFSMount.dmg)** · [Releases / SHA256](https://github.com/bio-apple/NTFSMount/releases/latest) · Current: **1.0.0**
+**[Download PKG](https://github.com/bio-apple/NTFSMount/releases/latest/download/NTFSMount.pkg)** · [Releases / SHA256](https://github.com/bio-apple/NTFSMount/releases/latest) · Current: **1.0.0**
 
 Download updates from GitHub Releases. The in-app Sparkle updater is hidden on this unnotarized build and is not the download path.
 
@@ -12,9 +12,9 @@ Download updates from GitHub Releases. The in-app Sparkle updater is hidden on t
 
 ## Quick Start
 
-1. Download the DMG from GitHub Latest. Drag **NTFSMount** into Applications.
-2. Control-click → **Open**, or System Settings → Privacy & Security → **Open Anyway**.
-3. Agree. The app then installs the mount helper (admin password once). This installs a LaunchDaemon — not sudoers NOPASSWD.
+1. Download the package from GitHub Latest and open it. The installer puts **NTFSMount** in Applications and installs the mount helper (the installer's administrator password, once). This installs a LaunchDaemon — not sudoers NOPASSWD.
+2. Control-click the app → **Open**, or System Settings → Privacy & Security → **Open Anyway**.
+3. Agree.
 4. Plug in an external NTFS disk → menu bar **NTFS** → **Mount Writable**.
 
 ## Architecture
@@ -49,7 +49,7 @@ flowchart TB
 ## Help
 
 - In the app: Diagnose Environment → Export Diagnostic Report and attach the zip to an [Issue](.github/ISSUE_TEMPLATE/bug_report.md).
-- After an upgrade: replace the app, then **Update mount helper**.
+- After an upgrade: install the package again. It updates the mount helper. If you only replaced the app, use **Update mount helper**.
 - If Diagnose reports missing bundled ntfs-3g: reinstall from GitHub Latest (do not use Homebrew).
 - On Sequoia or later, grant **Full Disk Access** to `NTFSMount.app`. The LaunchDaemon does not inherit that grant; if mounts still fail, add the helper in the same list.
 

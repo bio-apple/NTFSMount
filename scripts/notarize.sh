@@ -2,7 +2,7 @@
 # Developer ID 签名并公证。没有证书时只做 ad-hoc + Hardened Runtime 并警告。
 # 用法:
 #   CODESIGN_IDENTITY="Developer ID Application: Name (TEAM)" ./scripts/notarize.sh [app]
-#   ./scripts/notarize.sh dist/NTFSMount.dmg
+#   ./scripts/notarize.sh dist/NTFSMount.pkg
 # 公证凭据（任选）:
 #   NOTARY_PROFILE=钥匙串里的 notarytool profile（本机）
 #   或 APPLE_API_KEY_ID + APPLE_API_ISSUER + APPLE_API_KEY（p8 全文，CI）

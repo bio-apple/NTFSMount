@@ -34,7 +34,7 @@ Userspace FUSE library used by the bundled ntfs-3g. No kernel extension is requi
 - **License:** MIT
 - **Source:** https://github.com/sparkle-project/Sparkle
 
-Embedded as `Sparkle.framework`. In-app checks are disabled on unnotarized personal-use builds; users download a DMG from GitHub Releases. The appcast (when used after notarization) is a Sparkle RSS feed, not the GitHub Releases Atom. Automatic checks stay off by default. EdDSA public key is `SUPublicEDKey` in Info.plist; the private key is not in this repository. See [docs/SPARKLE.md](./docs/SPARKLE.md).
+Embedded as `Sparkle.framework`. In-app checks are disabled on unnotarized personal-use builds; users download an installer package from GitHub Releases. The appcast (when used after notarization) is a Sparkle RSS feed, not the GitHub Releases Atom. Automatic checks stay off by default. EdDSA public key is `SUPublicEDKey` in Info.plist; the private key is not in this repository. See [docs/SPARKLE.md](./docs/SPARKLE.md).
 
 ## Notices
 

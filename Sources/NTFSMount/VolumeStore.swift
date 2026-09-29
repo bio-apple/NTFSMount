@@ -234,7 +234,7 @@ final class VolumeStore: ObservableObject {
     alert.addButton(withTitle: L10n.t("alert.update"))
     alert.addButton(withTitle: L10n.t("later"))
     if alert.runModal() == .alertFirstButtonReturn {
-      NSWorkspace.shared.open(GitHubReleaseUpdate.latestDMGURL)
+      NSWorkspace.shared.open(GitHubReleaseUpdate.latestPackageURL)
     } else {
       UserDefaults.standard.set(
         GitHubReleaseUpdate.normalizeVersion(remoteVersion),

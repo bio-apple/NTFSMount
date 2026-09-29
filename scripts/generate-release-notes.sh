@@ -346,7 +346,7 @@ EOF
   printf '%s\n' "- **Leftover sudoers:** \`/etc/sudoers.d/ntfs-rw\` — still deleted on install/update/uninstall. Do not keep NOPASSWD leftovers."
   cat <<'EOF'
 
-## Verify the DMG
+## Verify the package
 
 CI appends SHA256 after packaging. Do not invent a hash here.
 EOF
