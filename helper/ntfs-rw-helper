@@ -1068,12 +1068,15 @@ do_mount() {
   # 默认不用 force/remove_hiberfile，避免静默毁掉 Windows 休眠会话。
   local rw_attempts=(
     "backend=nfs"
-    "backend=smb"
-    # FSKit 在 macOS 13+ 常被禁用；失败可忽略，勿改顺序。
+    # macOS 26/27 的 FSKit 是系统原生路径，而 SMB 后端在这些系统上会出现 RPC 层损坏
+    # （readdir 报 "RPC struct is bad"，Finder/cp 全部失败），所以 fskit 排在 smb 前面。
+    # 旧系统上 fskit 不可用时它会安静失败，代价只是十几秒。
     "backend=fskit"
+    "backend=smb"
   )
   local ro_attempts=(
     "ro,backend=nfs"
+    "ro,backend=fskit"
     "ro,backend=smb"
   )
   local err="" opts rc=1 errfile extra dirty=0 pre_state=""
@@ -2019,6 +2022,11 @@ do_selftest() {
   [[ "$(mount_attempt_report)" == "Backend attempts:"* ]] || die "selftest: the attempt report must be labeled"
   MOUNT_ATTEMPT_NOTES=""
   LOG_FILE="$saved_log"
+  # macOS 26/27 上 SMB 后端的 RPC 层会坏，fskit 必须排在它前面。
+  local src="${BASH_SOURCE[0]:-$0}" fskit_line smb_line
+  fskit_line="$(/usr/bin/grep -n '"backend=fskit"' "$src" | /usr/bin/head -1 | /usr/bin/cut -d: -f1)"
+  smb_line="$(/usr/bin/grep -n '"backend=smb"' "$src" | /usr/bin/head -1 | /usr/bin/cut -d: -f1)"
+  [[ -n "$fskit_line" && -n "$smb_line" && "$fskit_line" -lt "$smb_line" ]] || die "selftest: the fskit backend must be tried before smb"
   [[ "$(classify_line_for_state dirty)" == "classify: volume is dirty" ]] || die "selftest: dirty classify line"
   [[ "$(classify_line_for_state corrupt)" == "classify: volume may be corrupted" ]] || die "selftest: corrupt classify line"
   [[ "$(whole_disk_id disk4s2)" == "disk4" ]] || die "selftest: disk4s2 whole disk"
