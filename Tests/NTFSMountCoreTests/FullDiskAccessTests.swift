@@ -19,7 +19,31 @@ final class FullDiskAccessTests: XCTestCase {
     XCTAssertEqual(FullDiskAccess.gatedPath, "/Library/Application Support/com.apple.TCC/TCC.db")
     XCTAssertEqual(
       FullDiskAccess.helperInstallPath,
+      "/Library/Application Support/NTFSMount/ntfsmount-helperd"
+    )
+  }
+
+  func testRunningHelperPathPrefersTheSealedCopyTCCSees() {
+    XCTAssertEqual(
+      FullDiskAccess.runningHelperPath(
+        appBundlePath: "/Applications/NTFSMount.app",
+        exists: { $0 == "/Library/Application Support/NTFSMount/ntfsmount-helperd" }
+      ),
+      "/Library/Application Support/NTFSMount/ntfsmount-helperd"
+    )
+    XCTAssertEqual(
+      FullDiskAccess.runningHelperPath(
+        appBundlePath: "/Applications/NTFSMount.app",
+        exists: { $0 == "/Library/PrivilegedHelperTools/com.bioapple.ntfsmount.helperd" }
+      ),
       "/Library/PrivilegedHelperTools/com.bioapple.ntfsmount.helperd"
+    )
+    XCTAssertEqual(
+      FullDiskAccess.runningHelperPath(
+        appBundlePath: "/Applications/NTFSMount.app",
+        exists: { _ in false }
+      ),
+      "/Library/Application Support/NTFSMount/ntfsmount-helperd"
     )
   }
 

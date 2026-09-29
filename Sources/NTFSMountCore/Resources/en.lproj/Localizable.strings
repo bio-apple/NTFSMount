@@ -319,7 +319,7 @@ Return means you agree. Click “Quit” if you do not.";
 
 "fda.statusDenied" = "Full Disk Access for this app was not detected.";
 
-"fda.helperPath" = "If mounts still fail, add the helper in the same list: %@";
+"fda.helperPath" = "Mount and format also need the helper in this list — the app's grant is not inherited: %@";
 
 "alert.updateHelperTitle" = "Update Mount Helper";
 
@@ -334,6 +334,8 @@ Return means you agree. Click “Quit” if you do not.";
 "alert.mountFailed" = "Mount Failed";
 
 "alert.formatFailed" = "Format Failed";
+
+"error.rawDeviceDenied" = "macOS blocked direct disk access. Grant Full Disk Access to NTFSMount.app in System Settings → Privacy & Security, then try again.";
 
 "alert.kextBody" = "FSKit/kernel extensions being unavailable is expected on macOS 13+. You can ignore it. This app does not use kernel extensions; the helper prefers NFS/userspace FUSE. Do not install a kext.\n\n%@";
 

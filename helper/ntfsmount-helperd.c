@@ -595,7 +595,36 @@ static void handle(int fd) {
   write_all(fd, body, n);
 }
 
-int main(void) {
+/* One-shot mode used when the app runs this binary as its own child through Authorization
+ * Services, instead of going through the LaunchDaemon socket. The app's child inherits
+ * NTFSMount.app's Full Disk Access, which a launchd daemon never does.
+ *
+ * setgid/setuid to 0 (sudo-style): Authorization Services leaves the real uid at the user while
+ * raising only the effective uid, and ntfs-3g refuses to run when getuid() != geteuid() with an
+ * external FUSE library. Only the sealed helper is ever exec'd. */
+static int run_exec_root(int argc, char **argv) {
+  if (argc < 3 || strcmp(argv[1], "exec-root") != 0) return -1;
+  const char *target = argv[2];
+  if (strcmp(target, HELPER_SEALED) != 0) {
+    child_log("exec-root refused a non-sealed helper");
+    return 64;
+  }
+  if (setgid(0) != 0 || setuid(0) != 0) {
+    child_log("exec-root could not become root");
+    return 70;
+  }
+  execv(target, argv + 2);
+  child_log("exec-root exec failed");
+  return 127;
+}
+
+int main(int argc, char **argv) {
+  int oneShot = run_exec_root(argc, argv);
+  if (oneShot != -1) return oneShot;
+  if (argc > 1) {
+    child_log("unexpected arguments");
+    return 64;
+  }
   fprintf(stderr, "helperd: start pid=%d uid=%d\n", (int)getpid(), (int)getuid());
   os_log(helperd_log(), "start pid=%d uid=%d", (int)getpid(), (int)getuid());
   if (getuid() != 0) die("need root");

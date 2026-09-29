@@ -319,7 +319,7 @@ Return 即同意。不同意請點「結束」。";
 
 "fda.statusDenied" = "未偵測到本 App 的完整磁碟取用權限。";
 
-"fda.helperPath" = "若仍無法掛載，請在同一列表中加入助手：%@";
+"fda.helperPath" = "掛載與格式化還需要把助手也加入這個列表（App 的授權不會被繼承）：%@";
 
 "alert.updateHelperTitle" = "更新掛載助手";
 
@@ -334,6 +334,8 @@ Return 即同意。不同意請點「結束」。";
 "alert.mountFailed" = "掛載失敗";
 
 "alert.formatFailed" = "格式化失敗";
+
+"error.rawDeviceDenied" = "macOS 拒絕了直接存取磁碟。請在「系統設定 → 隱私權與安全性 → 完整磁碟取用權限」中為 NTFSMount.app 開啟授權後重試。";
 
 "alert.kextBody" = "FSKit／核心延伸模組不可用是 macOS 13+ 的預期情況，可忽略。本 App 不使用核心延伸模組，助手已優先使用 NFS／使用者態 FUSE。請勿安裝 kext。\n\n%@";
 

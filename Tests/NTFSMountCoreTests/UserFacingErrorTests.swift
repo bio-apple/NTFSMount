@@ -49,6 +49,22 @@ final class UserFacingErrorTests: XCTestCase {
     )
   }
 
+  func testRawDeviceDeniedPointsAtFullDiskAccess() {
+    let raw = "error: mkntfs failed: Could not open /dev/disk4s2: Operation not permitted"
+    let zh = Locale(identifier: "zh-Hans")
+    XCTAssertEqual(UserFacingError.kind(from: raw), .rawDeviceDenied)
+    XCTAssertEqual(UserFacingError.message(from: raw, locale: zh), L10n.t("error.rawDeviceDenied", locale: zh))
+    XCTAssertFalse(
+      UserFacingError.message(from: raw, locale: Locale(identifier: "en"))
+        .unicodeScalars.contains { (0x3400...0x9FFF).contains($0.value) }
+    )
+    // A mounted-device refusal stays a busy error, not a privacy grant problem.
+    XCTAssertEqual(
+      UserFacingError.kind(from: "Could not open /dev/disk4s2: Resource busy"),
+      .diskBusy
+    )
+  }
+
   func testMapsBusyEject() {
     let zh = Locale(identifier: "zh-Hans")
     XCTAssertEqual(

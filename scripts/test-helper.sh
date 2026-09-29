@@ -621,6 +621,14 @@ if ! /usr/bin/grep -q '"probe"' "$HELPERD_C"; then
   echo "helperd must allow probe" >&2
   exit 1
 fi
+if ! /usr/bin/grep -q '"exec-root"' "$HELPERD_C"; then
+  echo "helperd must keep the app-authorized exec-root mode" >&2
+  exit 1
+fi
+if ! /usr/bin/grep -q 'setuid(0)' "$HELPERD_C"; then
+  echo "exec-root must become real root or ntfs-3g refuses the mount" >&2
+  exit 1
+fi
 if ! /usr/bin/grep -A30 'func mountDefaultWritableIfNeeded' "${STORE[@]}" | /usr/bin/grep -q 'for vol in volumes'; then
   echo "mountDefaultWritableIfNeeded must iterate every volume, not only volumes.first" >&2
   exit 1

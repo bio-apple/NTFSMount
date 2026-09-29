@@ -7,8 +7,24 @@ public enum FullDiskAccess {
   /// Gated path used only for a readability probe. Never opened or parsed.
   public static let gatedPath = "/Library/Application Support/com.apple.TCC/TCC.db"
   public static let helperName = "ntfsmount-helperd"
-  public static let helperInstallPath = "/Library/PrivilegedHelperTools/com.bioapple.ntfsmount.helperd"
+  /// Where launchd actually starts `ntfsmount-helperd`, most likely first. TCC keys Full Disk
+  /// Access by the *running* binary, so the grant must name one of these, not NTFSMount.app.
+  public static let helperInstallPaths = [
+    "/Library/Application Support/NTFSMount/ntfsmount-helperd",
+    "/Library/PrivilegedHelperTools/com.bioapple.ntfsmount.helperd",
+  ]
+  public static let helperInstallPath = helperInstallPaths[0]
   public static let diagnoseLineId = "full_disk_access"
+
+  /// The daemon launchd is running (or would run) from. Prefer a sealed copy; fall back to the
+  /// app bundle, which is what an SMAppService (notarized) install uses.
+  public static func runningHelperPath(
+    appBundlePath: String = Bundle.main.bundlePath,
+    exists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }
+  ) -> String {
+    let bundled = appBundlePath + "/Contents/MacOS/" + helperName
+    return (helperInstallPaths + [bundled]).first(where: exists) ?? helperInstallPath
+  }
 
   public enum Status: String, Equatable, Sendable {
     case granted

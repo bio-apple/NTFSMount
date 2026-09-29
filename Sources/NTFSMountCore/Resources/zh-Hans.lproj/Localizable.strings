@@ -319,7 +319,7 @@
 
 "fda.statusDenied" = "未检测到本 App 的完全磁盘访问权限。";
 
-"fda.helperPath" = "若仍无法挂载，请在同一列表中添加助手：%@";
+"fda.helperPath" = "挂载与格式化还需要把助手也加进这个列表（App 的授权不会被继承）：%@";
 
 "alert.updateHelperTitle" = "更新挂载助手";
 
@@ -334,6 +334,8 @@
 "alert.mountFailed" = "挂载失败";
 
 "alert.formatFailed" = "格式化失败";
+
+"error.rawDeviceDenied" = "macOS 拒绝了直接访问磁盘。请在「系统设置 → 隐私与安全性 → 完全磁盘访问权限」中为 NTFSMount.app 打开授权后重试。";
 
 "alert.kextBody" = "FSKit/内核扩展不可用是 macOS 13+ 的预期情况，可忽略。本应用不使用内核扩展，助手已优先使用 NFS/用户态 FUSE。请勿安装 kext。\n\n%@";
 

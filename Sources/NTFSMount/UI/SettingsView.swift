@@ -121,7 +121,7 @@ struct SettingsView: View {
                   .foregroundStyle(fdaStatus == .granted ? Color.secondary : Color.orange)
                   .fixedSize(horizontal: false, vertical: true)
               }
-              Text(L10n.format("fda.helperPath", FullDiskAccess.helperInstallPath))
+              Text(L10n.format("fda.helperPath", FullDiskAccess.runningHelperPath()))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .textSelection(.enabled)

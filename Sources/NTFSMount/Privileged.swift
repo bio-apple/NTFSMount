@@ -6,10 +6,13 @@ import Security
 import ServiceManagement
 import os
 
-/// Ongoing privilege: SMAppService + LaunchDaemon over a Unix socket (CDHash pin).
-/// One-shot helper install/uninstall: SMAppService when signing allows; otherwise
-/// Authorization Services (`kAuthorizationRightExecute`), not AppleScript.
-/// SIP stays enabled. No sudoers NOPASSWD.
+/// Ongoing privilege, two paths:
+/// - on-demand volume work (probe / mount / unmount / eject / format / fix) runs as a root child
+///   of this app through Authorization Services, so it inherits NTFSMount.app’s Full Disk Access;
+/// - auto-mount and helper maintenance still use the LaunchDaemon Unix socket (CDHash pin), which
+///   is its own TCC subject and therefore needs its own grant.
+/// Helper install/uninstall: SMAppService when signing allows; otherwise Authorization Services
+/// (`kAuthorizationRightExecute`), not AppleScript. SIP stays enabled. No sudoers NOPASSWD.
 enum Privileged {
   static var systemHelperInstalled: Bool {
     FileManager.default.fileExists(atPath: AppIdentity.helperDaemonPath)
@@ -272,6 +275,13 @@ enum Privileged {
 
   private static let helperClientQueue = DispatchQueue(label: "com.bioapple.ntfsmount.helper-client")
 
+  /// On-demand operations that open the raw device (or run ntfs-3g / mkntfs) execute as a child
+  /// of this app, so they inherit NTFSMount.app’s Full Disk Access. Auto-mount keeps using the
+  /// LaunchDaemon socket: a daemon is its own TCC subject and never inherits that grant.
+  private static let appChildCommands: Set<String> = [
+    "probe", "mount", "unmount", "eject", "format", "fix", "ntfsfix",
+  ]
+
   /// Hop off the caller (often `@MainActor`) so socket IPC / admin prompts cannot freeze the menu spinner.
   private static func offMain(_ work: @escaping @Sendable () -> Outcome) async -> Outcome {
     await withCheckedContinuation { continuation in
@@ -298,16 +308,58 @@ enum Privileged {
       AppLog.helper.error("extra=\(extra, privacy: .private)")
       return Outcome(ok: false, text: L10n.t("privileged.mismatch"))
     }
-    if let via = transactViaDaemon(args) {
-      if via.ok {
-        AppLog.helper.info("ok \(cmd, privacy: .public) \(disk, privacy: .public)")
-      } else {
-        AppLog.helper.error("fail \(cmd, privacy: .public) \(via.text, privacy: .private)")
+    if let via = transactViaAppChild(args) {
+      logHelperCall(cmd: cmd, disk: disk, via: via)
+      // ntfs-3g refuses to run when it sees a setuid mount. The launcher sets real uid 0 to avoid
+      // that, so this means the child never got real root; retry once through the daemon, which is
+      // real root. Only mount/unmount are idempotent (they unmount first) — never retry format.
+      if via.ok || cmd != "mount" || !via.text.contains("insecure with the external FUSE library") {
+        return via
       }
+      AppLog.helper.error("app-child mount refused as setuid; retrying via daemon")
+    }
+    if let via = transactViaDaemon(args) {
+      logHelperCall(cmd: cmd, disk: disk, via: via)
       return via
     }
     AppLog.helper.error("\(cmd, privacy: .public) helper not found")
     return Outcome(ok: false, text: L10n.t("privileged.notFound"))
+  }
+
+  private static func logHelperCall(cmd: String, disk: String, via: Outcome) {
+    if via.ok {
+      AppLog.helper.info("ok \(cmd, privacy: .public) \(disk, privacy: .public)")
+    } else {
+      AppLog.helper.error("fail \(cmd, privacy: .public) \(via.text, privacy: .private)")
+    }
+  }
+
+  /// Runs the sealed helper as an app-authorized child. Returns nil when this path is not
+  /// applicable so the caller can fall back to the daemon socket.
+  private static func transactViaAppChild(_ args: [String]) -> Outcome? {
+    guard let cmd = args.first, appChildCommands.contains(cmd) else { return nil }
+    let sealed = AppIdentity.helperSupportPath
+    let daemon = AppIdentity.helperDaemonPath
+    guard let bundledHelper = Bundle.main.path(forResource: "ntfs-rw-helper", ofType: nil),
+          let bundledDaemon = Bundle.main.path(forResource: "ntfsmount-helperd", ofType: nil),
+          AppIdentity.sha256File(sealed) == AppIdentity.sha256File(bundledHelper),
+          // The one-shot `exec-root` mode is what makes this child real root. An older sealed
+          // helperd without it would daemonize here and never return, so require an exact match.
+          AppIdentity.sha256File(daemon) == AppIdentity.sha256File(bundledDaemon)
+    else {
+      return nil
+    }
+    let launch = AdminAuthorization.runTool(parts: [daemon, "exec-root", sealed] + args)
+    if launch.launched {
+      return Outcome(ok: launch.ok, text: launch.text)
+    }
+    // The administrator prompt was canceled: honor it instead of silently running the same
+    // operation through the daemon.
+    if UserFacingError.kind(from: launch.text) == .canceled {
+      AppLog.helper.error("canceled \(cmd, privacy: .public)")
+      return Outcome(ok: false, text: launch.text)
+    }
+    return nil
   }
 
   private static func transactViaDaemon(_ args: [String]) -> Outcome? {

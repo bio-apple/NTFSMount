@@ -11,6 +11,9 @@ public enum UserFacingError {
     case adminDenied
     case helperNeedsUpdate
     case diskBusy
+    /// macOS refused a direct raw-device open (`Operation not permitted`) — usually missing
+    /// Full Disk Access for the process doing the mounting / formatting.
+    case rawDeviceDenied
     case other
   }
 
@@ -30,6 +33,9 @@ public enum UserFacingError {
       || lower.contains("volume busy")
       || lower.contains("in use and cannot be ejected") {
       return .diskBusy
+    }
+    if lower.contains("operation not permitted") && t.contains("/dev/") {
+      return .rawDeviceDenied
     }
     if lower.contains("password") && lower.contains("sudo") {
       return .helperNeedsUpdate
@@ -93,6 +99,8 @@ public enum UserFacingError {
       } else {
         mapped = L10n.t("error.diskBusy", locale: locale)
       }
+    case .rawDeviceDenied:
+      mapped = L10n.t("error.rawDeviceDenied", locale: locale)
     case .other:
       if t.lowercased().contains("refused to eject") {
         mapped = L10n.t("eject.refuseSystem", locale: locale)
